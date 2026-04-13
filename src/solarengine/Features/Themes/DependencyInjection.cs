@@ -14,6 +14,7 @@ internal static class DependencyInjection
             serviceProvider.GetRequiredService<WindowsRegistryThemeMutator>());
 
         _ = services.AddSingleton<ApplyThemeCommandHandler>();
+        _ = services.AddSingleton(TimeProvider.System);
         _ = services.AddSingleton<ThemeTransitionOrchestrator>();
 
         return services;

@@ -11,7 +11,8 @@ namespace SolarEngine.Features.Themes;
 internal sealed class ThemeTransitionOrchestrator(
     StructuredLogPublisher logPublisher,
     ApplyThemeCommandHandler applyThemeCommandHandler,
-    IThemeMutator themeMutator) : IDisposable
+    IThemeMutator themeMutator,
+    TimeProvider timeProvider) : IDisposable
 {
     private readonly SemaphoreSlim _stateGate = new(1, 1);
     private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
@@ -98,17 +99,17 @@ internal sealed class ThemeTransitionOrchestrator(
     {
         if (!_configuration.IsConfigured || _todaySchedule is null)
         {
-            return "SolarEngine | Waiting for configuration";
+            return "Auto Theme Solar Engine | Waiting for configuration";
         }
 
         string modeText = (_lastAppliedMode ?? themeMutator.TryGetCurrentMode())?.ToString() ?? "Unknown";
 
         return _todaySchedule.DaylightCondition switch
         {
-            SolarDaylightCondition.PolarNight => $"SolarEngine | {modeText} | Polar night",
-            SolarDaylightCondition.MidnightSun => $"SolarEngine | {modeText} | Midnight sun",
-            SolarDaylightCondition.Standard => throw new NotImplementedException(),
-            _ => $"SolarEngine | {modeText} | Sunrise {_todaySchedule.SunriseLocal:HH:mm} | Sunset {_todaySchedule.SunsetLocal:HH:mm}"
+            SolarDaylightCondition.PolarNight => $"Auto Theme Solar Engine | {modeText} | Polar night",
+            SolarDaylightCondition.MidnightSun => $"Auto Theme Solar Engine | {modeText} | Midnight sun",
+            SolarDaylightCondition.Standard => BuildStandardStatusText(modeText),
+            _ => BuildStandardStatusText(modeText)
         };
     }
 
@@ -120,8 +121,8 @@ internal sealed class ThemeTransitionOrchestrator(
             {
                 SolarDaylightCondition.PolarNight => "Polar night | Dark mode enforced all day",
                 SolarDaylightCondition.MidnightSun => "Midnight sun | Light mode enforced all day",
-                SolarDaylightCondition.Standard => throw new NotImplementedException(),
-                _ => $"Sunrise {_todaySchedule.SunriseLocal:HH:mm} | Sunset {_todaySchedule.SunsetLocal:HH:mm}"
+                SolarDaylightCondition.Standard => BuildStandardScheduleText(),
+                _ => BuildStandardScheduleText()
             };
     }
 
@@ -190,7 +191,7 @@ internal sealed class ThemeTransitionOrchestrator(
             return;
         }
 
-        DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+        DateOnly today = DateOnly.FromDateTime(timeProvider.GetLocalNow().DateTime);
         Result<SolarSchedule> scheduleResult = await GetSolarScheduleQueryHandler.HandleAsync(
             new GetSolarScheduleQuery(today, coordinatesResult.Value),
             cancellationToken).ConfigureAwait(false);
@@ -228,7 +229,7 @@ internal sealed class ThemeTransitionOrchestrator(
             return;
         }
 
-        DateTime now = DateTime.Now;
+        DateTime now = timeProvider.GetLocalNow().DateTime;
         SolarSchedule schedule = _todaySchedule;
         ThemeMode desiredMode = ResolveMode(schedule, now);
         ThemeMode? currentMode = themeMutator.TryGetCurrentMode();
@@ -259,7 +260,7 @@ internal sealed class ThemeTransitionOrchestrator(
             return;
         }
 
-        DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+        DateOnly today = DateOnly.FromDateTime(timeProvider.GetLocalNow().DateTime);
         if (_todaySchedule is null || today != _scheduleDate)
         {
             await RefreshCoreAsync(cancellationToken).ConfigureAwait(false);
@@ -291,8 +292,22 @@ internal sealed class ThemeTransitionOrchestrator(
                 && schedule.SunsetLocal is not null
                 && now >= schedule.SunriseLocal.Value
                 && now < schedule.SunsetLocal.Value => ThemeMode.Light,
-            SolarDaylightCondition.Standard => throw new NotImplementedException(),
+            SolarDaylightCondition.Standard => ThemeMode.Dark,
             _ => ThemeMode.Dark
         };
+    }
+
+    private string BuildStandardStatusText(string modeText)
+    {
+        return _todaySchedule is { SunriseLocal: DateTime sunrise, SunsetLocal: DateTime sunset }
+            ? $"Auto Theme Solar Engine | {modeText} | Sunrise {sunrise:HH:mm} | Sunset {sunset:HH:mm}"
+            : $"Auto Theme Solar Engine | {modeText} | Schedule unavailable";
+    }
+
+    private string BuildStandardScheduleText()
+    {
+        return _todaySchedule is { SunriseLocal: DateTime sunrise, SunsetLocal: DateTime sunset }
+            ? $"Sunrise {sunrise:HH:mm} | Sunset {sunset:HH:mm}"
+            : "Schedule unavailable.";
     }
 }
