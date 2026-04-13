@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net11.0-windows10.0.19041.0</TargetFramework>
+
+    <!-- Required for the native Win32 tray/UI host and tightly scoped interop helpers used by the lightweight non-WPF runtime. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <AssemblyName>SolarEngine</AssemblyName>
+    <RootNamespace>SolarEngine</RootNamespace>
+    <AssemblyTitle>SolarEngine</AssemblyTitle>
+    <Product>SolarEngine</Product>
+    <Company>Humberto Schoenwald</Company>
+    <Authors>Humberto Schoenwald</Authors>
+    <Description>Switch the Windows light and dark theme automatically using local sunrise and
+      sunset calculations.</Description>
+    <RepositoryUrl>https://github.com/humbertoschoenwald/auto-theme-solar-engine</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/humbertoschoenwald/auto-theme-solar-engine</PackageProjectUrl>
+    <ApplicationIcon>Assets\SolarEngine.ico</ApplicationIcon>
+
+    <Version>26.04.00</Version>
+    <AssemblyVersion>26.04.00</AssemblyVersion>
+    <FileVersion>26.04.00</FileVersion>
+
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <PublishTrimmed>false</PublishTrimmed>
+    <IsTrimmable>false</IsTrimmable>
+
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\SolarEngine.ico" />
+    <EmbeddedResource Include="Resources\Localization\*.json" />
+  </ItemGroup>
+
+</Project>

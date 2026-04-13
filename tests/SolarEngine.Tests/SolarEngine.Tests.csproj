@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0-windows10.0.19041.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+
+    <IsTestProject>true</IsTestProject>
+
+    <RootNamespace>SolarEngine.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\solarengine\SolarEngine.csproj" />
+  </ItemGroup>
+
+</Project>

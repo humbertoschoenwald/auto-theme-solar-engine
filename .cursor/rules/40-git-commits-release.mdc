@@ -1,0 +1,60 @@
+---
+description: "Atomic Conventional Commits, CALVER tagging, and changelog generation rules"
+alwaysApply: true
+---
+
+# Git, Commits, Versioning, and Changelog Rules
+
+## Atomic Commit Policy
+
+- Every logical change must have its **own commit**.
+- A commit must include only the files required for that exact change.
+- Do not batch unrelated edits.
+- If a task contains multiple independent changes, split them into multiple commits.
+- Prefer commit order that keeps the repository buildable and testable after each commit.
+
+## Commit Message Policy
+
+Use Conventional Commits:
+
+- `feat:`
+- `fix:`
+- `refactor:`
+- `perf:`
+- `test:`
+- `docs:`
+- `build:`
+- `ci:`
+- `chore:`
+- `revert:`
+
+Format:
+
+`type(optional-scope): short description`
+
+Examples:
+
+- `feat(orders): add create order endpoint`
+- `fix(payments): prevent duplicate capture`
+- `test(orders): add not-found coverage for get-by-id query`
+- `ci: fail workflow when any test project fails`
+
+## Breaking Changes
+
+Use either:
+
+- `type(scope)!: description`
+- or a `BREAKING CHANGE:` footer
+
+## Versioning
+
+- Use **CALVER** tags in `YY.MM.PATCH` format.
+- Example: `26.04.00`.
+- Increment `PATCH` for subsequent releases in the same month.
+- Reset patch when the month changes.
+
+## Changelog
+
+- Generate changelog content from commit history.
+- Prefer `conventional-changelog` with the `conventionalcommits` preset.
+- Do not hand-curate release notes unless a human editorial pass is explicitly requested.

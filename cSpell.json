@@ -1,0 +1,35 @@
+{
+  "version": "0.2",
+  "language": "en,es",
+  "dictionaryDefinitions": [
+    {
+      "name": "Spanish",
+      "path": "./.cspell/spanish.txt",
+      "addWords": true
+    },
+    {
+      "name": "NamedEntities",
+      "path": "./.cspell/named-entities.txt",
+      "addWords": true
+    },
+    {
+      "name": "Technical",
+      "path": "./.cspell/technical.txt",
+      "addWords": true
+    }
+  ],
+  "dictionaries": ["Spanish", "NamedEntities", "Technical"],
+  "ignorePaths": [
+    "node_modules/**",
+    ".git/**",
+    ".cspell/**",
+    "artifacts/**",
+    "**/*.ico",
+    "package-lock.json",
+    "**/bin/**",
+    "**/obj/**",
+    "**/*.trx",
+    "**/TestResults/**",
+    "**/artifacts/**"
+  ]
+}

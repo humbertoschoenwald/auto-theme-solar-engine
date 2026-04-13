@@ -1,0 +1,63 @@
+---
+description: "Strict testing rules for .NET backend code: highly granular, deterministic, professional tests with strong regression coverage"
+globs:
+  - "tests/**/*.cs"
+  - "**/*Tests.cs"
+  - "**/*Test.cs"
+alwaysApply: false
+---
+
+# Testing Rules
+
+Testing in this repository is intentionally strict.
+
+## Core Testing Standard
+
+- Prefer **many small tests** over a few broad tests.
+- Nearly every public method should have direct test coverage unless it is trivial pass-through code.
+- Every bug fix must include a regression test.
+- Cover both success and failure paths.
+- Tests must be deterministic, isolated, and readable.
+
+## Test Types
+
+Use the right test at the right level:
+
+- **Unit tests** for domain logic, validators, mappers, and pure services.
+- **Integration tests** for API endpoints, persistence, pipelines, and cross-component behavior.
+- **Architecture tests** for layer boundaries and dependency direction.
+- **Snapshot tests** only when a textual or serialized contract truly benefits from stable snapshots.
+
+## Strictness Rules
+
+- One behavioral concern per test.
+- Avoid assertion-lite tests.
+- Avoid vague names like `Test1`, `ShouldWork`, or `HappyPath`.
+- Use precise names: `CreateOrder_WhenCustomerMissing_ReturnsNotFound`.
+- Do not use random data without deterministic seeds.
+- Do not use sleeps or timing assumptions.
+- Inject `TimeProvider` and fake time in tests.
+- Mock only true external dependencies. Prefer real collaborators when practical.
+
+## Preferred Stack
+
+- xUnit
+- FluentAssertions
+- NSubstitute
+- `WebApplicationFactory` for backend integration tests
+- NetArchTest for architectural rules
+
+## Coverage Intent
+
+The goal is not vanity coverage. The goal is behavioral precision.
+
+At minimum, test:
+
+- invariants,
+- branching logic,
+- validation failures,
+- mapping correctness,
+- persistence behavior,
+- API contracts,
+- authorization boundaries,
+- regression cases.

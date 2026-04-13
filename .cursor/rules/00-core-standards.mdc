@@ -1,0 +1,49 @@
+---
+description: "Core repository standards for all work in this .NET 11 / C# 15 codebase"
+alwaysApply: true
+---
+
+# Core Standards
+
+Use these rules as the default operating contract for all changes.
+
+## Platform Baseline
+
+- Target **C# 15** and **.NET 11**.
+- Treat preview-only language or framework features carefully. Prefer them only when the repository already opted in or the change explicitly requires them.
+- Use only English in source files, docs, commit messages, PR summaries, ADRs, and generated content.
+
+## Delivery Rules
+
+- Make the **smallest complete change** that solves the problem.
+- Keep changes **atomic**. One logical change set per commit.
+- Stage only the exact files required for that commit.
+- Do not combine refactors, new features, fixes, and formatting-only edits unless they are inseparable.
+- When changing behavior, add or update tests in the same change.
+
+## Repository Discipline
+
+- Read existing code before proposing patterns.
+- Prefer existing project conventions over generic examples.
+- Do not introduce a new dependency unless the benefit is concrete and local alternatives are clearly worse.
+- Prefer explicit code over clever code.
+- Favor deterministic behavior, stable APIs, and maintainable designs.
+
+## Quality Gate
+
+Before considering work complete, ensure the intended workflow passes:
+
+- `dotnet restore`
+- `dotnet format --verify-no-changes`
+- `dotnet build --configuration Release`
+- `dotnet test --configuration Release --no-build`
+
+If the repository has additional validation scripts, run them too.
+
+## Reference Documents
+
+- `docs/standards/architecture.md`
+- `docs/standards/csharp-dotnet.md`
+- `docs/standards/testing.md`
+- `docs/standards/commits-versioning.md`
+- `docs/standards/ci-quality-gates.md`

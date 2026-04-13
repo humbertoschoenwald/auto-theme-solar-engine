@@ -1,0 +1,10 @@
+# Enforce absolute Line Feed (LF) normalization across all text files in the repository index to guarantee deterministic cryptographic hashing and zero-noise diffs across mixed-OS contributor environments.
+* text=auto eol=lf
+
+# Explicitly mark binary assets to prevent Git from attempting text-based diffs or line ending conversions, which corrupts the payload.
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.dll binary
+*.exe binary

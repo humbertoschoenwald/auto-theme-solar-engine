@@ -1,0 +1,8 @@
+# --- NamedEntities ---
+humbe
+humberto
+humbertoschoenwald
+schoenwald
+SolarEngine
+Linq
+Segoe

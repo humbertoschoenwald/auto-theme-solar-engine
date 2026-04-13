@@ -1,0 +1,50 @@
+---
+description: "CI, pre-push validation, and quality gates for GitHub workflows and local hooks"
+globs:
+  - ".github/workflows/**/*.yml"
+  - ".githooks/**"
+  - "scripts/**"
+  - "package.json"
+  - "commitlint.config.cjs"
+alwaysApply: false
+---
+
+# CI and Quality Gate Rules
+
+## Required Local Gate
+
+Pushes should be blocked locally if any validation fails.
+
+The local pre-push gate must run:
+
+- format verification,
+- build,
+- all tests,
+- architecture tests if present.
+
+## Required Remote Gate
+
+GitHub Actions must validate the same baseline on push and pull request.
+
+At minimum:
+
+- restore,
+- format verification,
+- build,
+- test,
+- commit message linting.
+
+## Branch Protection
+
+To truly prevent broken code from reaching protected branches:
+
+- require PRs,
+- require status checks,
+- require CI success before merge,
+- block direct pushes to `main`.
+
+A workflow can fail a push, but only branch protection can prevent merging broken code into protected branches.
+
+## Rule of Completion
+
+Do not mark work done if local or CI validation would fail.
