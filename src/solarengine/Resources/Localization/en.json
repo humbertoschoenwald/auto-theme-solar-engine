@@ -1,5 +1,5 @@
 {
-  "settings.header": "SolarEngine settings",
+  "settings.header": "Auto Theme Solar Engine settings",
   "settings.latitude": "Latitude",
   "settings.longitude": "Longitude",
   "settings.precision": "Precision",
@@ -16,12 +16,12 @@
   "settings.operation.detecting_location": "Detecting location...",
   "settings.operation.already_running": "Another operation is already running.",
   "settings.message.theme_applied": "Theme applied.",
-  "status.waiting_configuration": "SolarEngine | Waiting for configuration",
+  "status.waiting_configuration": "Auto Theme Solar Engine | Waiting for configuration",
   "status.waiting_coordinates": "Waiting for coordinates.",
   "status.mode_unknown": "Unknown",
-  "status.polar_night_tooltip": "SolarEngine | {0} | Polar night",
-  "status.midnight_sun_tooltip": "SolarEngine | {0} | Midnight sun",
-  "status.schedule_tooltip": "SolarEngine | {0} | Sunrise {1} | Sunset {2}",
+  "status.polar_night_tooltip": "Auto Theme Solar Engine | {0} | Polar night",
+  "status.midnight_sun_tooltip": "Auto Theme Solar Engine | {0} | Midnight sun",
+  "status.schedule_tooltip": "Auto Theme Solar Engine | {0} | Sunrise {1} | Sunset {2}",
   "status.polar_night_window": "Polar night | Dark mode enforced all day",
   "status.midnight_sun_window": "Midnight sun | Light mode enforced all day",
   "status.schedule_window": "Sunrise {0} | Sunset {1}",
@@ -29,5 +29,5 @@
   "tray.apply_now": "Apply now",
   "tray.recalculate_today": "Recalculate today",
   "tray.exit": "Exit",
-  "app.already_running": "SolarEngine is already running in the notification area."
+  "app.already_running": "Auto Theme Solar Engine is already running in the notification area."
 }

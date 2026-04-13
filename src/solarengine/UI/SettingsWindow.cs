@@ -14,7 +14,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 {
     private readonly record struct ControlBounds(int X, int Y, int Width, int Height);
 
-    private const string AppName = "SolarEngine";
+    private const string AppName = "Auto Theme Solar Engine";
     private const string WindowClassName = "SolarEngine.NativeSettingsWindow";
     private const int WindowWidth = 460;
     private const int WindowHeight = 500;
@@ -226,6 +226,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
                 cbSize = (uint)Marshal.SizeOf<NativeInterop.WindowClassEx>(),
                 hInstance = NativeInterop.GetModuleHandle(null),
                 lpfnWndProc = Marshal.GetFunctionPointerForDelegate(WindowProcedureDelegate),
+                hbrBackground = NativeInterop.COLOR_WINDOW + 1,
                 lpszClassName = classNamePointer
             };
 
@@ -243,7 +244,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 
     private void CreateControls()
     {
-        _ = CreateLabel("SolarEngine settings", 16, 16, 400, 20);
+        _ = CreateLabel("Auto Theme Solar Engine settings", 16, 16, 400, 20);
 
         _ = CreateLabel("Latitude", 16, 52, 100, 20);
         _latitudeEditHandle = CreateEdit(LatitudeEditId, 140, 48, 260, 24);

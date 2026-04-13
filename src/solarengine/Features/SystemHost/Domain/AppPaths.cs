@@ -16,7 +16,7 @@ internal sealed class AppPaths
             : throw new ArgumentException("Provide a stable application data directory.", nameof(directoryPath));
 
         ConfigPath = Path.Combine(DirectoryPath, "config.json");
-        LogPath = Path.Combine(DirectoryPath, "SolarEngine.log");
+        LogPath = Path.Combine(DirectoryPath, "AutoThemeSolarEngine.log");
     }
 
     public string DirectoryPath { get; }
@@ -33,6 +33,6 @@ internal sealed class AppPaths
 
         return string.IsNullOrWhiteSpace(localApplicationData)
             ? throw new InvalidOperationException("Resolve a stable per-user application data root before composing runtime file paths.")
-            : Path.GetFullPath(Path.Combine(localApplicationData, "SolarEngine"));
+            : Path.GetFullPath(Path.Combine(localApplicationData, "AutoThemeSolarEngine"));
     }
 }

@@ -10,7 +10,7 @@ namespace SolarEngine.Features.Themes.Infrastructure;
 internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher logPublisher) : IThemeMutator
 {
     private const string PersonalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-    private const string SolarEngineKeyPath = @"Software\SolarEngine";
+    private const string AppKeyPath = @"Software\AutoThemeSolarEngine";
     private const string AppsUseLightThemeValueName = "AppsUseLightTheme";
     private const string SystemUsesLightThemeValueName = "SystemUsesLightTheme";
     private const string ColorPrevalenceValueName = "ColorPrevalence";
@@ -125,15 +125,15 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
             return;
         }
 
-        if (IsTaskbarPreferenceCurrentlyManagedBySolarEngine() && currentColorPrevalence == 0)
+        if (IsTaskbarPreferenceCurrentlyManagedByApplication() && currentColorPrevalence == 0)
         {
             return;
         }
 
-        using RegistryKey SolarEngineKey = Registry.CurrentUser.CreateSubKey(SolarEngineKeyPath, writable: true)
-            ?? throw new InvalidOperationException("Resolve the SolarEngine registry key before persisting taskbar appearance preferences.");
+        using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
+            ?? throw new InvalidOperationException("Resolve the application registry key before persisting taskbar appearance preferences.");
 
-        SolarEngineKey.SetValue(
+        appKey.SetValue(
             StoredDarkModeColorPrevalenceValueName,
             currentColorPrevalence,
             RegistryValueKind.DWord);
@@ -141,38 +141,38 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
 
     private static void RestoreDarkModeTaskbarPreferenceIfNeeded(RegistryKey personalizeKey)
     {
-        using RegistryKey SolarEngineKey = Registry.CurrentUser.CreateSubKey(SolarEngineKeyPath, writable: true)
-            ?? throw new InvalidOperationException("Resolve the SolarEngine registry key before restoring taskbar appearance preferences.");
+        using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
+            ?? throw new InvalidOperationException("Resolve the application registry key before restoring taskbar appearance preferences.");
 
-        bool isManagedBySolarEngine =
-            TryReadDword(SolarEngineKey.GetValue(LightModeTaskbarPreferenceManagedValueName), out int managedValue)
+        bool isManagedByApplication =
+            TryReadDword(appKey.GetValue(LightModeTaskbarPreferenceManagedValueName), out int managedValue)
             && managedValue == 1;
 
-        if (!isManagedBySolarEngine)
+        if (!isManagedByApplication)
         {
             return;
         }
 
-        if (TryReadDword(SolarEngineKey.GetValue(StoredDarkModeColorPrevalenceValueName), out int storedColorPrevalence))
+        if (TryReadDword(appKey.GetValue(StoredDarkModeColorPrevalenceValueName), out int storedColorPrevalence))
         {
             personalizeKey.SetValue(ColorPrevalenceValueName, storedColorPrevalence, RegistryValueKind.DWord);
         }
 
-        SolarEngineKey.DeleteValue(LightModeTaskbarPreferenceManagedValueName, throwOnMissingValue: false);
+        appKey.DeleteValue(LightModeTaskbarPreferenceManagedValueName, throwOnMissingValue: false);
     }
 
     private static void MarkTaskbarPreferenceAsManaged()
     {
-        using RegistryKey SolarEngineKey = Registry.CurrentUser.CreateSubKey(SolarEngineKeyPath, writable: true)
-            ?? throw new InvalidOperationException("Resolve the SolarEngine registry key before tracking taskbar appearance ownership.");
+        using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
+            ?? throw new InvalidOperationException("Resolve the application registry key before tracking taskbar appearance ownership.");
 
-        SolarEngineKey.SetValue(LightModeTaskbarPreferenceManagedValueName, 1, RegistryValueKind.DWord);
+        appKey.SetValue(LightModeTaskbarPreferenceManagedValueName, 1, RegistryValueKind.DWord);
     }
 
-    private static bool IsTaskbarPreferenceCurrentlyManagedBySolarEngine()
+    private static bool IsTaskbarPreferenceCurrentlyManagedByApplication()
     {
-        using RegistryKey? SolarEngineKey = Registry.CurrentUser.OpenSubKey(SolarEngineKeyPath, writable: false);
-        return SolarEngineKey is not null && TryReadDword(SolarEngineKey.GetValue(LightModeTaskbarPreferenceManagedValueName), out int managedValue)
+        using RegistryKey? appKey = Registry.CurrentUser.OpenSubKey(AppKeyPath, writable: false);
+        return appKey is not null && TryReadDword(appKey.GetValue(LightModeTaskbarPreferenceManagedValueName), out int managedValue)
             && managedValue == 1;
     }
 

@@ -84,9 +84,7 @@ internal static class NativeInterop
     internal const int IDI_APPLICATION = 32512;
 
     internal const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-    internal const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
     internal const int DWMWCP_ROUND = 2;
-    internal const int DWMSBT_MAINWINDOW = 2;
 
     internal const int MB_OK = 0x0000;
     internal const int MB_ICONINFORMATION = 0x0040;
@@ -99,6 +97,7 @@ internal static class NativeInterop
     internal const int CLIP_DEFAULT_PRECIS = 0;
     internal const int CLEARTYPE_QUALITY = 5;
     internal const int DEFAULT_PITCH = 0;
+    internal const int COLOR_WINDOW = 5;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct NativePoint
@@ -423,13 +422,6 @@ internal static class NativeInterop
             hWnd,
             DWMWA_WINDOW_CORNER_PREFERENCE,
             ref roundedCorners,
-            sizeof(int));
-
-        int backdropType = DWMSBT_MAINWINDOW;
-        _ = DwmSetWindowAttribute(
-            hWnd,
-            DWMWA_SYSTEMBACKDROP_TYPE,
-            ref backdropType,
             sizeof(int));
     }
 }

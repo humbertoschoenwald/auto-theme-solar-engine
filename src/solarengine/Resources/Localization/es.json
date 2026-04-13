@@ -1,5 +1,5 @@
 {
-  "settings.header": "Configuración de SolarEngine",
+  "settings.header": "Configuración de Auto Theme Solar Engine",
   "settings.latitude": "Latitud",
   "settings.longitude": "Longitud",
   "settings.precision": "Precisión",
@@ -16,12 +16,12 @@
   "settings.operation.detecting_location": "Detectando ubicación...",
   "settings.operation.already_running": "Ya hay otra operación en curso.",
   "settings.message.theme_applied": "Tema aplicado.",
-  "status.waiting_configuration": "SolarEngine | Esperando configuración",
+  "status.waiting_configuration": "Auto Theme Solar Engine | Esperando configuración",
   "status.waiting_coordinates": "Esperando coordenadas.",
   "status.mode_unknown": "Desconocido",
-  "status.polar_night_tooltip": "SolarEngine | {0} | Noche polar",
-  "status.midnight_sun_tooltip": "SolarEngine | {0} | Sol de medianoche",
-  "status.schedule_tooltip": "SolarEngine | {0} | Amanecer {1} | Atardecer {2}",
+  "status.polar_night_tooltip": "Auto Theme Solar Engine | {0} | Noche polar",
+  "status.midnight_sun_tooltip": "Auto Theme Solar Engine | {0} | Sol de medianoche",
+  "status.schedule_tooltip": "Auto Theme Solar Engine | {0} | Amanecer {1} | Atardecer {2}",
   "status.polar_night_window": "Noche polar | Modo oscuro todo el día",
   "status.midnight_sun_window": "Sol de medianoche | Modo claro todo el día",
   "status.schedule_window": "Amanecer {0} | Atardecer {1}",
@@ -29,5 +29,5 @@
   "tray.apply_now": "Aplicar ahora",
   "tray.recalculate_today": "Recalcular hoy",
   "tray.exit": "Salir",
-  "app.already_running": "SolarEngine ya se está ejecutando en el área de notificación."
+  "app.already_running": "Auto Theme Solar Engine ya se está ejecutando en el área de notificación."
 }

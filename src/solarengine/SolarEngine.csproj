@@ -7,10 +7,10 @@
     <!-- Required for the native Win32 tray/UI host and tightly scoped interop helpers used by the lightweight non-WPF runtime. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-    <AssemblyName>SolarEngine</AssemblyName>
+    <AssemblyName>AutoThemeSolarEngine</AssemblyName>
     <RootNamespace>SolarEngine</RootNamespace>
-    <AssemblyTitle>SolarEngine</AssemblyTitle>
-    <Product>SolarEngine</Product>
+    <AssemblyTitle>Auto Theme Solar Engine</AssemblyTitle>
+    <Product>Auto Theme Solar Engine</Product>
     <Company>Humberto Schoenwald</Company>
     <Authors>Humberto Schoenwald</Authors>
     <Description>Switch the Windows light and dark theme automatically using local sunrise and
@@ -19,9 +19,9 @@
     <PackageProjectUrl>https://github.com/humbertoschoenwald/auto-theme-solar-engine</PackageProjectUrl>
     <ApplicationIcon>Assets\SolarEngine.ico</ApplicationIcon>
 
-    <Version>26.04.00</Version>
-    <AssemblyVersion>26.04.00</AssemblyVersion>
-    <FileVersion>26.04.00</FileVersion>
+    <Version>26.04.01</Version>
+    <AssemblyVersion>26.04.01</AssemblyVersion>
+    <FileVersion>26.04.01</FileVersion>
 
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>

@@ -15,8 +15,8 @@ namespace SolarEngine;
 
 internal sealed class NativeApplication : IDisposable
 {
-    private const string AppName = "SolarEngine";
-    private const string SingleInstanceMutexName = @"Local\SolarEngine.SingleInstance";
+    private const string AppName = "Auto Theme Solar Engine";
+    private const string SingleInstanceMutexName = @"Local\AutoThemeSolarEngine.SingleInstance";
 
     private bool _disposed;
     private Mutex? _instanceMutex;
@@ -43,7 +43,7 @@ internal sealed class NativeApplication : IDisposable
             if (!TryAcquireSingleInstance())
             {
                 ShowMessage(
-                    "SolarEngine is already running in the notification area.",
+                    "Auto Theme Solar Engine is already running in the notification area.",
                     NativeInterop.MB_ICONINFORMATION);
 
                 return 0;
@@ -97,7 +97,7 @@ internal sealed class NativeApplication : IDisposable
             or InvalidOperationException
             or Win32Exception)
         {
-            HandleStartupFailure(appPaths, exception, "SolarEngine failed during startup.");
+            HandleStartupFailure(appPaths, exception, "Auto Theme Solar Engine failed during startup.");
             return -1;
         }
         finally

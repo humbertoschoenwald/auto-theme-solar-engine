@@ -6,7 +6,7 @@ namespace SolarEngine.Features.SystemHost.Infrastructure;
 internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublisher)
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "SolarEngine";
+    private const string ValueName = "Auto Theme Solar Engine";
 
     public void SetEnabled(bool enabled, string executablePath)
     {

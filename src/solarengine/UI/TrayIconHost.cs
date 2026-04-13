@@ -420,7 +420,7 @@ internal sealed class TrayIconHost(string appName)
 
     private static string NormalizeTooltip(string tooltip)
     {
-        string normalized = string.IsNullOrWhiteSpace(tooltip) ? "SolarEngine" : tooltip.Trim();
+        string normalized = string.IsNullOrWhiteSpace(tooltip) ? "Auto Theme Solar Engine" : tooltip.Trim();
         return normalized.Length <= 127 ? normalized : normalized[..127];
     }
 

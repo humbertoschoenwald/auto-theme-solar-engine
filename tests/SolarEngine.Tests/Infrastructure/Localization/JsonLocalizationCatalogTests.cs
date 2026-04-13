@@ -22,7 +22,7 @@ public sealed class JsonLocalizationCatalogTests
         {
             JsonLocalizationCatalog catalog = new();
 
-            Assert.Equal("Configuración de SolarEngine", catalog["settings.header"]);
+            Assert.Equal("Configuración de Auto Theme Solar Engine", catalog["settings.header"]);
             Assert.Equal("Salir", catalog["tray.exit"]);
         }
         finally
@@ -44,7 +44,7 @@ public sealed class JsonLocalizationCatalogTests
         {
             JsonLocalizationCatalog catalog = new();
 
-            Assert.Equal("SolarEngine settings", catalog["settings.header"]);
+            Assert.Equal("Auto Theme Solar Engine settings", catalog["settings.header"]);
             Assert.Equal("Exit", catalog["tray.exit"]);
         }
         finally
