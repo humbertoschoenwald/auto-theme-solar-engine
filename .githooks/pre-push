@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running pre-push quality gate..."
+npm run lint
+
+dotnet restore SolarEngine.slnx
+dotnet format SolarEngine.slnx --verify-no-changes --severity error --no-restore
+dotnet build SolarEngine.slnx --configuration Release --no-restore --verbosity minimal
+dotnet test tests/SolarEngine.Tests/SolarEngine.Tests.csproj --configuration Release --no-build --verbosity minimal
+
+echo "Pre-push validation passed."

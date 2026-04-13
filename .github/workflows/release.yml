@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '25'
+
+jobs:
+  release:
+    if: >
+      ${{
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main'
+      }}
+    runs-on: windows-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-dotnet-env
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Fetch tags
+        run: git fetch --force --tags origin
+
+      - name: Calculate next calver tag
+        id: version
+        shell: pwsh
+        run: |
+          $existingHeadTags = git tag --points-at HEAD | Where-Object { $_ -match '^\d{2}\.\d{2}\.\d{2}$' }
+
+          if ($existingHeadTags) {
+            "skip=true" >> $env:GITHUB_OUTPUT
+            "tag=$($existingHeadTags[0])" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+
+          $prefix = Get-Date -Format "yy.MM"
+          $matchingTags = @(git tag --list "$prefix.*" | Where-Object { $_ -match '^\d{2}\.\d{2}\.\d{2}$' })
+
+          if ($matchingTags.Count -eq 0) {
+            $nextPatch = 0
+          }
+          else {
+            $patches = $matchingTags | ForEach-Object { [int](($_ -split '\.')[-1]) }
+            $nextPatch = (($patches | Measure-Object -Maximum).Maximum) + 1
+          }
+
+          $nextTag = "$prefix.$($nextPatch.ToString('00'))"
+          "skip=false" >> $env:GITHUB_OUTPUT
+          "tag=$nextTag" >> $env:GITHUB_OUTPUT
+
+      - name: Create annotated tag
+        if: steps.version.outputs.skip != 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "release: ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Generate changelog
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        run: ./.github/scripts/generate-changelog.ps1 -CurrentTag "${{ steps.version.outputs.tag }}"
+
+      - name: Commit changelog and release notes
+        if: steps.version.outputs.skip != 'true'
+        shell: bash
+        run: |
+          if git diff --quiet -- CHANGELOG.md .github/release-notes.md; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md .github/release-notes.md
+          git commit -m "docs(changelog): release ${{ steps.version.outputs.tag }} [skip ci]"
+          git push origin HEAD:main
+
+      - name: Publish Windows executable
+        shell: pwsh
+        run: >
+          dotnet publish ./src/solarengine/SolarEngine.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          --output ./artifacts/release
+          /p:Version=${{ steps.version.outputs.tag }}
+
+      - name: Name release asset
+        id: release_asset
+        shell: pwsh
+        run: |
+          $assetName = "auto-theme-solar-engine-win-x64-${{ steps.version.outputs.tag }}.exe"
+          $assetPath = "artifacts/release/$assetName"
+          Move-Item -LiteralPath "artifacts/release/SolarEngine.exe" -Destination $assetPath -Force
+          "asset_path=$assetPath" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: main
+          body_path: .github/release-notes.md
+          files: ${{ steps.release_asset.outputs.asset_path }}

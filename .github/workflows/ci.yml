@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '25'
+
+jobs:
+  validate:
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: windows-latest
+
+    env:
+      SOLUTION_PATH: SolarEngine.slnx
+      TEST_PROJECT: tests/SolarEngine.Tests/SolarEngine.Tests.csproj
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-dotnet-env
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Commitlint
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            FROM="${{ github.event.pull_request.base.sha }}"
+            TO="${{ github.event.pull_request.head.sha }}"
+          else
+            FROM="${{ github.event.before }}"
+            TO="${{ github.sha }}"
+            if [[ "$FROM" == "0000000000000000000000000000000000000000" ]]; then
+              FROM="$(git rev-list --max-parents=0 HEAD)"
+            fi
+          fi
+
+          npx commitlint --from "$FROM" --to "$TO" --verbose
+
+      - name: Node quality gate
+        shell: bash
+        run: npm run lint
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
+
+      - name: Format and analyzer gate
+        run: dotnet format ${{ env.SOLUTION_PATH }} --verify-no-changes --severity error --no-restore
+
+      - name: Dependency vulnerability gate
+        shell: pwsh
+        run: ./.github/scripts/run-dependency-vulnerability-check.ps1 -ProjectPath "${{ env.SOLUTION_PATH }}"
+
+      - name: Test
+        run: >
+          dotnet test ${{ env.TEST_PROJECT }}
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=SolarEngine.Tests.trx"
+          --results-directory ./artifacts/test-results
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/test-results
