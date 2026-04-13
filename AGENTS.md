@@ -20,4 +20,4 @@ The current baseline is:
 - Minimal APIs
 - EF Core + Dapper hybrid
 - Very strict, highly granular tests
-- CALVER tags in `YY.MM.PATCH` format
+- CALVER tags in `vYY.MM.PATCH` format

@@ -1,8 +1,8 @@
-# Contributing to SolarEngine
+# Contributing to Auto Theme Solar Engine
 
 ## Scope and platform
 
-SolarEngine is a Windows-native tray application. Build, run, and test changes on Windows.
+Auto Theme Solar Engine is a Windows-native tray application. Build, run, and test changes on Windows.
 
 Current repository baseline:
 
@@ -54,21 +54,21 @@ ci(actions): run commitlint and cspell inside ci
 
 ## Versioning and releases
 
-This repository uses CalVer tags in `YY.MM.PATCH` format.
+This repository uses CalVer tags in `vYY.MM.PATCH` format.
 
 Examples:
 
 ```text
-26.04.00
-26.04.01
-26.05.00
+v26.04.00
+v26.04.01
+v26.05.00
 ```
 
 Release behavior is owned by GitHub Actions:
 
 - `ci.yml` is the required gate
 - `release.yml` runs only after `CI` succeeds on a push to `main`
-- the release workflow calculates the next `YY.MM.PATCH` tag for the current month
+- the release workflow calculates the next `vYY.MM.PATCH` tag for the current month
 - the release workflow updates `CHANGELOG.md` using the repository changelog script
 
 ## Local validation before opening a pull request

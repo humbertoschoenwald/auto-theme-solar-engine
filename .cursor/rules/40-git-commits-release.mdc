@@ -48,8 +48,8 @@ Use either:
 
 ## Versioning
 
-- Use **CALVER** tags in `YY.MM.PATCH` format.
-- Example: `26.04.00`.
+- Use **CALVER** tags in `vYY.MM.PATCH` format.
+- Example: `v26.04.00`.
 - Increment `PATCH` for subsequent releases in the same month.
 - Reset patch when the month changes.
 
