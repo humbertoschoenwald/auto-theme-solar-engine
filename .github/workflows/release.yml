@@ -42,11 +42,12 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $existingHeadTags = git tag --points-at HEAD | Where-Object { $_ -match '^\d{2}\.\d{2}\.\d{2}$' }
+          $existingHeadTags = @(git tag --points-at HEAD | Where-Object { $_ -match '^\d{2}\.\d{2}\.\d{2}$' })
 
           if ($existingHeadTags) {
+            $headTag = $existingHeadTags[0]
             "skip=true" >> $env:GITHUB_OUTPUT
-            "tag=$($existingHeadTags[0])" >> $env:GITHUB_OUTPUT
+            "tag=$headTag" >> $env:GITHUB_OUTPUT
             exit 0
           }
 
