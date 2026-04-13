@@ -122,9 +122,12 @@ const existing = existsSync(changeLogPath)
   ? readFileSync(changeLogPath, 'utf8').replace(/^\uFEFF/, '')
   : '# Changelog\n\n';
 const normalizedExisting = existing.trimStart();
-const body = normalizedExisting.startsWith('# Changelog')
+const existingBody = normalizedExisting.startsWith('# Changelog')
   ? normalizedExisting.replace(/^# Changelog\s*/m, '').trimStart()
   : normalizedExisting;
+const initialPlaceholder =
+  'This file is generated from Conventional Commits using `conventional-changelog`.';
+const body = existingBody.trim() === initialPlaceholder ? '' : existingBody;
 const nextChangelog = `# Changelog\n\n${releaseSection}${body ? `${body}\n` : ''}`;
 
 writeFileSync(changeLogPath, nextChangelog.replace(/\n{3,}/g, '\n\n'), 'utf8');
