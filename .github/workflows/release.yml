@@ -24,7 +24,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
@@ -42,29 +42,32 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $existingHeadTags = @(git tag --points-at HEAD | Where-Object { $_ -match '^\d{2}\.\d{2}\.\d{2}$' })
+          $existingHeadTags = @(git tag --points-at HEAD | Where-Object { $_ -match '^v\d{2}\.\d{2}\.\d{2}$' })
 
           if ($existingHeadTags) {
             $headTag = $existingHeadTags[0]
             "skip=true" >> $env:GITHUB_OUTPUT
             "tag=$headTag" >> $env:GITHUB_OUTPUT
+            "semver=$($headTag.TrimStart('v'))" >> $env:GITHUB_OUTPUT
             exit 0
           }
 
           $prefix = Get-Date -Format "yy.MM"
-          $matchingTags = @(git tag --list "$prefix.*" | Where-Object { $_ -match '^\d{2}\.\d{2}\.\d{2}$' })
+          $matchingTags = @(git tag --list "v$prefix.*" | Where-Object { $_ -match '^v\d{2}\.\d{2}\.\d{2}$' })
 
           if ($matchingTags.Count -eq 0) {
             $nextPatch = 0
           }
           else {
-            $patches = $matchingTags | ForEach-Object { [int](($_ -split '\.')[-1]) }
+            $patches = $matchingTags | ForEach-Object { [int](($_.TrimStart('v') -split '\.')[-1]) }
             $nextPatch = (($patches | Measure-Object -Maximum).Maximum) + 1
           }
 
-          $nextTag = "$prefix.$($nextPatch.ToString('00'))"
+          $nextSemver = "$prefix.$($nextPatch.ToString('00'))"
+          $nextTag = "v$nextSemver"
           "skip=false" >> $env:GITHUB_OUTPUT
           "tag=$nextTag" >> $env:GITHUB_OUTPUT
+          "semver=$nextSemver" >> $env:GITHUB_OUTPUT
 
       - name: Create annotated tag
         if: steps.version.outputs.skip != 'true'
@@ -94,29 +97,50 @@ jobs:
           git commit -m "docs(changelog): release ${{ steps.version.outputs.tag }} [skip ci]"
           git push origin HEAD:main
 
-      - name: Publish Windows executable
+      - name: Publish self-contained Windows executable
         shell: pwsh
         run: >
           dotnet publish ./src/solarengine/SolarEngine.csproj
           --configuration Release
           --runtime win-x64
           --self-contained true
-          --output ./artifacts/release
-          /p:Version=${{ steps.version.outputs.tag }}
+          --output ./artifacts/release/self-contained
+          /p:Version=${{ steps.version.outputs.semver }}
+          /p:SelfContained=true
 
-      - name: Name release asset
+      - name: Publish framework-dependent Windows executable
+        shell: pwsh
+        run: >
+          dotnet publish ./src/solarengine/SolarEngine.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained false
+          --output ./artifacts/release/framework-dependent
+          /p:Version=${{ steps.version.outputs.semver }}
+          /p:SelfContained=false
+          /p:EnableCompressionInSingleFile=false
+
+      - name: Name release assets
         id: release_asset
         shell: pwsh
         run: |
-          $assetName = "auto-theme-solar-engine-win-x64-${{ steps.version.outputs.tag }}.exe"
-          $assetPath = "artifacts/release/$assetName"
-          Move-Item -LiteralPath "artifacts/release/SolarEngine.exe" -Destination $assetPath -Force
-          "asset_path=$assetPath" >> $env:GITHUB_OUTPUT
+          $selfContainedAssetName = "auto-theme-solar-engine-win-x64-self-contained-${{ steps.version.outputs.tag }}.exe"
+          $frameworkDependentAssetName = "auto-theme-solar-engine-win-x64-framework-dependent-${{ steps.version.outputs.tag }}.exe"
+          $selfContainedAssetPath = "artifacts/release/$selfContainedAssetName"
+          $frameworkDependentAssetPath = "artifacts/release/$frameworkDependentAssetName"
+
+          Move-Item -LiteralPath "artifacts/release/self-contained/AutoThemeSolarEngine.exe" -Destination $selfContainedAssetPath -Force
+          Move-Item -LiteralPath "artifacts/release/framework-dependent/AutoThemeSolarEngine.exe" -Destination $frameworkDependentAssetPath -Force
+
+          "asset_paths<<EOF" >> $env:GITHUB_OUTPUT
+          $selfContainedAssetPath >> $env:GITHUB_OUTPUT
+          $frameworkDependentAssetPath >> $env:GITHUB_OUTPUT
+          "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           target_commitish: main
           body_path: .github/release-notes.md
-          files: ${{ steps.release_asset.outputs.asset_path }}
+          files: ${{ steps.release_asset.outputs.asset_paths }}

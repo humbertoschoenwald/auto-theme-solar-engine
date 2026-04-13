@@ -35,7 +35,7 @@ const allTags = hasHead
   ? tryRunGit(['tag', '--sort=-creatordate'])
       .split(/\r?\n/)
       .map((value) => value.trim())
-      .filter((value) => /^\d{2}\.\d{2}\.\d{2}$/.test(value))
+      .filter((value) => /^v?\d{2}\.\d{2}\.\d{2}$/.test(value))
   : [];
 
 const previousTag = allTags.find((value) => value !== currentTag) ?? '';
