@@ -15,10 +15,12 @@
 ### Fixes
 
 - **release:** omit initial changelog placeholder (08c8c68)
+- **release:** preserve full calver tag output (cdd2cb2)
 
 ### Documentation
 
 - add project documentation (838bc9b)
+- **changelog:** release 26.04.00 (bce9248)
 
 ### CI
 
