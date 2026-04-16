@@ -10,11 +10,20 @@ alwaysApply: false
 ---
 
 @file ../../docs/adr/0009-coding-and-testing-standards.md
+@file ../../docs/adr/0014-source-only-static-policy-enforcement.md
+@file ../../docs/adr/0016-modular-monolith-and-slice-boundaries.md
+@file ../../docs/adr/0017-explicit-failure-flow.md
+@file ../../docs/adr/0018-relational-data-access-applicability.md
 
 # Coding And Testing
 
+- RULE: Keep the repository as a modular monolith with feature slices instead of generic layer folders.
 - RULE: Keep code organized by feature and domain boundaries.
 - RULE: Use `Result` or `Result<T>` for expected failures. Reserve exceptions for invalid states and boundary failures.
+- RULE: Prefer early returns over deeply nested ternaries when validating or normalizing inputs.
+- RULE: Do not use `System.InvalidOperationException`. Use `Result<T>`, a more specific framework exception, or a dedicated repository exception that names the broken invariant.
+- RULE: Do not add EF Core, Dapper, or relational database plumbing unless a concrete repository feature introduces relational persistence and ADR is updated accordingly.
+- RULE: Repository-only forbidden-type checks must scan authored source under `src/` and `tests/`, not generated files under `obj/` or `bin/`.
 - RULE: Keep comments sparse. Repository rationale belongs in ADR. Inline comments are for local hazards only.
 - RULE: Public XML docs describe behavior when public APIs exist. They do not restate repository doctrine.
 - RULE: Tests must be deterministic, granular, and include regressions for bug fixes.

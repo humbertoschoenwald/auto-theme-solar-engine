@@ -15,12 +15,21 @@ alwaysApply: false
 @file ../../docs/adr/0007-toolchain-and-package-management.md
 @file ../../docs/adr/0008-quality-gates-versioning-and-automation.md
 @file ../../docs/adr/0010-bibliography-and-source-policy.md
+@file ../../docs/adr/0013-self-update-and-install-model.md
+@file ../../docs/adr/0014-source-only-static-policy-enforcement.md
+@file ../../docs/adr/0015-preview-sdk-and-language-adoption.md
+@file ../../docs/adr/0019-changelog-lifecycle-and-release-notes.md
 
 # Tooling, Versioning, And Automation
 
-- RULE: Use .NET 11 preview, C# 15 preview, Node.js 25, and pnpm as the repository toolchain baseline.
+- RULE: Use the pinned .NET 11 Preview 3 SDK, C# preview mode, Node.js 25, and pnpm as the repository toolchain baseline.
 - RULE: Use pnpm, not npm, for repository tooling installs and script execution.
+- RULE: Preview language features may be adopted only when the pinned SDK compiles them in a normal repository build without unsupported shims.
+- RULE: Do not use C# `union` declarations in product code until the pinned SDK and runtime provide a complete repository-ready path.
 - RULE: Keep Conventional Commits and CalVer `vYY.MM.PATCH`.
 - RULE: Local and remote quality gates must stay aligned.
+- RULE: Source-only repository lint is the enforcement path for forbidden constructs that analyzers cannot scope away from generated code.
 - RULE: Release automation belongs to successful pushes to `main` and must remain derived from commit history.
+- RULE: `CHANGELOG.md` must keep an `Unreleased` section between release tags, and release notes must derive from the tagged changelog section.
 - RULE: Non-deliverable pushes may skip release publication only through the explicit `[skip release]` marker.
+- RULE: Release assets and update logic must preserve self-contained versus framework-dependent delivery.

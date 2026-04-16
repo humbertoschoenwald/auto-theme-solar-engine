@@ -13,3 +13,7 @@ Schoenwald
 Segoe
 SolarEngine
 solarengine
+Meeus
+NOAA
+NREL
+USNO

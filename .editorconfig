@@ -1,4 +1,4 @@
-# Derived from ADR-0007 and ADR-0009.
+# Derived from ADR-0007, ADR-0009, and ADR-0015.
 # This file operationalizes repository doctrine. It is not an independent policy source.
 
 root = true
@@ -65,6 +65,7 @@ dotnet_naming_symbols.handler_symbols.required_modifiers = *
 dotnet_naming_style.handler_suffix_style.required_suffix = Handler
 dotnet_naming_style.handler_suffix_style.capitalization = pascal_case
 dotnet_diagnostic.IDE0005.severity = error
+dotnet_diagnostic.IDE0046.severity = none
 dotnet_diagnostic.IDE0055.severity = error
 dotnet_diagnostic.IDE0058.severity = error
 dotnet_diagnostic.IDE0060.severity = error
@@ -73,6 +74,7 @@ dotnet_diagnostic.IDE0090.severity = error
 dotnet_diagnostic.IDE0160.severity = error
 dotnet_diagnostic.IDE0161.severity = error
 dotnet_diagnostic.IDE0290.severity = error
+dotnet_diagnostic.RS0030.severity = error
 dotnet_analyzer_diagnostic.category-Style.severity = warning
 dotnet_analyzer_diagnostic.category-Design.severity = warning
 dotnet_analyzer_diagnostic.category-Maintainability.severity = warning

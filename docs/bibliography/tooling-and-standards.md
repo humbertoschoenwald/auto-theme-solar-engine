@@ -13,12 +13,21 @@ This bibliography lists the primary public references for the tools and standard
 ## Windows Platform and Runtime
 
 - [.NET](https://learn.microsoft.com/dotnet/)
+- [.NET 11 Preview 3 is now available!](https://devblogs.microsoft.com/dotnet/dotnet-11-preview-3/)
 - [C#](https://learn.microsoft.com/dotnet/csharp/)
+- [Configure C# language version](https://learn.microsoft.com/dotnet/csharp/language-reference/configure-language-version)
+- [Unions - C# feature specifications (preview)](https://learn.microsoft.com/dotnet/csharp/language-reference/proposals/unions)
 - [Win32 API](https://learn.microsoft.com/windows/win32/)
 - [Notification Area](https://learn.microsoft.com/windows/win32/shell/notification-area)
 - [Windows Data Protection](https://learn.microsoft.com/windows/win32/seccrypto/data-protection)
 - [Windows.Devices.Geolocation](https://learn.microsoft.com/uwp/api/windows.devices.geolocation)
 - [Desktop Window Manager](https://learn.microsoft.com/windows/win32/dwm/dwm-overview)
+
+## Solar Scheduling References
+
+- [NOAA Solar Calculation Details](https://www.gml.noaa.gov/grad/solcalc/calcdetails.html)
+- [NOAA General Solar Position Calculations](https://gml.noaa.gov/grad/solcalc/solareqns.PDF)
+- [NREL Solar Position Algorithm for Solar Radiation Applications](https://www.nrel.gov/docs/fy08osti/34302.pdf)
 
 ## Testing and Serialization
 

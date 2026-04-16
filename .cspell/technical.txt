@@ -26,6 +26,7 @@ dwmapi
 DWMSBT
 DWMWA
 DWMWCP
+Dont
 geolocation
 geolocator
 Geolocator
@@ -71,6 +72,7 @@ operationalizes
 Pkgxunit
 Pipfile
 POWERBROADCAST
+nameof
 RBUTTONUP
 resx
 RETURNCMD
@@ -107,3 +109,10 @@ WPF
 wtsapi
 WTSSESSION
 xunit
+LOCALAPPDATA
+schtasks
+HKCU
+ERASEBKGND
+CTLCOLOREDIT
+CTLCOLORBTN
+CTLCOLORSTATIC

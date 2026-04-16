@@ -1,6 +1,36 @@
-# ADR Workflow
+# Architecture Decision Records (ADR)
 
 This repository is documentation-driven and ADR-first.
+
+## Template
+
+```markdown
+# ADR-{NNNN}: {Title}
+
+**Status:** Proposed | Accepted | Deprecated | Superseded by ADR-XXXX
+**Date:** YYYY-MM-DD
+
+## Context
+
+What problem are we solving? What constraints exist?
+
+## Decision
+
+What we decided and why.
+
+## Alternatives Considered
+
+| Option | Pros | Cons |
+| ------ | ---- | ---- |
+| A      | ...  | ...  |
+| B      | ...  | ...  |
+
+## Consequences
+
+- **Positive:** what improves
+- **Negative:** what trade-offs we accept
+- **Risks:** what could go wrong
+```
 
 ## Authority Model
 
@@ -65,3 +95,12 @@ Current high-impact derived files include:
 - `0008-quality-gates-versioning-and-automation.md`
 - `0009-coding-and-testing-standards.md`
 - `0010-bibliography-and-source-policy.md`
+- `0011-workspace-config-projection.md`
+- `0012-native-settings-experience.md`
+- `0013-self-update-and-install-model.md`
+- `0014-source-only-static-policy-enforcement.md`
+- `0015-preview-sdk-and-language-adoption.md`
+- `0016-modular-monolith-and-slice-boundaries.md`
+- `0017-explicit-failure-flow.md`
+- `0018-relational-data-access-applicability.md`
+- `0019-changelog-lifecycle-and-release-notes.md`

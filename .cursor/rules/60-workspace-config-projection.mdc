@@ -1,0 +1,16 @@
+---
+description: Keep repository workspace projections in .vscode and keep .cursor focused on rules.
+globs:
+  - ".cursor/**"
+  - ".vscode/**"
+alwaysApply: false
+---
+
+@file ../../docs/adr/0011-workspace-config-projection.md
+
+# Workspace Config Projection
+
+- RULE: `.cursor` is for Cursor-specific operational files, especially rules.
+- RULE: Repository editor settings, task definitions, and launch profiles belong in `.vscode`.
+- RULE: Do not keep duplicate workspace projections across `.cursor` and `.vscode`.
+- RULE: Remove stale launch or task files instead of preserving dead copies.

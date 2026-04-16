@@ -11,11 +11,14 @@ The application must determine theme transitions without introducing cloud depen
 
 - Core scheduling uses local astronomical calculation, not external weather or sunrise APIs.
 - Solar event calculation is derived from date plus observer coordinates and must remain deterministic.
+- The sunrise and sunset implementation uses the lightweight NOAA/USNO-style equations documented by NOAA and traced back to Jean Meeus, rather than the much heavier NREL SPA model.
+- NREL SPA remains out of scope unless the product shifts from desktop scheduling to hardware-grade solar pointing or radiation-calibration requirements.
 - The scheduler recognizes three daylight conditions:
   - `Standard`,
   - `PolarNight`,
   - `MidnightSun`.
 - The calculation pipeline must preserve local-date correctness across time zones, UTC offsets, and daylight-saving transitions.
+- The application may apply a configurable one-minute offset after computed sunset to match Windows theme-transition behavior without distorting sunrise math.
 - Theme reevaluation is performed:
   - on startup,
   - on a clamped recurring interval,
@@ -26,4 +29,5 @@ The application must determine theme transitions without introducing cloud depen
 
 - The product remains fully functional without network access.
 - The repository owns its mathematical edge cases, including polar-day and polar-night behavior.
+- The solar engine stays cheap enough for a lightweight tray app while remaining explicit about its precision envelope and source model.
 - Scheduler and test code must treat time-zone and date-boundary correctness as first-class requirements.

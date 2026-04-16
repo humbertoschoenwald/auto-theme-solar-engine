@@ -1,5 +1,5 @@
 {
-  // Derived from ADR-0000, ADR-0006, ADR-0007, ADR-0008, and ADR-0009.
+  // Derived from ADR-0000, ADR-0006, ADR-0007, ADR-0008, ADR-0009, and ADR-0015.
   // This file is an operational projection of repository doctrine, not an independent policy source.
 
   "editor.detectIndentation": false,
