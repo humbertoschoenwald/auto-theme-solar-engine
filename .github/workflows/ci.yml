@@ -55,31 +55,14 @@ jobs:
 
           & $env:PNPM_BIN exec commitlint --from $from --to $to --verbose
 
-      - name: Node quality gate
+      - name: Repository validation
         shell: pwsh
-        run: |
-          & $env:PNPM_BIN lint
-
-      - name: Restore
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
-
-      - name: Build
-        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
-
-      - name: Format and analyzer gate
-        run: dotnet format ${{ env.SOLUTION_PATH }} --verify-no-changes --severity error --no-restore
-
-      - name: Dependency vulnerability gate
-        shell: pwsh
-        run: ./.github/scripts/run-dependency-vulnerability-check.ps1 -ProjectPath "${{ env.SOLUTION_PATH }}"
-
-      - name: Test
         run: >
-          dotnet test ${{ env.TEST_PROJECT }}
-          --configuration Release
-          --no-build
-          --logger "trx;LogFileName=SolarEngine.Tests.trx"
-          --results-directory ./artifacts/test-results
+          ./scripts/validate-repository.ps1
+          -SolutionPath "${{ env.SOLUTION_PATH }}"
+          -TestProject "${{ env.TEST_PROJECT }}"
+          -TestResultsDirectory "artifacts/test-results"
+          -SkipNodeInstall
 
       - name: Upload test results
         if: always()

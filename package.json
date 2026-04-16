@@ -6,8 +6,10 @@
     "node": "25.x"
   },
   "scripts": {
-    "lint": "eslint . && prettier . --check && cspell-cli --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",
+    "lint": "eslint . && prettier . --check && cspell-cli --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\" && pwsh -NoLogo -NoProfile -File ./scripts/assert-no-invalid-operation-exception.ps1",
+    "validate": "pwsh -NoLogo -NoProfile -File ./scripts/validate-repository.ps1",
     "lint:eslint": "eslint .",
+    "lint:invalid-operation-exception": "pwsh -NoLogo -NoProfile -File ./scripts/assert-no-invalid-operation-exception.ps1",
     "lint:prettier": "prettier . --check",
     "lint:prettier:fix": "prettier . --write",
     "lint:spelling": "cspell-cli --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",

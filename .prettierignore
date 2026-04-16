@@ -1,10 +1,13 @@
 bin
 obj
 artifacts
+.artifacts
+.dotnet
 coverage
 dist
 node_modules
 pnpm-lock.yaml
+packages.lock.json
 *.nupkg
 *.snupkg
 *.binlog

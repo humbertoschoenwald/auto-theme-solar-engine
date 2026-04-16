@@ -1,21 +1,21 @@
 {
-  // Derived from ADR-0007 and ADR-0009.
+  // Derived from ADR-0007, ADR-0009, ADR-0011, and ADR-0015.
   // This file is a convenience launch profile, not a policy source.
   "version": "0.2.0",
   "configurations": [
     {
-      "name": ".NET Core Launch (console)",
+      "name": "Launch App",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "${workspaceFolder}/tests/SolarEngine.Tests/bin/Debug/net11.0-windows10.0.19041.0/SolarEngine.Tests.dll",
+      "program": "${workspaceFolder}/src/SolarEngine/bin/Debug/net11.0-windows10.0.19041.0/win-x64/AutoThemeSolarEngine.dll",
       "args": [],
-      "cwd": "${workspaceFolder}/tests/SolarEngine.Tests",
+      "cwd": "${workspaceFolder}/src/SolarEngine",
       "console": "internalConsole",
       "stopAtEntry": false
     },
     {
-      "name": ".NET Core Attach",
+      "name": "Attach",
       "type": "coreclr",
       "request": "attach"
     }

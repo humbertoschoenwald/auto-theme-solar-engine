@@ -7,6 +7,8 @@ export default [
       '**/bin/**',
       '**/obj/**',
       '**/artifacts/**',
+      '**/.artifacts/**',
+      '**/.dotnet/**',
       '**/node_modules/**',
       '**/coverage/**',
       '**/dist/**',

@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/solarengine/SolarEngine.csproj" />
+    <Project Path="src/SolarEngine/SolarEngine.csproj" />
   </Folder>
 
   <Folder Name="/tests/">

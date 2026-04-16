@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\solarengine\SolarEngine.csproj" />
+    <ProjectReference Include="..\..\src\SolarEngine\SolarEngine.csproj" />
   </ItemGroup>
 
 </Project>
