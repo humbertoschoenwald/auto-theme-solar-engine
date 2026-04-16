@@ -1,0 +1,19 @@
+---
+description: Language, localization, and spell-check rules for repository content.
+globs:
+  - "README.md"
+  - "LÉEME.md"
+  - "src/solarengine/Resources/Localization/*.json"
+  - ".cspell/**"
+  - "cspell.jsonc"
+alwaysApply: false
+---
+
+@file ../../docs/adr/0006-localization-and-spellcheck-policy.md
+
+# Localization And Spellcheck
+
+- RULE: Keep doctrine, rules, configs, and contributor docs in English.
+- RULE: Allow Spanish only in explicit user-facing artifacts covered by ADR.
+- RULE: Keep localization resources in embedded JSON with English fallback.
+- RULE: Maintain manual cspell dictionaries instead of broad language-pack exceptions.

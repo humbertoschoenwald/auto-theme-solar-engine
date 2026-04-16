@@ -1,0 +1,19 @@
+---
+description: Product scope and platform rules for the Windows-native tray application.
+globs:
+  - "README.md"
+  - "LÉEME.md"
+  - "src/**/*.cs"
+  - "src/**/*.csproj"
+  - ".github/workflows/release.yml"
+alwaysApply: false
+---
+
+@file ../../docs/adr/0001-product-scope-and-platform.md
+
+# Product And Platform
+
+- RULE: Treat this repository as a Windows x64 notification-area application, not a cross-platform app framework.
+- RULE: Keep core behavior offline. Do not introduce cloud APIs or remote services for theme scheduling.
+- RULE: Preserve Windows 10+ desktop assumptions unless a new ADR expands platform scope.
+- RULE: Keep `README.md` lightweight and user-facing. Do not turn it into doctrine.

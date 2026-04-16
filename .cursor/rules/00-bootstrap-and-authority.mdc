@@ -1,0 +1,15 @@
+---
+description: Bootstrap every agent into the ADR-first doctrine used by this repository.
+alwaysApply: true
+---
+
+@file ../../docs/adr/0000-repository-doctrine.md
+@file ../../docs/adr/README.md
+
+# Bootstrap And Authority
+
+- RULE: Read `AGENTS.md` first, then every applicable rule file, then the ADRs cited by those rules.
+- RULE: Treat `docs/adr/**/*.md` as canonical doctrine.
+- RULE: Treat `docs/bibliography/**/*.md` as supporting references, not as policy overrides.
+- RULE: If a change affects repository policy, update ADR first.
+- RULE: Repository-facing content is English only unless ADR explicitly allows a user-facing Spanish artifact.

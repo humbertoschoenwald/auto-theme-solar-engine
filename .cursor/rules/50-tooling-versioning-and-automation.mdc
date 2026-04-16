@@ -1,0 +1,26 @@
+---
+description: Toolchain, package manager, quality gate, and release automation rules.
+globs:
+  - "package.json"
+  - "pnpm-lock.yaml"
+  - ".githooks/**"
+  - ".github/actions/**/*.yml"
+  - ".github/workflows/**/*.yml"
+  - "scripts/**"
+  - "commitlint.config.cjs"
+  - "cspell.jsonc"
+alwaysApply: false
+---
+
+@file ../../docs/adr/0007-toolchain-and-package-management.md
+@file ../../docs/adr/0008-quality-gates-versioning-and-automation.md
+@file ../../docs/adr/0010-bibliography-and-source-policy.md
+
+# Tooling, Versioning, And Automation
+
+- RULE: Use .NET 11 preview, C# 15 preview, Node.js 25, and pnpm as the repository toolchain baseline.
+- RULE: Use pnpm, not npm, for repository tooling installs and script execution.
+- RULE: Keep Conventional Commits and CalVer `vYY.MM.PATCH`.
+- RULE: Local and remote quality gates must stay aligned.
+- RULE: Release automation belongs to successful pushes to `main` and must remain derived from commit history.
+- RULE: Non-deliverable pushes may skip release publication only through the explicit `[skip release]` marker.

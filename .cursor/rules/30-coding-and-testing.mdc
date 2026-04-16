@@ -1,0 +1,21 @@
+---
+description: Coding and testing rules derived from repository implementation standards.
+globs:
+  - "src/**/*.cs"
+  - "tests/**/*.cs"
+  - "Directory.Build.props"
+  - "Directory.Build.targets"
+  - ".editorconfig"
+alwaysApply: false
+---
+
+@file ../../docs/adr/0009-coding-and-testing-standards.md
+
+# Coding And Testing
+
+- RULE: Keep code organized by feature and domain boundaries.
+- RULE: Use `Result` or `Result<T>` for expected failures. Reserve exceptions for invalid states and boundary failures.
+- RULE: Keep comments sparse. Repository rationale belongs in ADR. Inline comments are for local hazards only.
+- RULE: Public XML docs describe behavior when public APIs exist. They do not restate repository doctrine.
+- RULE: Tests must be deterministic, granular, and include regressions for bug fixes.
+- RULE: Use `TimeProvider` when time affects behavior.

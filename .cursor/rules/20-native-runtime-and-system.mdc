@@ -1,0 +1,21 @@
+---
+description: Native runtime, scheduling, privacy, and shell integration rules.
+globs:
+  - "src/**/*.cs"
+  - "src/**/*.csproj"
+  - "tests/**/*.cs"
+alwaysApply: false
+---
+
+@file ../../docs/adr/0002-native-runtime-and-ui.md
+@file ../../docs/adr/0003-local-solar-scheduling.md
+@file ../../docs/adr/0004-configuration-privacy-and-state.md
+@file ../../docs/adr/0005-theme-mutation-and-shell-refresh.md
+
+# Native Runtime And System
+
+- RULE: Keep the runtime native and lightweight. Do not introduce WPF, WinForms, MAUI, or another UI framework without a new ADR.
+- RULE: Keep Win32 interop centralized behind native helper boundaries instead of scattering platform calls across feature code.
+- RULE: Solar scheduling must stay local and deterministic. Do not replace it with external sunrise or weather APIs.
+- RULE: Persist coordinates only through the reduced-precision protected storage path.
+- RULE: Treat undocumented shell-refresh behavior as a compatibility exception. If you change it, update ADR first and keep graceful fallback behavior.
