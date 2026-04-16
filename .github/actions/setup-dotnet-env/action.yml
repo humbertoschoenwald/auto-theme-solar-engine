@@ -29,13 +29,26 @@ runs:
         cache-dependency-path: pnpm-lock.yaml
 
     - name: Setup pnpm
-      uses: pnpm/action-setup@v6
-      with:
-        run_install: false
+      shell: pwsh
+      run: |
+        if (Get-Command corepack -ErrorAction SilentlyContinue) {
+          corepack enable
+          corepack prepare pnpm@10.33.0 --activate
+        }
+        else {
+          npm install --global pnpm@10.33.0
+          $env:PATH = "$env:APPDATA\npm;$env:PATH"
+        }
+
+        pnpm --version
 
     - name: Install Node tooling
       shell: pwsh
       run: |
+        if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+          $env:PATH = "$env:APPDATA\npm;$env:PATH"
+        }
+
         if (Test-Path package.json) {
           pnpm install --frozen-lockfile
         }
