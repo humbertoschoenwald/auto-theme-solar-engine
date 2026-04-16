@@ -33,7 +33,12 @@ runs:
 
         & $npmCommand install --global pnpm@10.33.0
 
-        $pnpmBinDirectory = Join-Path $env:APPDATA "npm"
+        $pnpmBinDirectory = (& $npmCommand prefix --global).Trim()
+
+        if (-not $pnpmBinDirectory) {
+          throw "npm did not report a global prefix after pnpm bootstrap."
+        }
+
         $pnpmCommand = Join-Path $pnpmBinDirectory "pnpm.cmd"
 
         if (-not (Test-Path $pnpmCommand)) {
