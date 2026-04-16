@@ -30,6 +30,10 @@
 - **bibliography:** update pnpm bootstrap source (b3a33dd)
 - **doctrine:** codify adr-first repository rules (e1a96fb)
 
+### Tests
+
+- **tests:** make sunset offset checks timezone-stable (8fce025)
+
 ### CI
 
 - **tooling:** bootstrap pnpm with corepack (57648dc)
