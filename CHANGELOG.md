@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Fixes
+
+- **updates:** bootstrap direct program files installs (09259ce)
+
+### Documentation
+
+- **docs:** switch install guide to direct commands (1761d3c)
 
 ## v26.04.02 - 2026-04-16
 
