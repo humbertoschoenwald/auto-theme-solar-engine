@@ -19,26 +19,45 @@ runs:
     - name: Setup pnpm
       shell: pwsh
       run: |
-        if (Get-Command corepack -ErrorAction SilentlyContinue) {
-          corepack enable
-          corepack prepare pnpm@10.33.0 --activate
-        }
-        else {
-          npm install --global pnpm@10.33.0
-          $env:PATH = "$env:APPDATA\npm;$env:PATH"
+        $nodeCommand = Get-Command node -ErrorAction Stop
+        $nodeDirectory = Split-Path $nodeCommand.Source -Parent
+        $corepackCommand = Join-Path $nodeDirectory "corepack.cmd"
+
+        if (-not (Test-Path $corepackCommand)) {
+          $corepackCommand = Join-Path $nodeDirectory "corepack"
         }
 
-        pnpm --version
+        if (-not (Test-Path $corepackCommand)) {
+          throw "corepack was not found next to node in '$nodeDirectory'."
+        }
+
+        & $corepackCommand enable
+        & $corepackCommand prepare pnpm@10.33.0 --activate
+
+        $pnpmCommand = Join-Path $nodeDirectory "pnpm.cmd"
+
+        if (-not (Test-Path $pnpmCommand)) {
+          $pnpmCommand = Join-Path $nodeDirectory "pnpm"
+        }
+
+        if (-not (Test-Path $pnpmCommand)) {
+          throw "pnpm was not found next to node in '$nodeDirectory' after corepack activation."
+        }
+
+        $nodeDirectory | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        "PNPM_BIN=$pnpmCommand" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+        & $pnpmCommand --version
 
     - name: Install Node tooling
       shell: pwsh
       run: |
-        if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-          $env:PATH = "$env:APPDATA\npm;$env:PATH"
+        if (-not $env:PNPM_BIN) {
+          throw "PNPM_BIN is not set."
         }
 
         if (Test-Path package.json) {
-          pnpm install --frozen-lockfile
+          & $env:PNPM_BIN install --frozen-lockfile
         }
         else {
           Write-Host "No package.json found. Skipping pnpm install."

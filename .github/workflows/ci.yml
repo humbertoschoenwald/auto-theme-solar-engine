@@ -53,12 +53,12 @@ jobs:
             }
           }
 
-          pnpm exec commitlint --from $from --to $to --verbose
+          & $env:PNPM_BIN exec commitlint --from $from --to $to --verbose
 
       - name: Node quality gate
         shell: pwsh
         run: |
-          pnpm lint
+          & $env:PNPM_BIN lint
 
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION_PATH }}
