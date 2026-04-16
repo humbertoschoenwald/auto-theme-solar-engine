@@ -3,6 +3,7 @@ using SolarEngine.Features.SolarCalculations;
 using SolarEngine.Features.SolarCalculations.Domain;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.Themes.Domain;
+using SolarEngine.Infrastructure.Localization;
 using SolarEngine.Infrastructure.Logging;
 using SolarEngine.Shared.Core;
 
@@ -12,6 +13,7 @@ internal sealed class ThemeTransitionOrchestrator(
     StructuredLogPublisher logPublisher,
     ApplyThemeCommandHandler applyThemeCommandHandler,
     IThemeMutator themeMutator,
+    AppLocalization localization,
     TimeProvider timeProvider) : IDisposable
 {
     private readonly SemaphoreSlim _stateGate = new(1, 1);
@@ -76,7 +78,7 @@ internal sealed class ThemeTransitionOrchestrator(
 
     public SolarSchedule GetTodaySchedule()
     {
-        return _todaySchedule ?? throw new InvalidOperationException("Refresh the schedule before exposing solar state.");
+        return _todaySchedule ?? throw new UnexpectedStateException("Refresh the schedule before exposing solar state.");
     }
 
     public async ValueTask ApplyCurrentThemeAsync(CancellationToken cancellationToken = default)
@@ -95,19 +97,24 @@ internal sealed class ThemeTransitionOrchestrator(
         }
     }
 
+    public ThemeMode? TryGetCurrentMode()
+    {
+        return _lastAppliedMode ?? themeMutator.TryGetCurrentMode();
+    }
+
     public string BuildStatusText()
     {
         if (!_configuration.IsConfigured || _todaySchedule is null)
         {
-            return "Auto Theme Solar Engine | Waiting for configuration";
+            return localization["status.waiting_configuration"];
         }
 
-        string modeText = (_lastAppliedMode ?? themeMutator.TryGetCurrentMode())?.ToString() ?? "Unknown";
+        string modeText = (TryGetCurrentMode()?.ToString() ?? localization["status.mode_unknown"]).Trim();
 
         return _todaySchedule.DaylightCondition switch
         {
-            SolarDaylightCondition.PolarNight => $"Auto Theme Solar Engine | {modeText} | Polar night",
-            SolarDaylightCondition.MidnightSun => $"Auto Theme Solar Engine | {modeText} | Midnight sun",
+            SolarDaylightCondition.PolarNight => localization.Format("status.polar_night_tooltip", modeText),
+            SolarDaylightCondition.MidnightSun => localization.Format("status.midnight_sun_tooltip", modeText),
             SolarDaylightCondition.Standard => BuildStandardStatusText(modeText),
             _ => BuildStandardStatusText(modeText)
         };
@@ -116,11 +123,11 @@ internal sealed class ThemeTransitionOrchestrator(
     public string BuildTodayScheduleText()
     {
         return !_configuration.IsConfigured || _todaySchedule is null
-            ? "Waiting for coordinates."
+            ? localization["status.waiting_coordinates"]
             : _todaySchedule.DaylightCondition switch
             {
-                SolarDaylightCondition.PolarNight => "Polar night | Dark mode enforced all day",
-                SolarDaylightCondition.MidnightSun => "Midnight sun | Light mode enforced all day",
+                SolarDaylightCondition.PolarNight => localization["status.polar_night_window"],
+                SolarDaylightCondition.MidnightSun => localization["status.midnight_sun_window"],
                 SolarDaylightCondition.Standard => BuildStandardScheduleText(),
                 _ => BuildStandardScheduleText()
             };
@@ -229,7 +236,7 @@ internal sealed class ThemeTransitionOrchestrator(
 
         DateTime now = timeProvider.GetLocalNow().DateTime;
         SolarSchedule schedule = _todaySchedule;
-        ThemeMode desiredMode = ResolveMode(schedule, now);
+        ThemeMode desiredMode = ResolveMode(schedule, now, _configuration);
         ThemeMode? currentMode = themeMutator.TryGetCurrentMode();
 
         if (_lastAppliedMode == desiredMode && currentMode == desiredMode)
@@ -280,16 +287,18 @@ internal sealed class ThemeTransitionOrchestrator(
         return TimeSpan.FromSeconds(Math.Clamp(checkIntervalSeconds, 10, 300));
     }
 
-    private static ThemeMode ResolveMode(SolarSchedule schedule, DateTime now)
+    private static ThemeMode ResolveMode(SolarSchedule schedule, DateTime now, AppConfig configuration)
     {
+        DateTime? sunsetThreshold = ResolveEffectiveSunsetLocal(schedule, configuration);
+
         return schedule.DaylightCondition switch
         {
             SolarDaylightCondition.PolarNight => ThemeMode.Dark,
             SolarDaylightCondition.MidnightSun => ThemeMode.Light,
             _ when schedule.SunriseLocal is not null
-                && schedule.SunsetLocal is not null
+                && sunsetThreshold is not null
                 && now >= schedule.SunriseLocal.Value
-                && now < schedule.SunsetLocal.Value => ThemeMode.Light,
+                && now < sunsetThreshold.Value => ThemeMode.Light,
             SolarDaylightCondition.Standard => ThemeMode.Dark,
             _ => ThemeMode.Dark
         };
@@ -297,15 +306,30 @@ internal sealed class ThemeTransitionOrchestrator(
 
     private string BuildStandardStatusText(string modeText)
     {
-        return _todaySchedule is { SunriseLocal: DateTime sunrise, SunsetLocal: DateTime sunset }
-            ? $"Auto Theme Solar Engine | {modeText} | Sunrise {sunrise:HH:mm} | Sunset {sunset:HH:mm}"
-            : $"Auto Theme Solar Engine | {modeText} | Schedule unavailable";
+        return _todaySchedule is { SunriseLocal: DateTime sunrise }
+            && ResolveEffectiveSunsetLocal(_todaySchedule, _configuration) is DateTime sunset
+            ? localization.Format(
+                "status.schedule_tooltip",
+                modeText,
+                sunrise.ToString("HH:mm"),
+                sunset.ToString("HH:mm"))
+            : localization.Format("status.schedule_unavailable_tooltip", modeText);
     }
 
     private string BuildStandardScheduleText()
     {
-        return _todaySchedule is { SunriseLocal: DateTime sunrise, SunsetLocal: DateTime sunset }
-            ? $"Sunrise {sunrise:HH:mm} | Sunset {sunset:HH:mm}"
-            : "Schedule unavailable.";
+        return _todaySchedule is { SunriseLocal: DateTime sunrise }
+            && ResolveEffectiveSunsetLocal(_todaySchedule, _configuration) is DateTime sunset
+            ? localization.Format("status.schedule_window", sunrise.ToString("HH:mm"), sunset.ToString("HH:mm"))
+            : localization["status.schedule_unavailable_window"];
+    }
+
+    private static DateTime? ResolveEffectiveSunsetLocal(SolarSchedule schedule, AppConfig configuration)
+    {
+        return schedule.SunsetLocal is not DateTime sunset
+            ? null
+            : configuration.AddExtraMinuteAtSunset
+            ? sunset.AddMinutes(1)
+            : sunset;
     }
 }

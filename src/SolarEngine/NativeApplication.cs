@@ -7,7 +7,10 @@ using SolarEngine.Features.SystemHost;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.Themes;
 using SolarEngine.Features.Themes.Domain;
+using SolarEngine.Features.Updates;
+using SolarEngine.Infrastructure.Localization;
 using SolarEngine.Infrastructure.Logging;
+using SolarEngine.Shared;
 using SolarEngine.Shared.Core;
 using SolarEngine.UI;
 
@@ -15,7 +18,7 @@ namespace SolarEngine;
 
 internal sealed class NativeApplication : IDisposable
 {
-    private const string AppName = "Auto Theme Solar Engine";
+    private const string AppName = AppIdentity.RuntimeName;
     private const string SingleInstanceMutexName = @"Local\AutoThemeSolarEngine.SingleInstance";
 
     private bool _disposed;
@@ -25,6 +28,8 @@ internal sealed class NativeApplication : IDisposable
     private ApplicationLifecycleOrchestrator? _applicationLifecycleOrchestrator;
     private ThemeTransitionOrchestrator? _themeTransitionOrchestrator;
     private StructuredLogPublisher? _structuredLogPublisher;
+    private AppLocalization? _localization;
+    private UpdateCoordinator? _updateCoordinator;
     private CancellationTokenSource? _applicationLifetimeCancellationTokenSource;
     private TrayIconHost? _trayIconHost;
     private SettingsWindow? _settingsWindow;
@@ -43,7 +48,8 @@ internal sealed class NativeApplication : IDisposable
             if (!TryAcquireSingleInstance())
             {
                 ShowMessage(
-                    "Auto Theme Solar Engine is already running in the notification area.",
+                    _localization?["app.already_running"]
+                    ?? $"{AppIdentity.RuntimeName} is already running in the notification area.",
                     NativeInterop.MB_ICONINFORMATION);
 
                 return 0;
@@ -51,7 +57,7 @@ internal sealed class NativeApplication : IDisposable
 
             InitializeServices();
 
-            _trayIconHost = new TrayIconHost(AppName);
+            _trayIconHost = new TrayIconHost(AppName, _localization!);
             _trayIconHost.OpenRequested += ShowSettingsWindow;
             _trayIconHost.ApplyNowRequested += HandleApplyNowRequested;
             _trayIconHost.RecalculateTodayRequested += HandleRecalculateTodayRequested;
@@ -64,7 +70,8 @@ internal sealed class NativeApplication : IDisposable
             _themeTransitionOrchestrator!.StateChanged += HandleStateChanged;
 
             _applicationLifecycleOrchestrator!.Initialize();
-            _settingsWindow = new SettingsWindow(_applicationLifecycleOrchestrator);
+            _settingsWindow = new SettingsWindow(_applicationLifecycleOrchestrator, _localization!, _updateCoordinator!);
+            _settingsWindow.UpdatePrepared += ExitApplication;
 
             _applicationLifecycleOrchestrator
                 .StartAsync(GetApplicationLifetimeCancellationToken())
@@ -75,6 +82,11 @@ internal sealed class NativeApplication : IDisposable
             if (_applicationLifecycleOrchestrator.Config.UseWindowsLocation)
             {
                 StartBackgroundRefresh(showErrors: false);
+            }
+
+            if (_applicationLifecycleOrchestrator.Config.AutomaticUpdatesEnabled)
+            {
+                StartAutomaticUpdateCheck();
             }
 
             _trayIconHost.SetTooltip(_applicationLifecycleOrchestrator.GetStatusText());
@@ -94,7 +106,7 @@ internal sealed class NativeApplication : IDisposable
         catch (Exception exception) when (
             exception is IOException
             or UnauthorizedAccessException
-            or InvalidOperationException
+            or UnexpectedStateException
             or Win32Exception)
         {
             HandleStartupFailure(appPaths, exception, "Auto Theme Solar Engine failed during startup.");
@@ -136,7 +148,11 @@ internal sealed class NativeApplication : IDisposable
             _trayIconHost = null;
         }
 
-        _settingsWindow?.Close();
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.UpdatePrepared -= ExitApplication;
+            _settingsWindow.Close();
+        }
         _settingsWindow = null;
         themeTransitionOrchestrator?.Dispose();
         _applicationLifecycleOrchestrator?.Dispose();
@@ -167,7 +183,8 @@ internal sealed class NativeApplication : IDisposable
             .AddLocationsFeature()
             .AddSolarCalculationsFeature()
             .AddThemesFeature()
-            .AddSystemHostFeature();
+            .AddSystemHostFeature()
+            .AddUpdatesFeature();
 
         _serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -176,10 +193,12 @@ internal sealed class NativeApplication : IDisposable
         });
 
         _structuredLogPublisher = _serviceProvider.GetRequiredService<StructuredLogPublisher>();
+        _localization = _serviceProvider.GetRequiredService<AppLocalization>();
         _applicationLifecycleOrchestrator =
             _serviceProvider.GetRequiredService<ApplicationLifecycleOrchestrator>();
         _themeTransitionOrchestrator =
             _serviceProvider.GetRequiredService<ThemeTransitionOrchestrator>();
+        _updateCoordinator = _serviceProvider.GetRequiredService<UpdateCoordinator>();
     }
 
     private bool TryAcquireSingleInstance()
@@ -219,6 +238,16 @@ internal sealed class NativeApplication : IDisposable
         StartBackgroundRefresh(showErrors: false);
     }
 
+    private void StartAutomaticUpdateCheck()
+    {
+        if (_applicationLifecycleOrchestrator is null || _updateCoordinator is null)
+        {
+            return;
+        }
+
+        _ = CheckForAndApplyUpdatesAsync();
+    }
+
     private void HandleStateChanged(object? sender, SchedulerStateChangedEventArgs eventArgs)
     {
         _trayIconHost?.SetTooltip(eventArgs.Tooltip);
@@ -228,7 +257,11 @@ internal sealed class NativeApplication : IDisposable
     private void ExitApplication()
     {
         CancelApplicationLifetime();
-        _settingsWindow?.Close();
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.UpdatePrepared -= ExitApplication;
+            _settingsWindow.Close();
+        }
         _settingsWindow = null;
         _trayIconHost?.Close();
         _trayIconHost = null;
@@ -297,7 +330,7 @@ internal sealed class NativeApplication : IDisposable
         catch (Exception exception) when (
             exception is IOException
             or UnauthorizedAccessException
-            or InvalidOperationException
+            or UnexpectedStateException
             or Win32Exception)
         {
             _structuredLogPublisher?.Write($"Runtime refresh failed: {exception}");
@@ -310,6 +343,49 @@ internal sealed class NativeApplication : IDisposable
         finally
         {
             _ = Interlocked.Exchange(ref _refreshInProgress, 0);
+        }
+    }
+
+    private async Task CheckForAndApplyUpdatesAsync()
+    {
+        try
+        {
+            ApplicationLifecycleOrchestrator? applicationLifecycleOrchestrator = _applicationLifecycleOrchestrator;
+            UpdateCoordinator? updateCoordinator = _updateCoordinator;
+            if (applicationLifecycleOrchestrator is null || updateCoordinator is null)
+            {
+                return;
+            }
+
+            CancellationToken cancellationToken = GetApplicationLifetimeCancellationToken();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            bool updatePrepared = await updateCoordinator
+                .PrepareAndLaunchUpdateAsync(applicationLifecycleOrchestrator.Config, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!updatePrepared || cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            _structuredLogPublisher?.Write("Automatic update prepared. Exiting current process to apply the new executable.");
+            ExitApplication();
+        }
+        catch (OperationCanceledException) when (IsApplicationShuttingDown())
+        {
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+            or IOException
+            or UnauthorizedAccessException
+            or UnexpectedStateException
+            or Win32Exception)
+        {
+            _structuredLogPublisher?.Write($"Automatic update check failed: {exception}");
         }
     }
 

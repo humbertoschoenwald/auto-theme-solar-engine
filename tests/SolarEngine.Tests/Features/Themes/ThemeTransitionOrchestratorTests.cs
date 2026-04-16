@@ -1,6 +1,9 @@
+using SolarEngine.Features.Locations.Domain;
+using SolarEngine.Features.SolarCalculations.Domain;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.Themes;
 using SolarEngine.Features.Themes.Domain;
+using SolarEngine.Infrastructure.Localization;
 using SolarEngine.Infrastructure.Logging;
 using SolarEngine.Shared.Core;
 using Xunit;
@@ -12,6 +15,8 @@ namespace SolarEngine.Tests.Features.Themes;
 /// </summary>
 public sealed class ThemeTransitionOrchestratorTests
 {
+    private static readonly DateOnly BaselineEquinoxDate = new(2026, 3, 29);
+
     /// <summary>
     /// Verifies standard daylight days render the schedule instead of throwing.
     /// </summary>
@@ -29,9 +34,28 @@ public sealed class ThemeTransitionOrchestratorTests
 
         Assert.Contains("Sunrise", scheduleText, StringComparison.Ordinal);
         Assert.Contains("Sunset", scheduleText, StringComparison.Ordinal);
-        Assert.Contains("Auto Theme Solar Engine", statusText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Auto Theme Solar Engine", statusText, StringComparison.Ordinal);
         Assert.Contains("Sunrise", statusText, StringComparison.Ordinal);
         Assert.Contains("Sunset", statusText, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Verifies the optional sunset offset changes the exposed schedule text.
+    /// </summary>
+    [Fact]
+    public async Task BuildTodayScheduleText_UsesAdjustedSunset_WhenExtraMinuteAtSunsetIsEnabled()
+    {
+        using TestContext context = new();
+        SolarSchedule baseSchedule = CreateStandardDaySchedule();
+        using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator();
+
+        orchestrator.UpdateConfiguration(CreateStandardDayConfiguration());
+        await orchestrator.RefreshAsync();
+
+        string scheduleText = orchestrator.BuildTodayScheduleText();
+
+        _ = Assert.NotNull(baseSchedule.SunsetLocal);
+        Assert.Contains(baseSchedule.SunsetLocal.Value.AddMinutes(1).ToString("HH:mm"), scheduleText, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -50,16 +74,70 @@ public sealed class ThemeTransitionOrchestratorTests
         _ = Assert.Single(context.ThemeMutator.AppliedModes);
     }
 
+    /// <summary>
+    /// Verifies the sunset offset keeps light mode active during the extra minute.
+    /// </summary>
+    [Fact]
+    public async Task ApplyCurrentThemeAsync_KeepsLightModeDuringConfiguredSunsetOffset()
+    {
+        SolarSchedule baseSchedule = CreateStandardDaySchedule();
+        _ = Assert.NotNull(baseSchedule.SunsetLocal);
+        DateTime momentInsideExtraMinute = baseSchedule.SunsetLocal.Value.AddSeconds(30);
+
+        using TestContext context = new();
+        using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator(momentInsideExtraMinute);
+
+        orchestrator.UpdateConfiguration(CreateStandardDayConfiguration());
+        await orchestrator.RefreshAsync();
+        await orchestrator.ApplyCurrentThemeAsync();
+
+        Assert.Equal(ThemeMode.Light, Assert.Single(context.ThemeMutator.AppliedModes));
+    }
+
+    /// <summary>
+    /// Verifies disabling the sunset offset restores the raw astronomical cutoff.
+    /// </summary>
+    [Fact]
+    public async Task ApplyCurrentThemeAsync_UsesRawSunset_WhenExtraMinuteAtSunsetIsDisabled()
+    {
+        SolarSchedule baseSchedule = CreateStandardDaySchedule();
+        _ = Assert.NotNull(baseSchedule.SunsetLocal);
+        DateTime momentAfterRawSunset = baseSchedule.SunsetLocal.Value.AddSeconds(30);
+
+        using TestContext context = new();
+        using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator(momentAfterRawSunset);
+
+        AppConfig configuration = CreateStandardDayConfiguration() with { AddExtraMinuteAtSunset = false };
+        orchestrator.UpdateConfiguration(configuration);
+        await orchestrator.RefreshAsync();
+        await orchestrator.ApplyCurrentThemeAsync();
+
+        Assert.Equal(ThemeMode.Dark, Assert.Single(context.ThemeMutator.AppliedModes));
+    }
+
     private static AppConfig CreateStandardDayConfiguration()
     {
         return new AppConfig
         {
-            Latitude = 51.5074d,
-            Longitude = -0.1278d,
+            Latitude = 19.4326d,
+            Longitude = -99.1332d,
             LocationPrecisionDecimals = 3,
             CheckIntervalSeconds = 300,
             IsConfigured = true
         };
+    }
+
+    private static SolarSchedule CreateStandardDaySchedule()
+    {
+        Result<GeoCoordinates> coordinatesResult = GeoCoordinates.Create(19.4326d, -99.1332d);
+        Assert.True(coordinatesResult.IsSuccess);
+
+        Result<SolarSchedule> scheduleResult = SolarPositionEngine.Calculate(
+            BaselineEquinoxDate,
+            coordinatesResult.Value);
+
+        Assert.True(scheduleResult.IsSuccess, $"{scheduleResult.Error.Code}: {scheduleResult.Error.Description}");
+        return scheduleResult.Value;
     }
 
     private sealed class TestContext : IDisposable
@@ -76,14 +154,15 @@ public sealed class ThemeTransitionOrchestratorTests
 
         public RecordingThemeMutator ThemeMutator { get; } = new();
 
-        public ThemeTransitionOrchestrator CreateOrchestrator()
+        public ThemeTransitionOrchestrator CreateOrchestrator(DateTime? localNow = null)
         {
             StructuredLogPublisher logPublisher = new(Path.Combine(_directoryPath, "AutoThemeSolarEngine.log"));
             return new ThemeTransitionOrchestrator(
                 logPublisher,
                 new ApplyThemeCommandHandler(ThemeMutator),
                 ThemeMutator,
-                new FixedTimeProvider(new DateTimeOffset(2026, 3, 29, 12, 0, 0, TimeSpan.Zero)));
+                new AppLocalization(),
+                new FixedTimeProvider(localNow ?? new DateTime(2026, 3, 29, 12, 0, 0)));
         }
 
         public void Dispose()
@@ -111,13 +190,14 @@ public sealed class ThemeTransitionOrchestratorTests
         }
     }
 
-    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    private sealed class FixedTimeProvider(DateTime localNow) : TimeProvider
     {
-        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Local;
 
         public override DateTimeOffset GetUtcNow()
         {
-            return utcNow;
+            DateTime utcDateTime = TimeZoneInfo.ConvertTimeToUtc(localNow, TimeZoneInfo.Local);
+            return new DateTimeOffset(utcDateTime, TimeSpan.Zero);
         }
     }
 }

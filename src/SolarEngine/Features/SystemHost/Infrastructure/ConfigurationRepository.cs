@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SystemHost.Domain;
+using SolarEngine.Infrastructure.Localization;
 using SolarEngine.Infrastructure.Logging;
 using SolarEngine.Infrastructure.Security;
 using SolarEngine.Infrastructure.Serialization;
@@ -145,6 +146,9 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
             StartWithWindows = persistedConfiguration.StartWithWindows,
             StartMinimized = persistedConfiguration.StartMinimized,
             UseHighPriority = persistedConfiguration.UseHighPriority,
+            AddExtraMinuteAtSunset = persistedConfiguration.AddExtraMinuteAtSunset,
+            AutomaticUpdatesEnabled = persistedConfiguration.AutomaticUpdatesEnabled,
+            LanguageCode = AppLanguageCodes.Normalize(persistedConfiguration.LanguageCode),
             CheckIntervalSeconds = persistedConfiguration.CheckIntervalSeconds,
             IsConfigured = isConfigured
         };
@@ -198,6 +202,9 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
             StartWithWindows = configuration.StartWithWindows,
             StartMinimized = configuration.StartMinimized,
             UseHighPriority = configuration.UseHighPriority,
+            AddExtraMinuteAtSunset = configuration.AddExtraMinuteAtSunset,
+            AutomaticUpdatesEnabled = configuration.AutomaticUpdatesEnabled,
+            LanguageCode = AppLanguageCodes.Normalize(configuration.LanguageCode),
             CheckIntervalSeconds = configuration.CheckIntervalSeconds,
             IsConfigured = configuration.IsConfigured
         };

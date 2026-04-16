@@ -8,7 +8,7 @@ internal sealed record PersistedAppConfig
 
     public double? Longitude { get; init; }
 
-    public bool UseWindowsLocation { get; init; }
+    public bool UseWindowsLocation { get; init; } = true;
 
     public int LocationPrecisionDecimals { get; init; } = 3;
 
@@ -16,7 +16,13 @@ internal sealed record PersistedAppConfig
 
     public bool StartMinimized { get; init; } = true;
 
-    public bool UseHighPriority { get; init; }
+    public bool UseHighPriority { get; init; } = true;
+
+    public bool AddExtraMinuteAtSunset { get; init; } = true;
+
+    public bool AutomaticUpdatesEnabled { get; init; } = true;
+
+    public string LanguageCode { get; init; } = "en";
 
     public int CheckIntervalSeconds { get; init; } = 30;
 

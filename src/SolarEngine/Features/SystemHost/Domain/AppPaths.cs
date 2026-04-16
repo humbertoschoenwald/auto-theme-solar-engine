@@ -32,7 +32,7 @@ internal sealed class AppPaths
             Environment.SpecialFolderOption.Create);
 
         return string.IsNullOrWhiteSpace(localApplicationData)
-            ? throw new InvalidOperationException("Resolve a stable per-user application data root before composing runtime file paths.")
+            ? throw new DirectoryNotFoundException("Resolve a stable per-user application data root before composing runtime file paths.")
             : Path.GetFullPath(Path.Combine(localApplicationData, "AutoThemeSolarEngine"));
     }
 }

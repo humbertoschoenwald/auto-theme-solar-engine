@@ -7,18 +7,16 @@ namespace SolarEngine.Infrastructure.Localization;
 
 internal sealed class JsonLocalizationCatalog
 {
-    private const string DefaultLanguageCode = "en";
-    private const string SpanishLanguageCode = "es";
     private const string ResourceNamespace = "SolarEngine.Resources.Localization";
 
     private readonly FrozenDictionary<string, string> _defaultTranslations;
     private readonly FrozenDictionary<string, string> _activeTranslations;
 
-    public JsonLocalizationCatalog()
+    public JsonLocalizationCatalog(string? preferredLanguageCode = null)
     {
-        string languageCode = ResolvePreferredLanguageCode();
-        _defaultTranslations = LoadTranslations(DefaultLanguageCode);
-        _activeTranslations = string.Equals(languageCode, DefaultLanguageCode, StringComparison.Ordinal)
+        string languageCode = AppLanguageCodes.Normalize(preferredLanguageCode ?? ResolvePreferredLanguageCode());
+        _defaultTranslations = LoadTranslations(AppLanguageCodes.Default);
+        _activeTranslations = string.Equals(languageCode, AppLanguageCodes.Default, StringComparison.Ordinal)
             ? _defaultTranslations
             : LoadTranslations(languageCode);
     }
@@ -38,9 +36,9 @@ internal sealed class JsonLocalizationCatalog
     private static string ResolvePreferredLanguageCode()
     {
         string twoLetterCode = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-        return string.Equals(twoLetterCode, SpanishLanguageCode, StringComparison.OrdinalIgnoreCase)
-            ? SpanishLanguageCode
-            : DefaultLanguageCode;
+        return string.Equals(twoLetterCode, AppLanguageCodes.Spanish, StringComparison.OrdinalIgnoreCase)
+            ? AppLanguageCodes.Spanish
+            : AppLanguageCodes.Default;
     }
 
     private static FrozenDictionary<string, string> LoadTranslations(string languageCode)
@@ -49,7 +47,7 @@ internal sealed class JsonLocalizationCatalog
         string resourceName = $"{ResourceNamespace}.{languageCode}.json";
 
         using Stream stream = assembly.GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Embedded localization resource was not found: {resourceName}");
+            ?? throw new FileNotFoundException($"Embedded localization resource was not found: {resourceName}", resourceName);
         using JsonDocument document = JsonDocument.Parse(stream);
 
         Dictionary<string, string> translations = [with(StringComparer.Ordinal)];

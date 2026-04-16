@@ -35,9 +35,13 @@ internal static class NativeInterop
     internal const uint WM_DESTROY = 0x0002;
     internal const uint WM_COMMAND = 0x0111;
     internal const uint WM_CONTEXTMENU = 0x007B;
+    internal const uint WM_ERASEBKGND = 0x0014;
     internal const uint WM_TIMECHANGE = 0x001E;
     internal const uint WM_SETFONT = 0x0030;
     internal const uint WM_SETICON = 0x0080;
+    internal const uint WM_CTLCOLOREDIT = 0x0133;
+    internal const uint WM_CTLCOLORBTN = 0x0135;
+    internal const uint WM_CTLCOLORSTATIC = 0x0138;
     internal const uint WM_LBUTTONUP = 0x0202;
     internal const uint WM_LBUTTONDBLCLK = 0x0203;
     internal const uint WM_RBUTTONUP = 0x0205;
@@ -84,6 +88,7 @@ internal static class NativeInterop
     internal const int IDI_APPLICATION = 32512;
 
     internal const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    internal const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     internal const int DWMWCP_ROUND = 2;
 
     internal const int MB_OK = 0x0000;
@@ -104,6 +109,15 @@ internal static class NativeInterop
     {
         public int X;
         public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -289,6 +303,15 @@ internal static class NativeInterop
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool DeleteObject(nint handle);
 
+    [DllImport("gdi32.dll")]
+    internal static extern int SetTextColor(nint hdc, int colorRef);
+
+    [DllImport("gdi32.dll")]
+    internal static extern int SetBkColor(nint hdc, int colorRef);
+
+    [DllImport("gdi32.dll")]
+    internal static extern nint CreateSolidBrush(int colorRef);
+
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool Shell_NotifyIcon(uint dwMessage, ref NotifyIconData data);
@@ -315,6 +338,17 @@ internal static class NativeInterop
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool DestroyIcon(nint iconHandle);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetClientRect(nint hWnd, out NativeRect rect);
+
+    [DllImport("user32.dll")]
+    internal static extern int FillRect(nint hdc, ref NativeRect rect, nint brushHandle);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool InvalidateRect(nint hWnd, nint rect, [MarshalAs(UnmanagedType.Bool)] bool erase);
 
     internal static int RunMessageLoop()
     {
@@ -410,18 +444,31 @@ internal static class NativeInterop
         return LoadIcon(nint.Zero, IDI_APPLICATION);
     }
 
-    internal static void ApplyDwmAttributes(nint hWnd)
+    internal static void ApplyDwmAttributes(nint hWnd, bool useDarkMode = false)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000) || hWnd == nint.Zero)
+        if (hWnd == nint.Zero)
         {
             return;
         }
 
-        int roundedCorners = DWMWCP_ROUND;
-        _ = DwmSetWindowAttribute(
-            hWnd,
-            DWMWA_WINDOW_CORNER_PREFERENCE,
-            ref roundedCorners,
-            sizeof(int));
+        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17763))
+        {
+            int darkMode = useDarkMode ? 1 : 0;
+            _ = DwmSetWindowAttribute(
+                hWnd,
+                DWMWA_USE_IMMERSIVE_DARK_MODE,
+                ref darkMode,
+                sizeof(int));
+        }
+
+        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        {
+            int roundedCorners = DWMWCP_ROUND;
+            _ = DwmSetWindowAttribute(
+                hWnd,
+                DWMWA_WINDOW_CORNER_PREFERENCE,
+                ref roundedCorners,
+                sizeof(int));
+        }
     }
 }

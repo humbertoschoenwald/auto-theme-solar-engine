@@ -1,4 +1,5 @@
 using SolarEngine.Features.Locations.Domain;
+using SolarEngine.Infrastructure.Localization;
 
 namespace SolarEngine.Features.SystemHost.Domain;
 
@@ -20,7 +21,7 @@ internal sealed record AppConfig
             : throw new ArgumentOutOfRangeException(nameof(value), "Use a finite longitude value to preserve deterministic solar calculations.");
     }
 
-    public bool UseWindowsLocation { get; init; }
+    public bool UseWindowsLocation { get; init; } = true;
 
     public int LocationPrecisionDecimals
     {
@@ -32,7 +33,17 @@ internal sealed record AppConfig
 
     public bool StartMinimized { get; init; } = true;
 
-    public bool UseHighPriority { get; init; }
+    public bool UseHighPriority { get; init; } = true;
+
+    public bool AddExtraMinuteAtSunset { get; init; } = true;
+
+    public bool AutomaticUpdatesEnabled { get; init; } = true;
+
+    public string LanguageCode
+    {
+        get;
+        init => field = AppLanguageCodes.Normalize(value);
+    } = AppLanguageCodes.Default;
 
     public int CheckIntervalSeconds
     {

@@ -4,6 +4,8 @@ using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.SystemHost.Infrastructure;
 using SolarEngine.Features.Themes;
+using SolarEngine.Features.Themes.Domain;
+using SolarEngine.Infrastructure.Localization;
 using SolarEngine.Infrastructure.Logging;
 using SolarEngine.Shared.Core;
 
@@ -13,14 +15,19 @@ internal sealed class ApplicationLifecycleOrchestrator(
     ConfigurationRepository configurationRepository,
     ThemeTransitionOrchestrator themeTransitionOrchestrator,
     WindowsStartupRegistrar windowsStartupRegistrar,
+    ISystemLocationProvider systemLocationProvider,
     GetSystemLocationQueryHandler getSystemLocationQueryHandler,
+    AppLocalization localization,
     StructuredLogPublisher logPublisher) : IDisposable
 {
     public AppConfig Config { get; private set; } = new();
 
+    public SystemLocationAccessState WindowsLocationAccessState { get; private set; } = SystemLocationAccessState.Unknown;
+
     public void Initialize()
     {
         Config = configurationRepository.Load();
+        localization.UpdateLanguage(Config.LanguageCode);
         windowsStartupRegistrar.SetEnabled(Config.StartWithWindows, GetExecutablePath());
         themeTransitionOrchestrator.UpdateConfiguration(Config);
         ApplyProcessPriority();
@@ -29,6 +36,8 @@ internal sealed class ApplicationLifecycleOrchestrator(
     public async ValueTask StartAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        await RefreshWindowsLocationAccessStateAsync(cancellationToken).ConfigureAwait(false);
+        await ReconcileWindowsLocationPreferenceAsync(cancellationToken).ConfigureAwait(false);
 
         await themeTransitionOrchestrator.StartAsync(cancellationToken).ConfigureAwait(false);
         await ApplyCurrentThemeAsync(cancellationToken).ConfigureAwait(false);
@@ -40,6 +49,11 @@ internal sealed class ApplicationLifecycleOrchestrator(
         cancellationToken.ThrowIfCancellationRequested();
 
         Config = SanitizeConfiguration(configuration with { IsConfigured = true });
+        await RefreshWindowsLocationAccessStateAsync(cancellationToken).ConfigureAwait(false);
+        if (Config.UseWindowsLocation && WindowsLocationAccessState != SystemLocationAccessState.Allowed)
+        {
+            Config = Config with { UseWindowsLocation = false };
+        }
         PersistConfigurationState();
 
         if (Config.UseWindowsLocation)
@@ -62,7 +76,7 @@ internal sealed class ApplicationLifecycleOrchestrator(
     public ValueTask<Result<GeoCoordinates>> DetectCoordinatesAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return getSystemLocationQueryHandler.HandleAsync(new GetSystemLocationQuery(), cancellationToken);
+        return DetectCoordinatesCoreAsync(cancellationToken);
     }
 
     public async ValueTask<Result<GeoCoordinates>> RefreshCoordinatesFromWindowsAsync(CancellationToken cancellationToken = default)
@@ -76,7 +90,7 @@ internal sealed class ApplicationLifecycleOrchestrator(
                 "Preserve explicit operator intent when Windows location is disabled in configuration."));
         }
 
-        Result<GeoCoordinates> coordinatesResult = await DetectCoordinatesAsync(cancellationToken).ConfigureAwait(false);
+        Result<GeoCoordinates> coordinatesResult = await DetectCoordinatesCoreAsync(cancellationToken).ConfigureAwait(false);
         if (coordinatesResult.IsFailure)
         {
             return coordinatesResult;
@@ -122,6 +136,11 @@ internal sealed class ApplicationLifecycleOrchestrator(
         return themeTransitionOrchestrator.BuildTodayScheduleText();
     }
 
+    public ThemeMode? GetCurrentThemeMode()
+    {
+        return themeTransitionOrchestrator.TryGetCurrentMode();
+    }
+
     public void Dispose()
     {
         themeTransitionOrchestrator.Dispose();
@@ -130,6 +149,7 @@ internal sealed class ApplicationLifecycleOrchestrator(
     private void PersistConfigurationState()
     {
         configurationRepository.Save(Config);
+        localization.UpdateLanguage(Config.LanguageCode);
         windowsStartupRegistrar.SetEnabled(Config.StartWithWindows, GetExecutablePath());
         themeTransitionOrchestrator.UpdateConfiguration(Config);
     }
@@ -146,7 +166,7 @@ internal sealed class ApplicationLifecycleOrchestrator(
     {
         return Environment.ProcessPath
         ?? Process.GetCurrentProcess().MainModule?.FileName
-        ?? throw new InvalidOperationException("Resolve the executable path before mutating OS registration state.");
+        ?? throw new UnexpectedStateException("Resolve the executable path before mutating OS registration state.");
     }
 
     private void ApplyProcessPriority()
@@ -172,7 +192,8 @@ internal sealed class ApplicationLifecycleOrchestrator(
         {
             return configuration with
             {
-                LocationPrecisionDecimals = locationPrecisionDecimals
+                LocationPrecisionDecimals = locationPrecisionDecimals,
+                LanguageCode = AppLanguageCodes.Normalize(configuration.LanguageCode)
             };
         }
 
@@ -188,7 +209,37 @@ internal sealed class ApplicationLifecycleOrchestrator(
         {
             Latitude = reducedCoordinates.Latitude,
             Longitude = reducedCoordinates.Longitude,
-            LocationPrecisionDecimals = locationPrecisionDecimals
+            LocationPrecisionDecimals = locationPrecisionDecimals,
+            LanguageCode = AppLanguageCodes.Normalize(configuration.LanguageCode)
         };
+    }
+
+    private async ValueTask<Result<GeoCoordinates>> DetectCoordinatesCoreAsync(CancellationToken cancellationToken)
+    {
+        await RefreshWindowsLocationAccessStateAsync(cancellationToken).ConfigureAwait(false);
+        return WindowsLocationAccessState == SystemLocationAccessState.Allowed
+            ? await getSystemLocationQueryHandler.HandleAsync(new GetSystemLocationQuery(), cancellationToken).ConfigureAwait(false)
+            : Result<GeoCoordinates>.Failure(
+                new Error(
+                    "locations.provider.access_denied",
+                    "Preserve user-controlled privacy boundaries when native location access is unavailable."));
+    }
+
+    private async ValueTask RefreshWindowsLocationAccessStateAsync(CancellationToken cancellationToken)
+    {
+        WindowsLocationAccessState = await systemLocationProvider.GetAccessStateAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask ReconcileWindowsLocationPreferenceAsync(CancellationToken cancellationToken)
+    {
+        if (!Config.UseWindowsLocation || WindowsLocationAccessState == SystemLocationAccessState.Allowed)
+        {
+            return;
+        }
+
+        Config = Config with { UseWindowsLocation = false };
+        PersistConfigurationState();
+        await RefreshScheduleAsync(cancellationToken).ConfigureAwait(false);
+        logPublisher.Write("Windows location was disabled because native access is unavailable.");
     }
 }

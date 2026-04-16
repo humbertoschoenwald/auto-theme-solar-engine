@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using SolarEngine.Infrastructure.Localization;
+using SolarEngine.Shared;
 
 namespace SolarEngine.UI;
 
-internal sealed class TrayIconHost(string appName)
+internal sealed class TrayIconHost(string appName, AppLocalization localization)
 {
     private const string WindowClassName = "SolarEngine.TrayHostWindow";
     private const int OpenCommandId = 1001;
@@ -19,6 +21,7 @@ internal sealed class TrayIconHost(string appName)
     private static ushort _windowClassAtom;
 
     private readonly string _appName = appName;
+    private readonly AppLocalization _localization = localization;
     private readonly Lock _tooltipGate = new();
     private bool _disposed;
     private nint _windowHandle;
@@ -214,7 +217,7 @@ internal sealed class TrayIconHost(string appName)
         }
     }
 
-    private static nint CreateMenuHandle()
+    private nint CreateMenuHandle()
     {
         nint menuHandle = NativeInterop.CreatePopupMenu();
         if (menuHandle == nint.Zero)
@@ -222,11 +225,11 @@ internal sealed class TrayIconHost(string appName)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the tray menu.");
         }
 
-        if (!NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, OpenCommandId, "Open settings")
-            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ApplyNowCommandId, "Apply now")
-            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, RecalculateCommandId, "Recalculate today")
+        if (!NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, OpenCommandId, _localization["tray.open_settings"])
+            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ApplyNowCommandId, _localization["tray.apply_now"])
+            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, RecalculateCommandId, _localization["tray.recalculate_today"])
             || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_SEPARATOR, nint.Zero, null)
-            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ExitCommandId, "Exit"))
+            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ExitCommandId, _localization["tray.exit"]))
         {
             _ = NativeInterop.DestroyMenu(menuHandle);
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to populate the tray menu.");
@@ -310,10 +313,7 @@ internal sealed class TrayIconHost(string appName)
 
     private void ShowContextMenu()
     {
-        if (_menuHandle == nint.Zero)
-        {
-            return;
-        }
+        RebuildMenu();
 
         _ = NativeInterop.SetForegroundWindow(_windowHandle);
 
@@ -334,6 +334,16 @@ internal sealed class TrayIconHost(string appName)
         {
             ExecuteCommand(command);
         }
+    }
+
+    private void RebuildMenu()
+    {
+        if (_menuHandle != nint.Zero)
+        {
+            _ = NativeInterop.DestroyMenu(_menuHandle);
+        }
+
+        _menuHandle = CreateMenuHandle();
     }
 
     private void ExecuteCommand(int commandId)
@@ -420,7 +430,7 @@ internal sealed class TrayIconHost(string appName)
 
     private static string NormalizeTooltip(string tooltip)
     {
-        string normalized = string.IsNullOrWhiteSpace(tooltip) ? "Auto Theme Solar Engine" : tooltip.Trim();
+        string normalized = string.IsNullOrWhiteSpace(tooltip) ? AppIdentity.RuntimeName : tooltip.Trim();
         return normalized.Length <= 127 ? normalized : normalized[..127];
     }
 

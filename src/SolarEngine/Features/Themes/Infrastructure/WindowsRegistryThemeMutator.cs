@@ -44,7 +44,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
             int lightValue = mode == ThemeMode.Light ? 1 : 0;
 
             using RegistryKey personalizeKey = Registry.CurrentUser.CreateSubKey(PersonalizeKeyPath, writable: true)
-                ?? throw new InvalidOperationException("Resolve the Personalize registry key before mutating shell theme state.");
+                ?? throw new UnexpectedStateException("Resolve the Personalize registry key before mutating shell theme state.");
 
             personalizeKey.SetValue(AppsUseLightThemeValueName, lightValue, RegistryValueKind.DWord);
             personalizeKey.SetValue(SystemUsesLightThemeValueName, lightValue, RegistryValueKind.DWord);
@@ -131,7 +131,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         }
 
         using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
-            ?? throw new InvalidOperationException("Resolve the application registry key before persisting taskbar appearance preferences.");
+            ?? throw new UnexpectedStateException("Resolve the application registry key before persisting taskbar appearance preferences.");
 
         appKey.SetValue(
             StoredDarkModeColorPrevalenceValueName,
@@ -142,7 +142,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private static void RestoreDarkModeTaskbarPreferenceIfNeeded(RegistryKey personalizeKey)
     {
         using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
-            ?? throw new InvalidOperationException("Resolve the application registry key before restoring taskbar appearance preferences.");
+            ?? throw new UnexpectedStateException("Resolve the application registry key before restoring taskbar appearance preferences.");
 
         bool isManagedByApplication =
             TryReadDword(appKey.GetValue(LightModeTaskbarPreferenceManagedValueName), out int managedValue)
@@ -164,7 +164,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private static void MarkTaskbarPreferenceAsManaged()
     {
         using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
-            ?? throw new InvalidOperationException("Resolve the application registry key before tracking taskbar appearance ownership.");
+            ?? throw new UnexpectedStateException("Resolve the application registry key before tracking taskbar appearance ownership.");
 
         appKey.SetValue(LightModeTaskbarPreferenceManagedValueName, 1, RegistryValueKind.DWord);
     }

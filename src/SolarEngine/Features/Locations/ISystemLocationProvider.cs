@@ -5,5 +5,7 @@ namespace SolarEngine.Features.Locations;
 
 internal interface ISystemLocationProvider
 {
+    public ValueTask<SystemLocationAccessState> GetAccessStateAsync(CancellationToken cancellationToken = default);
+
     public ValueTask<Result<GeoCoordinates>> GetLocationAsync(CancellationToken cancellationToken = default);
 }

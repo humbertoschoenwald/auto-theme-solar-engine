@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.SystemHost.Infrastructure;
+using SolarEngine.Infrastructure.Localization;
 using SolarEngine.Infrastructure.Logging;
 
 namespace SolarEngine.Features.SystemHost;
@@ -19,6 +20,7 @@ internal static class DependencyInjection
             return new StructuredLogPublisher(appPaths.LogPath);
         });
 
+        _ = services.AddSingleton<AppLocalization>();
         _ = services.AddSingleton<ConfigurationRepository>();
         _ = services.AddSingleton<WindowsStartupRegistrar>();
         _ = services.AddSingleton<ApplicationLifecycleOrchestrator>();

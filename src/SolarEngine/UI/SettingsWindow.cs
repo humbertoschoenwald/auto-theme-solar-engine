@@ -6,28 +6,51 @@ using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SystemHost;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.SystemHost.Infrastructure;
+using SolarEngine.Features.Themes.Domain;
+using SolarEngine.Features.Updates;
+using SolarEngine.Features.Updates.Domain;
+using SolarEngine.Infrastructure.Localization;
+using SolarEngine.Shared;
 using SolarEngine.Shared.Core;
 
 namespace SolarEngine.UI;
 
-internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicationLifecycleOrchestrator)
+internal sealed class SettingsWindow(
+    ApplicationLifecycleOrchestrator applicationLifecycleOrchestrator,
+    AppLocalization localization,
+    UpdateCoordinator updateCoordinator)
 {
+    private enum SettingsTab
+    {
+        Home,
+        Configuration,
+        Updates
+    }
+
     private readonly record struct ControlBounds(int X, int Y, int Width, int Height);
 
-    private const string AppName = "Auto Theme Solar Engine";
+    private const string WindowTitle = AppIdentity.ProductName;
+    private const string DialogCaption = AppIdentity.RuntimeName;
     private const string WindowClassName = "SolarEngine.NativeSettingsWindow";
-    private const int WindowWidth = 460;
-    private const int WindowHeight = 500;
+    private const int WindowWidth = 520;
+    private const int WindowHeight = 680;
 
-    private const int LatitudeEditId = 101;
-    private const int LongitudeEditId = 102;
-    private const int UseWindowsLocationId = 103;
-    private const int DetectLocationId = 104;
-    private const int StartWithWindowsId = 105;
-    private const int StartMinimizedId = 106;
-    private const int HighPriorityId = 107;
-    private const int ApplyNowId = 108;
-    private const int PrecisionEditId = 111;
+    private const int LanguageToggleId = 100;
+    private const int HomeTabId = 101;
+    private const int ConfigurationTabId = 102;
+    private const int UpdatesTabId = 103;
+    private const int LatitudeEditId = 104;
+    private const int LongitudeEditId = 105;
+    private const int UseWindowsLocationId = 106;
+    private const int DetectLocationId = 107;
+    private const int StartWithWindowsId = 108;
+    private const int StartMinimizedId = 109;
+    private const int HighPriorityId = 110;
+    private const int ApplyNowId = 111;
+    private const int ExtraMinuteAtSunsetId = 112;
+    private const int AutomaticUpdatesId = 113;
+    private const int PrecisionEditId = 114;
+    private const int CheckUpdatesId = 115;
     private const uint WM_PROCESS_UI_ACTIONS = NativeInterop.WM_APP + 100;
 
     private static readonly Lock InstancesGate = new();
@@ -36,24 +59,60 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
     private static ushort _windowClassAtom;
 
     private readonly ApplicationLifecycleOrchestrator _applicationLifecycleOrchestrator = applicationLifecycleOrchestrator;
+    private readonly AppLocalization _localization = localization;
+    private readonly UpdateCoordinator _updateCoordinator = updateCoordinator;
     private readonly ConcurrentQueue<Action> _pendingUiActions = [];
+    private readonly List<nint> _homeControls = [];
+    private readonly List<nint> _configurationControls = [];
+    private readonly List<nint> _updatesControls = [];
+    private readonly List<nint> _allControls = [];
     private bool _disposed;
     private int _operationInProgress;
+    private SettingsTab _activeTab = SettingsTab.Home;
+    private string _selectedLanguageCode = AppLanguageCodes.Default;
     private nint _windowHandle;
     private nint _fontHandle;
     private nint _windowIconHandle;
     private bool _ownsWindowIconHandle;
+    private nint _backgroundBrushHandle;
+    private int _backgroundColorRef = ToColorRef(255, 255, 255);
+    private int _foregroundColorRef = ToColorRef(0, 0, 0);
+    private nint _headerLabelHandle;
+    private nint _languageLabelHandle;
+    private nint _languageButtonHandle;
+    private nint _homeTabButtonHandle;
+    private nint _configurationTabButtonHandle;
+    private nint _updatesTabButtonHandle;
+    private nint _locationAccessLabelHandle;
+    private nint _locationAccessValueHandle;
+    private nint _latitudeLabelHandle;
     private nint _latitudeEditHandle;
+    private nint _longitudeLabelHandle;
     private nint _longitudeEditHandle;
+    private nint _precisionLabelHandle;
     private nint _precisionEditHandle;
+    private nint _privacyHintLabelHandle;
     private nint _useWindowsLocationHandle;
     private nint _detectLocationButtonHandle;
+    private nint _todayScheduleLabelHandle;
     private nint _startWithWindowsHandle;
     private nint _startMinimizedHandle;
     private nint _highPriorityHandle;
+    private nint _extraMinuteAtSunsetHandle;
+    private nint _automaticUpdatesHandle;
     private nint _todayScheduleHandle;
+    private nint _runtimeStatusLabelHandle;
     private nint _runtimeStatusHandle;
+    private nint _currentVersionLabelHandle;
+    private nint _currentVersionValueHandle;
+    private nint _latestVersionLabelHandle;
+    private nint _latestVersionValueHandle;
+    private nint _updateStatusLabelHandle;
+    private nint _updateStatusHandle;
+    private nint _checkUpdatesButtonHandle;
     private nint _applyNowButtonHandle;
+
+    public event Action? UpdatePrepared;
 
     public void ShowFromTray()
     {
@@ -65,7 +124,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         _ = NativeInterop.UpdateWindow(_windowHandle);
         RefreshFromModel();
         _ = NativeInterop.SetForegroundWindow(_windowHandle);
-        _ = NativeInterop.SetFocus(_latitudeEditHandle);
+        FocusActiveTab();
     }
 
     public void RefreshFromModel()
@@ -86,7 +145,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             return;
         }
 
-        EnqueueUiAction(RefreshFromModel);
+        EnqueueUiAction(RefreshStatus);
     }
 
     public void Close()
@@ -133,6 +192,14 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
                 HandleCommand(NativeInterop.LoWord(wParam));
                 return 0;
 
+            case NativeInterop.WM_ERASEBKGND:
+                return HandleEraseBackground(wParam);
+
+            case NativeInterop.WM_CTLCOLOREDIT:
+            case NativeInterop.WM_CTLCOLORBTN:
+            case NativeInterop.WM_CTLCOLORSTATIC:
+                return HandleControlColor(wParam);
+
             case NativeInterop.WM_CLOSE:
                 HideToTray();
                 return 0;
@@ -158,7 +225,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         _windowHandle = NativeInterop.CreateWindowEx(
             0,
             WindowClassName,
-            AppName,
+            WindowTitle,
             NativeInterop.WS_CAPTION
             | NativeInterop.WS_SYSMENU
             | NativeInterop.WS_MINIMIZEBOX
@@ -206,7 +273,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         }
 
         CreateControls();
-        NativeInterop.ApplyDwmAttributes(_windowHandle);
+        ApplyThemePalette();
         RefreshFromModel();
     }
 
@@ -244,69 +311,50 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 
     private void CreateControls()
     {
-        _ = CreateLabel("Auto Theme Solar Engine settings", 16, 16, 400, 20);
+        _headerLabelHandle = CreateLabel(string.Empty, 16, 16, 240, 20);
+        _applyNowButtonHandle = CreateButton(ApplyNowId, string.Empty, 354, 12, 150, 32, true);
 
-        _ = CreateLabel("Latitude", 16, 52, 100, 20);
-        _latitudeEditHandle = CreateEdit(LatitudeEditId, 140, 48, 260, 24);
+        _homeTabButtonHandle = CreateButton(HomeTabId, string.Empty, 16, 56, 152, 30, false);
+        _configurationTabButtonHandle = CreateButton(ConfigurationTabId, string.Empty, 184, 56, 152, 30, false);
+        _updatesTabButtonHandle = CreateButton(UpdatesTabId, string.Empty, 352, 56, 152, 30, false);
 
-        _ = CreateLabel("Longitude", 16, 86, 100, 20);
-        _longitudeEditHandle = CreateEdit(LongitudeEditId, 140, 82, 260, 24);
+        _locationAccessLabelHandle = CreateLabel(string.Empty, 16, 108, 132, 20, _homeControls);
+        _locationAccessValueHandle = CreateLabel(string.Empty, 156, 108, 348, 20, _homeControls);
+        _useWindowsLocationHandle = CreateCheckBox(UseWindowsLocationId, string.Empty, 16, 140, 240, 20, _homeControls);
+        _detectLocationButtonHandle = CreateButton(DetectLocationId, string.Empty, 324, 136, 180, 28, false, _homeControls);
+        _latitudeLabelHandle = CreateLabel(string.Empty, 16, 180, 132, 20, _homeControls);
+        _latitudeEditHandle = CreateEdit(LatitudeEditId, 156, 176, 220, 24, 18, _homeControls);
+        _longitudeLabelHandle = CreateLabel(string.Empty, 16, 214, 132, 20, _homeControls);
+        _longitudeEditHandle = CreateEdit(LongitudeEditId, 156, 210, 220, 24, 18, _homeControls);
+        _precisionLabelHandle = CreateLabel(string.Empty, 16, 248, 132, 20, _homeControls);
+        _precisionEditHandle = CreateEdit(PrecisionEditId, 156, 244, 48, 24, 1, _homeControls);
+        _privacyHintLabelHandle = CreateLabel(string.Empty, 216, 248, 288, 20, _homeControls);
+        _todayScheduleLabelHandle = CreateLabel(string.Empty, 16, 292, 160, 20, _homeControls);
+        _todayScheduleHandle = CreateLabel(string.Empty, 16, 320, 488, 44, _homeControls);
 
-        _ = CreateLabel("Precision", 16, 120, 100, 20);
-        _precisionEditHandle = CreateEdit(PrecisionEditId, 140, 116, 40, 24, 1);
-        _ = CreateLabel("2-5 decimals | lower = more private", 188, 120, 212, 20);
+        _languageLabelHandle = CreateLabel(string.Empty, 16, 108, 132, 20, _configurationControls);
+        _languageButtonHandle = CreateButton(LanguageToggleId, string.Empty, 156, 104, 160, 28, false, _configurationControls);
+        _startWithWindowsHandle = CreateCheckBox(StartWithWindowsId, string.Empty, 16, 152, 240, 20, _configurationControls);
+        _startMinimizedHandle = CreateCheckBox(StartMinimizedId, string.Empty, 16, 182, 240, 20, _configurationControls);
+        _highPriorityHandle = CreateCheckBox(HighPriorityId, string.Empty, 16, 212, 280, 20, _configurationControls);
+        _extraMinuteAtSunsetHandle = CreateCheckBox(ExtraMinuteAtSunsetId, string.Empty, 16, 242, 280, 20, _configurationControls);
+        _runtimeStatusLabelHandle = CreateLabel(string.Empty, 16, 286, 160, 20, _configurationControls);
+        _runtimeStatusHandle = CreateLabel(string.Empty, 16, 314, 488, 44, _configurationControls);
 
-        _useWindowsLocationHandle = CreateCheckBox(
-            UseWindowsLocationId,
-            "Use Windows location",
-            16,
-            154,
-            200,
-            20);
+        _automaticUpdatesHandle = CreateCheckBox(AutomaticUpdatesId, string.Empty, 16, 108, 280, 20, _updatesControls);
+        _currentVersionLabelHandle = CreateLabel(string.Empty, 16, 150, 132, 20, _updatesControls);
+        _currentVersionValueHandle = CreateLabel(string.Empty, 156, 150, 348, 20, _updatesControls);
+        _latestVersionLabelHandle = CreateLabel(string.Empty, 16, 182, 132, 20, _updatesControls);
+        _latestVersionValueHandle = CreateLabel(string.Empty, 156, 182, 348, 20, _updatesControls);
+        _updateStatusLabelHandle = CreateLabel(string.Empty, 16, 214, 132, 20, _updatesControls);
+        _updateStatusHandle = CreateLabel(string.Empty, 156, 214, 348, 44, _updatesControls);
+        _checkUpdatesButtonHandle = CreateButton(CheckUpdatesId, string.Empty, 16, 274, 180, 30, false, _updatesControls);
 
-        _detectLocationButtonHandle = CreateButton(
-            DetectLocationId,
-            "Detect from Windows",
-            232,
-            150,
-            168,
-            28,
-            false);
-
-        _startWithWindowsHandle = CreateCheckBox(
-            StartWithWindowsId,
-            "Start with Windows",
-            16,
-            192,
-            200,
-            20);
-
-        _startMinimizedHandle = CreateCheckBox(
-            StartMinimizedId,
-            "Open in tray",
-            16,
-            220,
-            200,
-            20);
-
-        _highPriorityHandle = CreateCheckBox(
-            HighPriorityId,
-            "Use high process priority",
-            16,
-            248,
-            220,
-            20);
-
-        _ = CreateLabel("Today's schedule", 16, 290, 140, 20);
-        _todayScheduleHandle = CreateLabel(string.Empty, 16, 314, 384, 34);
-
-        _ = CreateLabel("Runtime status", 16, 358, 140, 20);
-        _runtimeStatusHandle = CreateLabel(string.Empty, 16, 382, 384, 34);
-
-        _applyNowButtonHandle = CreateButton(ApplyNowId, "Save and apply", 16, 430, 140, 30, true);
+        SetActiveTab(SettingsTab.Home);
+        ApplyLocalizedText();
     }
 
-    private nint CreateLabel(string text, int x, int y, int width, int height)
+    private nint CreateLabel(string text, int x, int y, int width, int height, List<nint>? group = null)
     {
         return CreateControl(
             "STATIC",
@@ -314,10 +362,18 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             NativeInterop.SS_LEFT,
             0,
             new ControlBounds(x, y, width, height),
-            0);
+            0,
+            group);
     }
 
-    private nint CreateEdit(int controlId, int x, int y, int width, int height, int maxCharacters = 18)
+    private nint CreateEdit(
+        int controlId,
+        int x,
+        int y,
+        int width,
+        int height,
+        int maxCharacters = 18,
+        List<nint>? group = null)
     {
         nint editHandle = CreateControl(
             "EDIT",
@@ -325,13 +381,21 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             NativeInterop.ES_AUTOHSCROLL | NativeInterop.WS_TABSTOP,
             NativeInterop.WS_EX_CLIENTEDGE,
             new ControlBounds(x, y, width, height),
-            controlId);
+            controlId,
+            group);
 
         _ = NativeInterop.SendMessage(editHandle, NativeInterop.EM_SETLIMITTEXT, maxCharacters, nint.Zero);
         return editHandle;
     }
 
-    private nint CreateCheckBox(int controlId, string text, int x, int y, int width, int height)
+    private nint CreateCheckBox(
+        int controlId,
+        string text,
+        int x,
+        int y,
+        int width,
+        int height,
+        List<nint>? group = null)
     {
         return CreateControl(
             "BUTTON",
@@ -339,7 +403,8 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             NativeInterop.BS_AUTOCHECKBOX | NativeInterop.WS_TABSTOP,
             0,
             new ControlBounds(x, y, width, height),
-            controlId);
+            controlId,
+            group);
     }
 
     private nint CreateButton(
@@ -349,7 +414,8 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         int y,
         int width,
         int height,
-        bool isDefault)
+        bool isDefault,
+        List<nint>? group = null)
     {
         int style = NativeInterop.WS_TABSTOP;
         if (isDefault)
@@ -357,7 +423,14 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             style |= NativeInterop.BS_DEFPUSHBUTTON;
         }
 
-        return CreateControl("BUTTON", text, style, 0, new ControlBounds(x, y, width, height), controlId);
+        return CreateControl(
+            "BUTTON",
+            text,
+            style,
+            0,
+            new ControlBounds(x, y, width, height),
+            controlId,
+            group);
     }
 
     private nint CreateControl(
@@ -366,7 +439,8 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         int style,
         int extendedStyle,
         ControlBounds bounds,
-        int controlId)
+        int controlId,
+        List<nint>? group = null)
     {
         nint controlHandle = NativeInterop.CreateWindowEx(
             extendedStyle,
@@ -390,15 +464,190 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         }
 
         NativeInterop.ApplyFont(controlHandle, _fontHandle);
+        _allControls.Add(controlHandle);
+        group?.Add(controlHandle);
         return controlHandle;
+    }
+
+    private void ApplyLocalizedText()
+    {
+        _ = NativeInterop.SetWindowText(_windowHandle, WindowTitle);
+        _ = NativeInterop.SetWindowText(_headerLabelHandle, _localization["settings.header"]);
+        _ = NativeInterop.SetWindowText(_applyNowButtonHandle, _localization["settings.save_and_apply"]);
+        _ = NativeInterop.SetWindowText(_homeTabButtonHandle, _localization["settings.tab.home"]);
+        _ = NativeInterop.SetWindowText(_configurationTabButtonHandle, _localization["settings.tab.configuration"]);
+        _ = NativeInterop.SetWindowText(_updatesTabButtonHandle, _localization["settings.tab.updates"]);
+
+        _ = NativeInterop.SetWindowText(_locationAccessLabelHandle, _localization["settings.location_access"]);
+        _ = NativeInterop.SetWindowText(_useWindowsLocationHandle, _localization["settings.use_windows_location"]);
+        _ = NativeInterop.SetWindowText(_detectLocationButtonHandle, _localization["settings.detect_from_windows"]);
+        _ = NativeInterop.SetWindowText(_latitudeLabelHandle, _localization["settings.latitude"]);
+        _ = NativeInterop.SetWindowText(_longitudeLabelHandle, _localization["settings.longitude"]);
+        _ = NativeInterop.SetWindowText(_precisionLabelHandle, _localization["settings.precision"]);
+        _ = NativeInterop.SetWindowText(_privacyHintLabelHandle, _localization["settings.privacy_hint"]);
+        _ = NativeInterop.SetWindowText(_todayScheduleLabelHandle, _localization["settings.today_schedule"]);
+
+        _ = NativeInterop.SetWindowText(_languageLabelHandle, _localization["settings.language"]);
+        _ = NativeInterop.SetWindowText(_languageButtonHandle, GetLanguageToggleText());
+        _ = NativeInterop.SetWindowText(_startWithWindowsHandle, _localization["settings.start_with_windows"]);
+        _ = NativeInterop.SetWindowText(_startMinimizedHandle, _localization["settings.open_in_tray"]);
+        _ = NativeInterop.SetWindowText(_highPriorityHandle, _localization["settings.use_high_priority"]);
+        _ = NativeInterop.SetWindowText(_extraMinuteAtSunsetHandle, _localization["settings.extra_minute_at_sunset"]);
+        _ = NativeInterop.SetWindowText(_runtimeStatusLabelHandle, _localization["settings.runtime_status"]);
+
+        _ = NativeInterop.SetWindowText(_automaticUpdatesHandle, _localization["settings.install_updates_automatically"]);
+        _ = NativeInterop.SetWindowText(_currentVersionLabelHandle, _localization["settings.current_version"]);
+        _ = NativeInterop.SetWindowText(_latestVersionLabelHandle, _localization["settings.latest_version"]);
+        _ = NativeInterop.SetWindowText(_updateStatusLabelHandle, _localization["settings.update_status"]);
+        _ = NativeInterop.SetWindowText(_checkUpdatesButtonHandle, _localization["settings.check_updates"]);
+    }
+
+    private string GetLanguageToggleText()
+    {
+        return string.Equals(_selectedLanguageCode, AppLanguageCodes.Spanish, StringComparison.Ordinal)
+            ? _localization["settings.language.switch_to_english"]
+            : _localization["settings.language.switch_to_spanish"];
+    }
+
+    private void SetActiveTab(SettingsTab activeTab)
+    {
+        _activeTab = activeTab;
+        SetControlsVisible(_homeControls, activeTab == SettingsTab.Home);
+        SetControlsVisible(_configurationControls, activeTab == SettingsTab.Configuration);
+        SetControlsVisible(_updatesControls, activeTab == SettingsTab.Updates);
+
+        _ = NativeInterop.EnableWindow(_homeTabButtonHandle, activeTab != SettingsTab.Home);
+        _ = NativeInterop.EnableWindow(_configurationTabButtonHandle, activeTab != SettingsTab.Configuration);
+        _ = NativeInterop.EnableWindow(_updatesTabButtonHandle, activeTab != SettingsTab.Updates);
+    }
+
+    private static void SetControlsVisible(IEnumerable<nint> controlHandles, bool isVisible)
+    {
+        foreach (nint handle in controlHandles)
+        {
+            _ = NativeInterop.ShowWindow(handle, isVisible ? NativeInterop.SW_SHOW : NativeInterop.SW_HIDE);
+        }
+    }
+
+    private void FocusActiveTab()
+    {
+        nint focusHandle = _activeTab switch
+        {
+            SettingsTab.Home => _latitudeEditHandle,
+            SettingsTab.Configuration => _languageButtonHandle,
+            SettingsTab.Updates => _checkUpdatesButtonHandle,
+            _ => _latitudeEditHandle
+        };
+
+        if (focusHandle != nint.Zero)
+        {
+            _ = NativeInterop.SetFocus(focusHandle);
+        }
+    }
+
+    private void ApplyThemePalette()
+    {
+        ThemeMode themeMode = _applicationLifecycleOrchestrator.GetCurrentThemeMode() ?? ThemeMode.Light;
+        int backgroundColorRef = themeMode == ThemeMode.Dark
+            ? ToColorRef(24, 24, 24)
+            : ToColorRef(255, 255, 255);
+        int foregroundColorRef = themeMode == ThemeMode.Dark
+            ? ToColorRef(244, 244, 244)
+            : ToColorRef(0, 0, 0);
+
+        if (_backgroundColorRef == backgroundColorRef
+            && _foregroundColorRef == foregroundColorRef
+            && _backgroundBrushHandle != nint.Zero)
+        {
+            NativeInterop.ApplyDwmAttributes(_windowHandle, themeMode == ThemeMode.Dark);
+            return;
+        }
+
+        if (_backgroundBrushHandle != nint.Zero)
+        {
+            _ = NativeInterop.DeleteObject(_backgroundBrushHandle);
+        }
+
+        _backgroundColorRef = backgroundColorRef;
+        _foregroundColorRef = foregroundColorRef;
+        _backgroundBrushHandle = NativeInterop.CreateSolidBrush(_backgroundColorRef);
+
+        NativeInterop.ApplyDwmAttributes(_windowHandle, themeMode == ThemeMode.Dark);
+        _ = NativeInterop.InvalidateRect(_windowHandle, nint.Zero, erase: true);
+
+        foreach (nint controlHandle in _allControls)
+        {
+            _ = NativeInterop.InvalidateRect(controlHandle, nint.Zero, erase: true);
+        }
+    }
+
+    private nint HandleEraseBackground(nint wParam)
+    {
+        if (_backgroundBrushHandle == nint.Zero
+            || !NativeInterop.GetClientRect(_windowHandle, out NativeInterop.NativeRect rect))
+        {
+            return NativeInterop.DefWindowProc(_windowHandle, NativeInterop.WM_ERASEBKGND, wParam, nint.Zero);
+        }
+
+        _ = NativeInterop.FillRect(wParam, ref rect, _backgroundBrushHandle);
+        return 1;
+    }
+
+    private nint HandleControlColor(nint wParam)
+    {
+        if (_backgroundBrushHandle == nint.Zero)
+        {
+            return nint.Zero;
+        }
+
+        _ = NativeInterop.SetTextColor(wParam, _foregroundColorRef);
+        _ = NativeInterop.SetBkColor(wParam, _backgroundColorRef);
+        return _backgroundBrushHandle;
+    }
+
+    private void ToggleLanguage()
+    {
+        _selectedLanguageCode = string.Equals(_selectedLanguageCode, AppLanguageCodes.Spanish, StringComparison.Ordinal)
+            ? AppLanguageCodes.English
+            : AppLanguageCodes.Spanish;
+        _localization.UpdateLanguage(_selectedLanguageCode);
+        ApplyLocalizedText();
+        RefreshStatus();
     }
 
     private void HandleCommand(int controlId)
     {
         switch (controlId)
         {
+            case HomeTabId:
+                SetActiveTab(SettingsTab.Home);
+                FocusActiveTab();
+                break;
+
+            case ConfigurationTabId:
+                SetActiveTab(SettingsTab.Configuration);
+                FocusActiveTab();
+                break;
+
+            case UpdatesTabId:
+                SetActiveTab(SettingsTab.Updates);
+                FocusActiveTab();
+                break;
+
+            case LanguageToggleId:
+                ToggleLanguage();
+                break;
+
+            case UseWindowsLocationId:
+                RefreshStatus();
+                break;
+
             case DetectLocationId:
                 StartDetectLocation();
+                break;
+
+            case CheckUpdatesId:
+                StartCheckForUpdates();
                 break;
 
             case ApplyNowId:
@@ -418,7 +667,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             return;
         }
 
-        if (!TryBeginOperation("Applying theme..."))
+        if (!TryBeginOperation(_localization["settings.operation.applying_theme"]))
         {
             return;
         }
@@ -436,7 +685,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             EnqueueUiAction(() =>
             {
                 RefreshFromModel();
-                ShowMessage("Theme applied.", NativeInterop.MB_ICONINFORMATION);
+                ShowMessage(_localization["settings.message.theme_applied"], NativeInterop.MB_ICONINFORMATION);
             });
         }
         catch (OperationCanceledException)
@@ -461,12 +710,57 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             return;
         }
 
-        if (!TryBeginOperation("Detecting location..."))
+        if (!TryBeginOperation(_localization["settings.operation.detecting_location"]))
         {
             return;
         }
 
         _ = DetectLocationAsync(locationPrecisionResult.Value);
+    }
+
+    private void StartCheckForUpdates()
+    {
+        if (!TryBeginOperation(_localization["settings.operation.checking_updates"]))
+        {
+            return;
+        }
+
+        _ = CheckForUpdatesAsync();
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            bool updatePrepared = await _updateCoordinator
+                .PrepareAndLaunchUpdateAsync(_applicationLifecycleOrchestrator.Config)
+                .ConfigureAwait(false);
+
+            EnqueueUiAction(() =>
+            {
+                RefreshStatus();
+
+                if (!updatePrepared)
+                {
+                    ShowMessage(_localization["settings.message.no_updates"], NativeInterop.MB_ICONINFORMATION);
+                    return;
+                }
+
+                ShowMessage(_localization["settings.message.update_prepared"], NativeInterop.MB_ICONINFORMATION);
+                UpdatePrepared?.Invoke();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            EnqueueUiAction(() => ShowMessage(exception.Message, NativeInterop.MB_ICONERROR));
+        }
+        finally
+        {
+            EnqueueUiAction(CompleteOperation);
+        }
     }
 
     private async Task DetectLocationAsync(int locationPrecisionDecimals)
@@ -518,7 +812,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
     {
         if (Interlocked.CompareExchange(ref _operationInProgress, 1, 0) != 0)
         {
-            ShowMessage("Another operation is already running.", NativeInterop.MB_ICONWARNING);
+            ShowMessage(_localization["settings.operation.already_running"], NativeInterop.MB_ICONWARNING);
             return false;
         }
 
@@ -534,12 +828,17 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 
     private void SetBusy(bool isBusy, string? statusText)
     {
-        _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, !isBusy);
+        bool locationAvailable =
+            _applicationLifecycleOrchestrator.WindowsLocationAccessState == SystemLocationAccessState.Allowed;
+
+        _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, !isBusy && locationAvailable);
+        _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, !isBusy && locationAvailable);
+        _ = NativeInterop.EnableWindow(_checkUpdatesButtonHandle, !isBusy);
         _ = NativeInterop.EnableWindow(_applyNowButtonHandle, !isBusy);
 
         if (isBusy && !string.IsNullOrWhiteSpace(statusText))
         {
-            _ = NativeInterop.SetWindowText(_runtimeStatusHandle, statusText);
+            _ = NativeInterop.SetWindowText(_updateStatusHandle, statusText);
             return;
         }
 
@@ -584,11 +883,11 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
     private void LoadConfiguration()
     {
         AppConfig configuration = _applicationLifecycleOrchestrator.Config;
-        bool showStoredCoordinates = configuration.IsConfigured && !configuration.UseWindowsLocation;
+        bool hasStoredCoordinates = configuration.IsConfigured;
 
         _ = NativeInterop.SetWindowText(
             _latitudeEditHandle,
-            showStoredCoordinates
+            hasStoredCoordinates
                 ? CoordinatePrecisionPolicy.Format(
                     configuration.Latitude,
                     configuration.LocationPrecisionDecimals)
@@ -596,7 +895,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 
         _ = NativeInterop.SetWindowText(
             _longitudeEditHandle,
-            showStoredCoordinates
+            hasStoredCoordinates
                 ? CoordinatePrecisionPolicy.Format(
                     configuration.Longitude,
                     configuration.LocationPrecisionDecimals)
@@ -605,10 +904,23 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         _ = NativeInterop.SetWindowText(
             _precisionEditHandle,
             configuration.LocationPrecisionDecimals.ToString(CultureInfo.InvariantCulture));
-        NativeInterop.SetChecked(_useWindowsLocationHandle, configuration.UseWindowsLocation);
+
+        _selectedLanguageCode = AppLanguageCodes.Normalize(configuration.LanguageCode);
+        _localization.UpdateLanguage(_selectedLanguageCode);
+        ApplyLocalizedText();
+
+        bool isWindowsLocationAvailable =
+            _applicationLifecycleOrchestrator.WindowsLocationAccessState == SystemLocationAccessState.Allowed;
+        NativeInterop.SetChecked(
+            _useWindowsLocationHandle,
+            configuration.UseWindowsLocation && isWindowsLocationAvailable);
         NativeInterop.SetChecked(_startWithWindowsHandle, configuration.StartWithWindows);
         NativeInterop.SetChecked(_startMinimizedHandle, configuration.StartMinimized);
         NativeInterop.SetChecked(_highPriorityHandle, configuration.UseHighPriority);
+        NativeInterop.SetChecked(_extraMinuteAtSunsetHandle, configuration.AddExtraMinuteAtSunset);
+        NativeInterop.SetChecked(_automaticUpdatesHandle, configuration.AutomaticUpdatesEnabled);
+        _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, isWindowsLocationAvailable);
+        _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, isWindowsLocationAvailable);
     }
 
     private Result<AppConfig> ReadConfigurationFromForm()
@@ -669,21 +981,27 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 
     private static Result<GeoCoordinates> ParseCoordinates(string latitudeText, string longitudeText)
     {
-        return !double.TryParse(
+        if (!double.TryParse(
                 latitudeText,
                 NumberStyles.Float | NumberStyles.AllowLeadingSign,
                 CultureInfo.InvariantCulture,
-                out double latitude)
-            ? Result<GeoCoordinates>.Failure(
-                Error.Validation("InvalidLatitude", "Provide a valid decimal latitude."))
-            : !double.TryParse(
+                out double latitude))
+        {
+            return Result<GeoCoordinates>.Failure(
+                Error.Validation("InvalidLatitude", "Provide a valid decimal latitude."));
+        }
+
+        if (!double.TryParse(
                 longitudeText,
                 NumberStyles.Float | NumberStyles.AllowLeadingSign,
                 CultureInfo.InvariantCulture,
-                out double longitude)
-            ? Result<GeoCoordinates>.Failure(
-                Error.Validation("InvalidLongitude", "Provide a valid decimal longitude."))
-            : GeoCoordinates.Create(latitude, longitude);
+                out double longitude))
+        {
+            return Result<GeoCoordinates>.Failure(
+                Error.Validation("InvalidLongitude", "Provide a valid decimal longitude."));
+        }
+
+        return GeoCoordinates.Create(latitude, longitude);
     }
 
     private Result<int> ParseLocationPrecisionFromForm()
@@ -694,22 +1012,28 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 
     private static Result<int> ParseLocationPrecision(string locationPrecisionText)
     {
-        return !int.TryParse(
+        if (!int.TryParse(
                 locationPrecisionText,
                 NumberStyles.Integer,
                 CultureInfo.InvariantCulture,
-                out int locationPrecisionDecimals)
-            ? Result<int>.Failure(
+                out int locationPrecisionDecimals))
+        {
+            return Result<int>.Failure(
                 Error.Validation(
                     "InvalidLocationPrecision",
-                    $"Provide a whole-number precision between {CoordinatePrecisionPolicy.MinStoredDecimals} and {CoordinatePrecisionPolicy.MaxStoredDecimals}."))
-            : locationPrecisionDecimals is < CoordinatePrecisionPolicy.MinStoredDecimals
-            or > CoordinatePrecisionPolicy.MaxStoredDecimals
-            ? Result<int>.Failure(
+                    $"Provide a whole-number precision between {CoordinatePrecisionPolicy.MinStoredDecimals} and {CoordinatePrecisionPolicy.MaxStoredDecimals}."));
+        }
+
+        if (locationPrecisionDecimals is < CoordinatePrecisionPolicy.MinStoredDecimals
+            or > CoordinatePrecisionPolicy.MaxStoredDecimals)
+        {
+            return Result<int>.Failure(
                 Error.Validation(
                     "InvalidLocationPrecision",
-                    $"Provide a whole-number precision between {CoordinatePrecisionPolicy.MinStoredDecimals} and {CoordinatePrecisionPolicy.MaxStoredDecimals}."))
-            : Result<int>.Success(locationPrecisionDecimals);
+                    $"Provide a whole-number precision between {CoordinatePrecisionPolicy.MinStoredDecimals} and {CoordinatePrecisionPolicy.MaxStoredDecimals}."));
+        }
+
+        return Result<int>.Success(locationPrecisionDecimals);
     }
 
     private AppConfig BuildConfiguration(
@@ -730,12 +1054,28 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
             StartWithWindows = NativeInterop.GetChecked(_startWithWindowsHandle),
             StartMinimized = NativeInterop.GetChecked(_startMinimizedHandle),
             UseHighPriority = NativeInterop.GetChecked(_highPriorityHandle),
+            AddExtraMinuteAtSunset = NativeInterop.GetChecked(_extraMinuteAtSunsetHandle),
+            AutomaticUpdatesEnabled = NativeInterop.GetChecked(_automaticUpdatesHandle),
+            LanguageCode = _selectedLanguageCode,
             IsConfigured = true
         };
     }
 
     private void RefreshStatus()
     {
+        ApplyThemePalette();
+
+        bool locationAvailable =
+            _applicationLifecycleOrchestrator.WindowsLocationAccessState == SystemLocationAccessState.Allowed;
+        bool isBusy = Volatile.Read(ref _operationInProgress) != 0;
+        _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, locationAvailable && !isBusy);
+        _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, locationAvailable && !isBusy);
+        _ = NativeInterop.EnableWindow(_checkUpdatesButtonHandle, !isBusy);
+
+        _ = NativeInterop.SetWindowText(
+            _locationAccessValueHandle,
+            GetLocationAccessText(_applicationLifecycleOrchestrator.WindowsLocationAccessState));
+
         _ = NativeInterop.SetWindowText(
             _todayScheduleHandle,
             _applicationLifecycleOrchestrator.GetTodayScheduleText());
@@ -743,6 +1083,31 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         _ = NativeInterop.SetWindowText(
             _runtimeStatusHandle,
             _applicationLifecycleOrchestrator.GetStatusText());
+
+        UpdateStatusSnapshot updateSnapshot = _updateCoordinator.GetSnapshot();
+        _ = NativeInterop.SetWindowText(_currentVersionValueHandle, updateSnapshot.CurrentVersion.ToTag());
+        _ = NativeInterop.SetWindowText(
+            _latestVersionValueHandle,
+            updateSnapshot.LatestVersionTag ?? _localization["settings.update.not_checked"]);
+        _ = NativeInterop.SetWindowText(
+            _updateStatusHandle,
+            updateSnapshot.LatestVersionTag is null
+                ? _localization["settings.update.idle"]
+                : updateSnapshot.IsUpdateAvailable
+                ? _localization["settings.update.available"]
+                : _localization["settings.update.up_to_date"]);
+    }
+
+    private string GetLocationAccessText(SystemLocationAccessState accessState)
+    {
+        return accessState switch
+        {
+            SystemLocationAccessState.Allowed => _localization["settings.location_access.allowed"],
+            SystemLocationAccessState.Denied => _localization["settings.location_access.denied"],
+            SystemLocationAccessState.Unavailable => _localization["settings.location_access.unavailable"],
+            SystemLocationAccessState.Unknown => _localization["settings.location_access.unknown"],
+            _ => _localization["settings.location_access.unknown"]
+        };
     }
 
     private void ShowValidationError(Error error)
@@ -783,7 +1148,7 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         _ = NativeInterop.MessageBox(
             _windowHandle,
             message,
-            AppName,
+            DialogCaption,
             NativeInterop.MB_OK | iconFlags);
     }
 
@@ -800,6 +1165,12 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
 
     private void DisposeNativeResources()
     {
+        if (_backgroundBrushHandle != nint.Zero)
+        {
+            _ = NativeInterop.DeleteObject(_backgroundBrushHandle);
+            _backgroundBrushHandle = nint.Zero;
+        }
+
         if (_fontHandle != nint.Zero)
         {
             _ = NativeInterop.DeleteObject(_fontHandle);
@@ -821,9 +1192,16 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         _startWithWindowsHandle = nint.Zero;
         _startMinimizedHandle = nint.Zero;
         _highPriorityHandle = nint.Zero;
+        _extraMinuteAtSunsetHandle = nint.Zero;
+        _automaticUpdatesHandle = nint.Zero;
         _todayScheduleHandle = nint.Zero;
         _runtimeStatusHandle = nint.Zero;
         _applyNowButtonHandle = nint.Zero;
+    }
+
+    private static int ToColorRef(byte red, byte green, byte blue)
+    {
+        return red | (green << 8) | (blue << 16);
     }
 
     private void ThrowIfDisposed()

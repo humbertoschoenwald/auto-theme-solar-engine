@@ -1,19 +1,22 @@
 using Microsoft.Win32;
 using SolarEngine.Infrastructure.Logging;
+using SolarEngine.Shared;
+using SolarEngine.Shared.Core;
 
 namespace SolarEngine.Features.SystemHost.Infrastructure;
 
 internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublisher)
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "Auto Theme Solar Engine";
+    private const string ValueName = AppIdentity.RuntimeName;
+    private const string LegacyValueName = AppIdentity.LegacyRuntimeName;
 
     public void SetEnabled(bool enabled, string executablePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
 
         using RegistryKey key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true)
-            ?? throw new InvalidOperationException("Resolve the current-user Run key before mutating startup state.");
+            ?? throw new UnexpectedStateException("Resolve the current-user Run key before mutating startup state.");
 
         if (enabled)
         {
@@ -26,16 +29,33 @@ internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublishe
                 logPublisher.Write("Startup registration enabled.");
             }
 
+            if (key.GetValue(LegacyValueName) is not null)
+            {
+                key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
+                logPublisher.Write("Legacy startup registration removed.");
+            }
+
             return;
         }
 
-        if (key.GetValue(ValueName) is null)
+        bool removedValue = false;
+
+        if (key.GetValue(ValueName) is not null)
         {
-            return;
+            key.DeleteValue(ValueName, throwOnMissingValue: false);
+            removedValue = true;
         }
 
-        key.DeleteValue(ValueName, throwOnMissingValue: false);
-        logPublisher.Write("Startup registration disabled.");
+        if (key.GetValue(LegacyValueName) is not null)
+        {
+            key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
+            removedValue = true;
+        }
+
+        if (removedValue)
+        {
+            logPublisher.Write("Startup registration disabled.");
+        }
     }
 
     private static string Quote(string path)

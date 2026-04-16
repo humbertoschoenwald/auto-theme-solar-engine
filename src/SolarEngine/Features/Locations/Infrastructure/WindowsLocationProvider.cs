@@ -7,40 +7,15 @@ namespace SolarEngine.Features.Locations.Infrastructure;
 
 internal sealed class WindowsLocationProvider(StructuredLogPublisher logPublisher) : ISystemLocationProvider
 {
+    public async ValueTask<SystemLocationAccessState> GetAccessStateAsync(CancellationToken cancellationToken = default)
+    {
+        return await RequestAccessStateAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async ValueTask<Result<GeoCoordinates>> GetLocationAsync(CancellationToken cancellationToken = default)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
-        {
-            return Result<GeoCoordinates>.Failure(
-                new Error(
-                    "locations.provider.unsupported_os",
-                    "Preserve deterministic behavior when the operating system cannot expose native location APIs."));
-        }
-
-        GeolocationAccessStatus accessStatus;
-
-        try
-        {
-            accessStatus = await Geolocator
-                .RequestAccessAsync()
-                .AsTask(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            logPublisher.Write($"Windows location access request failed: {exception.Message}");
-
-            return Result<GeoCoordinates>.Failure(
-                new Error(
-                    "locations.provider.access_request_failed",
-                    "Preserve explicit user consent boundaries when requesting native location access."));
-        }
-
-        if (accessStatus != GeolocationAccessStatus.Allowed)
+        SystemLocationAccessState accessState = await RequestAccessStateAsync(cancellationToken).ConfigureAwait(false);
+        if (accessState != SystemLocationAccessState.Allowed)
         {
             return Result<GeoCoordinates>.Failure(
                 new Error(
@@ -82,6 +57,35 @@ internal sealed class WindowsLocationProvider(StructuredLogPublisher logPublishe
                 new Error(
                     "locations.provider.lookup_failed",
                     "Preserve tray responsiveness when the operating system cannot resolve coordinates."));
+        }
+    }
+
+    private async ValueTask<SystemLocationAccessState> RequestAccessStateAsync(CancellationToken cancellationToken)
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+        {
+            return SystemLocationAccessState.Unavailable;
+        }
+
+        try
+        {
+            GeolocationAccessStatus accessStatus = await Geolocator
+                .RequestAccessAsync()
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
+
+            return accessStatus == GeolocationAccessStatus.Allowed
+                ? SystemLocationAccessState.Allowed
+                : SystemLocationAccessState.Denied;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logPublisher.Write($"Windows location access request failed: {exception.Message}");
+            return SystemLocationAccessState.Unavailable;
         }
     }
 }
