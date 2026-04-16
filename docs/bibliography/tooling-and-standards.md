@@ -28,8 +28,8 @@ This bibliography lists the primary public references for the tools and standard
 ## JavaScript Tooling and Repository Operations
 
 - [Node.js](https://nodejs.org/)
+- [Corepack](https://nodejs.org/api/corepack.html)
 - [pnpm](https://pnpm.io/)
-- [pnpm/action-setup](https://github.com/pnpm/action-setup)
 - [ESLint](https://eslint.org/docs/latest/)
 - [Prettier](https://prettier.io/docs/en/)
 - [CSpell](https://cspell.org/)
