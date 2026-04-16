@@ -21,9 +21,12 @@ alwaysApply: false
 - RULE: Solar scheduling must stay local and deterministic. Do not replace it with external sunrise or weather APIs.
 - RULE: Keep the solar engine on the documented NOAA/Meeus approximation unless ADR explicitly upgrades the precision and complexity budget.
 - RULE: Persist coordinates only through the reduced-precision protected storage path.
+- RULE: Keep persisted coordinates visually hidden on the main settings surface unless the user is actively editing them.
 - RULE: Treat undocumented shell-refresh behavior as a compatibility exception. If you change it, update ADR first and keep graceful fallback behavior.
 - RULE: Keep the settings experience native, tabbed, theme-aware, and directly localizable rather than introducing a heavyweight desktop UI stack.
+- RULE: Use a native language selector for English and Spanish instead of a toggle-only control.
 - RULE: Automatic updates must preserve the installed delivery flavor and use a deferred replacement step after the current executable exits.
+- RULE: Update availability must refresh automatically at startup and on the documented bounded background cadence, even when automatic install is disabled.
 - RULE: Prefer `LocalAppData` as the default install mode for silent updates, but always respect the user-selected install directory when applying future updates.
 - RULE: Silent update replacement may fall back to app-owned LocalAppData staging when the install directory is not writable.
 - RULE: Silent update relaunch must preserve the effective privilege boundary of the running app.

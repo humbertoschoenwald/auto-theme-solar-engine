@@ -17,6 +17,14 @@ wrong delivery flavor by accident.
   `Updates` tab.
 - Update checks use GitHub Releases and look only for tags newer than the
   current CalVer tag.
+- Update availability checks run automatically at startup and then on a bounded
+  background cadence of four hours so the settings UI reflects current release
+  state without waiting for a manual action.
+- The automatic-install toggle controls the silent apply step, not whether the
+  app refreshes release availability metadata.
+- After a completed startup or background check, the `Updates` tab should show
+  the latest known matching version and current status instead of remaining in
+  a perpetual `not checked yet` state.
 - The preferred install mode is a per-user `LocalAppData` install because it
   allows silent updates without elevation. `Program Files` remains a supported
   opt-in path for users who explicitly want a machine-oriented install.
@@ -77,6 +85,8 @@ wrong delivery flavor by accident.
 - **Positive:** Users stay on the same runtime flavor they originally installed.
 - **Positive:** The updater has a documented fallback when the preferred staging
   directory is not writable.
+- **Positive:** Update status stays informative even when automatic install is
+  disabled.
 - **Negative:** Update orchestration now spans runtime code, install scripts,
   release assets, and startup registration.
 - **Risks:** Silent updates to protected install locations require a carefully

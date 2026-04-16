@@ -24,21 +24,29 @@ inside the desktop UI while keeping the runtime fully native.
 - `Save and apply` remains persistently visible regardless of the active tab.
 - The settings UI must support English and Spanish through embedded JSON
   resources and an explicit in-app language switcher.
-- The language switcher is a direct runtime control in the settings window
-  rather than an external configuration file edit.
+- The language switcher is a native list selector in the settings window
+  rather than an external configuration file edit or a toggle-only shortcut.
 - Runtime status text should describe state, not repeat the long product name.
 - The settings window should mirror the currently applied runtime theme mode.
   When the runtime mode is dark, the window uses a dark visual treatment. When
   the runtime mode is light, the window uses a light treatment.
 - The `Home` tab contains Windows location status, Windows location detection,
-  coordinates, precision, and today's schedule.
+  coordinate privacy controls, precision, and today's schedule.
+- Stored coordinates must not be rendered in cleartext on the main settings
+  surface. The native UI may accept manual coordinate input, but it should
+  keep persisted values visually hidden when the user is not actively editing
+  them.
 - The `Configuration` tab contains startup, tray, process-priority, language,
   sunset-offset, and runtime-status controls.
 - The `Updates` tab contains automatic-update state and manual update checks.
 - `Use Windows location` defaults to enabled only when native location access is
   actually available. If access is unavailable or denied, the option must be
   disabled rather than appearing active.
+- New operator-facing toggles default to enabled unless a system capability gate
+  prevents it. This includes startup, tray launch, high process priority,
+  sunset offset, and automatic update installation.
 - `Use high process priority` defaults to enabled.
+- `Add one extra minute at sunset` defaults to enabled.
 
 ## Alternatives Considered
 
@@ -54,6 +62,8 @@ inside the desktop UI while keeping the runtime fully native.
   better localization control.
 - **Positive:** User-facing branding can stay compact and legible in the
   desktop runtime without changing repository or release naming.
+- **Positive:** Coordinate privacy is preserved even when the settings window is
+  visible on screen.
 - **Negative:** Theme-aware Win32 drawing and tab state handling add more manual
   UI code.
 - **Risks:** A native layout refactor can regress control focus, visibility, and
