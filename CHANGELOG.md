@@ -14,6 +14,10 @@
 - **doctrine:** codify UI privacy and update cadence (2bbcfff)
 - **docs:** clarify install blocks auto-launch (644f9d2)
 
+### Build
+
+- **app:** prepare v26.04.03 release (57ed169)
+
 ### Chores
 
 - **tooling:** extend cspell dictionaries (0c2834f)
