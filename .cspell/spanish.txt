@@ -202,3 +202,12 @@ silenciosos
 toda
 ubicaciones
 usuario
+cada
+termina
+abriendo
+valores
+ocultos
+pantalla
+revisa
+falló
+reintentará
