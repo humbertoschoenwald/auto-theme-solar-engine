@@ -23,6 +23,8 @@ public sealed class JsonLocalizationCatalogTests
             JsonLocalizationCatalog catalog = new();
 
             Assert.Equal("Configuración", catalog["settings.header"]);
+            Assert.Equal("Español", catalog["settings.language.option.spanish"]);
+            Assert.Equal("La última revisión falló. Se reintentará automáticamente.", catalog["settings.update.check_failed"]);
             Assert.Equal("Salir", catalog["tray.exit"]);
         }
         finally
@@ -45,6 +47,8 @@ public sealed class JsonLocalizationCatalogTests
             JsonLocalizationCatalog catalog = new();
 
             Assert.Equal("Settings", catalog["settings.header"]);
+            Assert.Equal("English", catalog["settings.language.option.english"]);
+            Assert.Equal("The last update check failed. Retrying automatically.", catalog["settings.update.check_failed"]);
             Assert.Equal("Exit", catalog["tray.exit"]);
         }
         finally

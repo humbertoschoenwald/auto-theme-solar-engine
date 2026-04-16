@@ -29,13 +29,13 @@ internal sealed class SettingsWindow(
 
     private readonly record struct ControlBounds(int X, int Y, int Width, int Height);
 
-    private const string WindowTitle = AppIdentity.ProductName;
+    private const string WindowTitle = AppIdentity.RuntimeName;
     private const string DialogCaption = AppIdentity.RuntimeName;
     private const string WindowClassName = "SolarEngine.NativeSettingsWindow";
     private const int WindowWidth = 520;
     private const int WindowHeight = 680;
 
-    private const int LanguageToggleId = 100;
+    private const int LanguageSelectorId = 100;
     private const int HomeTabId = 101;
     private const int ConfigurationTabId = 102;
     private const int UpdatesTabId = 103;
@@ -79,7 +79,7 @@ internal sealed class SettingsWindow(
     private int _foregroundColorRef = ToColorRef(0, 0, 0);
     private nint _headerLabelHandle;
     private nint _languageLabelHandle;
-    private nint _languageButtonHandle;
+    private nint _languageSelectorHandle;
     private nint _homeTabButtonHandle;
     private nint _configurationTabButtonHandle;
     private nint _updatesTabButtonHandle;
@@ -111,8 +111,6 @@ internal sealed class SettingsWindow(
     private nint _updateStatusHandle;
     private nint _checkUpdatesButtonHandle;
     private nint _applyNowButtonHandle;
-
-    public event Action? UpdatePrepared;
 
     public void ShowFromTray()
     {
@@ -188,14 +186,15 @@ internal sealed class SettingsWindow(
                 DrainUiActions();
                 return 0;
 
-            case NativeInterop.WM_COMMAND when NativeInterop.HiWord(wParam) == NativeInterop.BN_CLICKED:
-                HandleCommand(NativeInterop.LoWord(wParam));
+            case NativeInterop.WM_COMMAND:
+                HandleCommand(NativeInterop.LoWord(wParam), NativeInterop.HiWord(wParam));
                 return 0;
 
             case NativeInterop.WM_ERASEBKGND:
                 return HandleEraseBackground(wParam);
 
             case NativeInterop.WM_CTLCOLOREDIT:
+            case NativeInterop.WM_CTLCOLORLISTBOX:
             case NativeInterop.WM_CTLCOLORBTN:
             case NativeInterop.WM_CTLCOLORSTATIC:
                 return HandleControlColor(wParam);
@@ -326,6 +325,8 @@ internal sealed class SettingsWindow(
         _latitudeEditHandle = CreateEdit(LatitudeEditId, 156, 176, 220, 24, 18, _homeControls);
         _longitudeLabelHandle = CreateLabel(string.Empty, 16, 214, 132, 20, _homeControls);
         _longitudeEditHandle = CreateEdit(LongitudeEditId, 156, 210, 220, 24, 18, _homeControls);
+        NativeInterop.SetPasswordCharacter(_latitudeEditHandle, '*');
+        NativeInterop.SetPasswordCharacter(_longitudeEditHandle, '*');
         _precisionLabelHandle = CreateLabel(string.Empty, 16, 248, 132, 20, _homeControls);
         _precisionEditHandle = CreateEdit(PrecisionEditId, 156, 244, 48, 24, 1, _homeControls);
         _privacyHintLabelHandle = CreateLabel(string.Empty, 216, 248, 288, 20, _homeControls);
@@ -333,7 +334,7 @@ internal sealed class SettingsWindow(
         _todayScheduleHandle = CreateLabel(string.Empty, 16, 320, 488, 44, _homeControls);
 
         _languageLabelHandle = CreateLabel(string.Empty, 16, 108, 132, 20, _configurationControls);
-        _languageButtonHandle = CreateButton(LanguageToggleId, string.Empty, 156, 104, 160, 28, false, _configurationControls);
+        _languageSelectorHandle = CreateDropDownList(LanguageSelectorId, 156, 104, 160, 120, _configurationControls);
         _startWithWindowsHandle = CreateCheckBox(StartWithWindowsId, string.Empty, 16, 152, 240, 20, _configurationControls);
         _startMinimizedHandle = CreateCheckBox(StartMinimizedId, string.Empty, 16, 182, 240, 20, _configurationControls);
         _highPriorityHandle = CreateCheckBox(HighPriorityId, string.Empty, 16, 212, 280, 20, _configurationControls);
@@ -401,6 +402,24 @@ internal sealed class SettingsWindow(
             "BUTTON",
             text,
             NativeInterop.BS_AUTOCHECKBOX | NativeInterop.WS_TABSTOP,
+            0,
+            new ControlBounds(x, y, width, height),
+            controlId,
+            group);
+    }
+
+    private nint CreateDropDownList(
+        int controlId,
+        int x,
+        int y,
+        int width,
+        int height,
+        List<nint>? group = null)
+    {
+        return CreateControl(
+            "COMBOBOX",
+            string.Empty,
+            NativeInterop.CBS_DROPDOWNLIST | NativeInterop.WS_TABSTOP | NativeInterop.WS_VSCROLL,
             0,
             new ControlBounds(x, y, width, height),
             controlId,
@@ -488,7 +507,7 @@ internal sealed class SettingsWindow(
         _ = NativeInterop.SetWindowText(_todayScheduleLabelHandle, _localization["settings.today_schedule"]);
 
         _ = NativeInterop.SetWindowText(_languageLabelHandle, _localization["settings.language"]);
-        _ = NativeInterop.SetWindowText(_languageButtonHandle, GetLanguageToggleText());
+        RefreshLanguageSelector();
         _ = NativeInterop.SetWindowText(_startWithWindowsHandle, _localization["settings.start_with_windows"]);
         _ = NativeInterop.SetWindowText(_startMinimizedHandle, _localization["settings.open_in_tray"]);
         _ = NativeInterop.SetWindowText(_highPriorityHandle, _localization["settings.use_high_priority"]);
@@ -502,11 +521,12 @@ internal sealed class SettingsWindow(
         _ = NativeInterop.SetWindowText(_checkUpdatesButtonHandle, _localization["settings.check_updates"]);
     }
 
-    private string GetLanguageToggleText()
+    private void RefreshLanguageSelector()
     {
-        return string.Equals(_selectedLanguageCode, AppLanguageCodes.Spanish, StringComparison.Ordinal)
-            ? _localization["settings.language.switch_to_english"]
-            : _localization["settings.language.switch_to_spanish"];
+        NativeInterop.ResetComboBoxContent(_languageSelectorHandle);
+        NativeInterop.AddComboBoxString(_languageSelectorHandle, _localization["settings.language.option.english"]);
+        NativeInterop.AddComboBoxString(_languageSelectorHandle, _localization["settings.language.option.spanish"]);
+        NativeInterop.SetComboSelection(_languageSelectorHandle, GetLanguageIndex(_selectedLanguageCode));
     }
 
     private void SetActiveTab(SettingsTab activeTab)
@@ -534,7 +554,7 @@ internal sealed class SettingsWindow(
         nint focusHandle = _activeTab switch
         {
             SettingsTab.Home => _latitudeEditHandle,
-            SettingsTab.Configuration => _languageButtonHandle,
+            SettingsTab.Configuration => _languageSelectorHandle,
             SettingsTab.Updates => _checkUpdatesButtonHandle,
             _ => _latitudeEditHandle
         };
@@ -605,18 +625,47 @@ internal sealed class SettingsWindow(
         return _backgroundBrushHandle;
     }
 
-    private void ToggleLanguage()
+    private void HandleLanguageSelectionChanged()
     {
-        _selectedLanguageCode = string.Equals(_selectedLanguageCode, AppLanguageCodes.Spanish, StringComparison.Ordinal)
-            ? AppLanguageCodes.English
-            : AppLanguageCodes.Spanish;
+        int selectedIndex = NativeInterop.GetComboSelection(_languageSelectorHandle);
+        if (selectedIndex == NativeInterop.CB_ERR)
+        {
+            return;
+        }
+
+        _selectedLanguageCode = GetLanguageCode(selectedIndex);
         _localization.UpdateLanguage(_selectedLanguageCode);
         ApplyLocalizedText();
         RefreshStatus();
     }
 
-    private void HandleCommand(int controlId)
+    private static int GetLanguageIndex(string languageCode)
     {
+        return string.Equals(languageCode, AppLanguageCodes.Spanish, StringComparison.Ordinal)
+            ? 1
+            : 0;
+    }
+
+    private static string GetLanguageCode(int selectedIndex)
+    {
+        return selectedIndex == 1
+            ? AppLanguageCodes.Spanish
+            : AppLanguageCodes.English;
+    }
+
+    private void HandleCommand(int controlId, int notificationCode)
+    {
+        if (controlId == LanguageSelectorId && notificationCode == NativeInterop.CBN_SELCHANGE)
+        {
+            HandleLanguageSelectionChanged();
+            return;
+        }
+
+        if (notificationCode != NativeInterop.BN_CLICKED)
+        {
+            return;
+        }
+
         switch (controlId)
         {
             case HomeTabId:
@@ -632,10 +681,6 @@ internal sealed class SettingsWindow(
             case UpdatesTabId:
                 SetActiveTab(SettingsTab.Updates);
                 FocusActiveTab();
-                break;
-
-            case LanguageToggleId:
-                ToggleLanguage();
                 break;
 
             case UseWindowsLocationId:
@@ -732,22 +777,21 @@ internal sealed class SettingsWindow(
     {
         try
         {
-            bool updatePrepared = await _updateCoordinator
-                .PrepareAndLaunchUpdateAsync(_applicationLifecycleOrchestrator.Config)
+            UpdateStatusSnapshot updateSnapshot = await _updateCoordinator
+                .CheckForUpdatesAsync()
                 .ConfigureAwait(false);
 
             EnqueueUiAction(() =>
             {
                 RefreshStatus();
 
-                if (!updatePrepared)
+                if (!updateSnapshot.IsUpdateAvailable)
                 {
                     ShowMessage(_localization["settings.message.no_updates"], NativeInterop.MB_ICONINFORMATION);
                     return;
                 }
 
-                ShowMessage(_localization["settings.message.update_prepared"], NativeInterop.MB_ICONINFORMATION);
-                UpdatePrepared?.Invoke();
+                ShowMessage(_localization["settings.message.update_available"], NativeInterop.MB_ICONINFORMATION);
             });
         }
         catch (OperationCanceledException)
@@ -755,7 +799,12 @@ internal sealed class SettingsWindow(
         }
         catch (Exception exception)
         {
-            EnqueueUiAction(() => ShowMessage(exception.Message, NativeInterop.MB_ICONERROR));
+            _updateCoordinator.RecordCheckFailure(exception.Message);
+            EnqueueUiAction(() =>
+            {
+                RefreshStatus();
+                ShowMessage(exception.Message, NativeInterop.MB_ICONERROR);
+            });
         }
         finally
         {
@@ -833,6 +882,7 @@ internal sealed class SettingsWindow(
 
         _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, !isBusy && locationAvailable);
         _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, !isBusy && locationAvailable);
+        _ = NativeInterop.EnableWindow(_languageSelectorHandle, !isBusy);
         _ = NativeInterop.EnableWindow(_checkUpdatesButtonHandle, !isBusy);
         _ = NativeInterop.EnableWindow(_applyNowButtonHandle, !isBusy);
 
@@ -1088,14 +1138,33 @@ internal sealed class SettingsWindow(
         _ = NativeInterop.SetWindowText(_currentVersionValueHandle, updateSnapshot.CurrentVersion.ToTag());
         _ = NativeInterop.SetWindowText(
             _latestVersionValueHandle,
-            updateSnapshot.LatestVersionTag ?? _localization["settings.update.not_checked"]);
-        _ = NativeInterop.SetWindowText(
-            _updateStatusHandle,
-            updateSnapshot.LatestVersionTag is null
-                ? _localization["settings.update.idle"]
-                : updateSnapshot.IsUpdateAvailable
-                ? _localization["settings.update.available"]
-                : _localization["settings.update.up_to_date"]);
+            updateSnapshot.LastCheckedAtUtc is null
+                ? _localization["settings.update.not_checked"]
+                : updateSnapshot.LatestVersionTag ?? updateSnapshot.CurrentVersion.ToTag());
+
+        if (!isBusy)
+        {
+            _ = NativeInterop.SetWindowText(
+                _updateStatusHandle,
+                GetUpdateStatusText(updateSnapshot));
+        }
+    }
+
+    private string GetUpdateStatusText(UpdateStatusSnapshot updateSnapshot)
+    {
+        if (!string.IsNullOrWhiteSpace(updateSnapshot.LastCheckErrorMessage))
+        {
+            return _localization["settings.update.check_failed"];
+        }
+
+        if (updateSnapshot.LastCheckedAtUtc is null)
+        {
+            return _localization["settings.update.idle"];
+        }
+
+        return updateSnapshot.IsUpdateAvailable
+            ? _localization["settings.update.available"]
+            : _localization["settings.update.up_to_date"];
     }
 
     private string GetLocationAccessText(SystemLocationAccessState accessState)
@@ -1184,6 +1253,7 @@ internal sealed class SettingsWindow(
 
         _windowIconHandle = nint.Zero;
         _ownsWindowIconHandle = false;
+        _languageSelectorHandle = nint.Zero;
         _latitudeEditHandle = nint.Zero;
         _longitudeEditHandle = nint.Zero;
         _precisionEditHandle = nint.Zero;

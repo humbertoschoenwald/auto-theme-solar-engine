@@ -17,6 +17,7 @@ internal static class NativeInterop
     internal const int WS_CLIPCHILDREN = 0x02000000;
     internal const int WS_BORDER = 0x00800000;
     internal const int WS_TABSTOP = 0x00010000;
+    internal const int WS_VSCROLL = 0x00200000;
     internal const int WS_OVERLAPPEDWINDOW =
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
     internal const int WS_EX_CLIENTEDGE = 0x00000200;
@@ -24,6 +25,7 @@ internal static class NativeInterop
     internal const int ES_AUTOHSCROLL = 0x0080;
     internal const int BS_DEFPUSHBUTTON = 0x0001;
     internal const int BS_AUTOCHECKBOX = 0x0003;
+    internal const int CBS_DROPDOWNLIST = 0x0003;
     internal const int SS_LEFT = 0x0000;
 
     internal const int SW_HIDE = 0;
@@ -40,6 +42,7 @@ internal static class NativeInterop
     internal const uint WM_SETFONT = 0x0030;
     internal const uint WM_SETICON = 0x0080;
     internal const uint WM_CTLCOLOREDIT = 0x0133;
+    internal const uint WM_CTLCOLORLISTBOX = 0x0134;
     internal const uint WM_CTLCOLORBTN = 0x0135;
     internal const uint WM_CTLCOLORSTATIC = 0x0138;
     internal const uint WM_LBUTTONUP = 0x0202;
@@ -55,10 +58,17 @@ internal static class NativeInterop
     internal const uint BM_SETCHECK = 0x00F1;
     internal const uint EM_SETSEL = 0x00B1;
     internal const uint EM_SETLIMITTEXT = 0x00C5;
+    internal const uint EM_SETPASSWORDCHAR = 0x00CC;
+    internal const uint CB_ADDSTRING = 0x0143;
+    internal const uint CB_GETCURSEL = 0x0147;
+    internal const uint CB_RESETCONTENT = 0x014B;
+    internal const uint CB_SETCURSEL = 0x014E;
 
     internal const int BST_UNCHECKED = 0;
     internal const int BST_CHECKED = 1;
     internal const int BN_CLICKED = 0;
+    internal const int CBN_SELCHANGE = 1;
+    internal const int CB_ERR = -1;
 
     internal const int ICON_SMALL = 0;
     internal const int ICON_BIG = 1;
@@ -238,6 +248,9 @@ internal static class NativeInterop
     internal static extern nint SendMessage(nint hWnd, uint msg, nint wParam, nint lParam);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern nint SendMessage(nint hWnd, uint msg, nint wParam, string lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool SetWindowText(nint hWnd, string text);
 
@@ -411,6 +424,32 @@ internal static class NativeInterop
         char[] buffer = new char[length + 1];
         int copied = GetWindowText(hWnd, buffer, buffer.Length);
         return copied <= 0 ? string.Empty : new string(buffer, 0, copied);
+    }
+
+    internal static void SetPasswordCharacter(nint hWnd, char passwordCharacter)
+    {
+        _ = SendMessage(hWnd, EM_SETPASSWORDCHAR, passwordCharacter, nint.Zero);
+        _ = InvalidateRect(hWnd, nint.Zero, erase: true);
+    }
+
+    internal static void ResetComboBoxContent(nint hWnd)
+    {
+        _ = SendMessage(hWnd, CB_RESETCONTENT, nint.Zero, nint.Zero);
+    }
+
+    internal static void AddComboBoxString(nint hWnd, string text)
+    {
+        _ = SendMessage(hWnd, CB_ADDSTRING, nint.Zero, text);
+    }
+
+    internal static void SetComboSelection(nint hWnd, int index)
+    {
+        _ = SendMessage(hWnd, CB_SETCURSEL, index, nint.Zero);
+    }
+
+    internal static int GetComboSelection(nint hWnd)
+    {
+        return unchecked((int)SendMessage(hWnd, CB_GETCURSEL, nint.Zero, nint.Zero));
     }
 
     internal static nint LoadAppIcon(out bool ownsHandle)

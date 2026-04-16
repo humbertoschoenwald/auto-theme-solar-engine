@@ -39,7 +39,11 @@ public sealed class ConfigurationRepositoryTests
             Assert.Equal(19.433d, configuration.Latitude);
             Assert.Equal(-99.133d, configuration.Longitude);
             Assert.Equal(3, configuration.LocationPrecisionDecimals);
+            Assert.True(configuration.StartWithWindows);
+            Assert.True(configuration.StartMinimized);
+            Assert.True(configuration.UseHighPriority);
             Assert.True(configuration.AddExtraMinuteAtSunset);
+            Assert.True(configuration.AutomaticUpdatesEnabled);
             Assert.DoesNotContain("\"Latitude\"", persistedJson, StringComparison.Ordinal);
             Assert.DoesNotContain("\"Longitude\"", persistedJson, StringComparison.Ordinal);
         }
