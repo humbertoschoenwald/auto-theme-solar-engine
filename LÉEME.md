@@ -24,7 +24,8 @@ La aplicación se ejecuta en el área de notificación, calcula el horario solar
 
 La aplicación soporta dos ubicaciones de instalación y deja el ejecutable
 descargado dentro de esa carpeta. Elige el flavor que quieras y ejecuta el
-bloque correspondiente.
+bloque correspondiente. Cada bloque termina abriendo automáticamente el
+ejecutable descargado.
 
 ### LocalAppData (Recomendado)
 
@@ -85,7 +86,7 @@ acceso a la ubicación de Windows.
 
 ## Cambios del repositorio
 
-- Objetivo actualizado a .NET 11 preview y C# 15.
+- Objetivo actualizado a .NET 11 preview 3 y C# 15 (preview).
 - CI estricto en GitHub Actions con commitlint, cspell, compilación, analizadores, escaneo de vulnerabilidades y pruebas.
 - La ventana de configuración sigue la preferencia Light/Dark de Windows.
 - La interfaz soporta español e inglés mediante recursos JSON.

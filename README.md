@@ -24,7 +24,7 @@ The app runs in the notification area, calculates the solar schedule for your ex
 
 The app supports two install locations and keeps the downloaded release asset in
 that folder. Pick the release flavor you want and run the matching four
-commands.
+commands. Each block ends by launching the downloaded executable automatically.
 
 ### LocalAppData (Recommended)
 
@@ -84,7 +84,7 @@ access.
 
 ## Highlights in this repository
 
-- Targets .NET 11 preview and C# 15.
+- Targets .NET 11 preview 3 and C# 15 (preview).
 - Uses strict CI on GitHub Actions with commitlint, cspell, build, analyzers, vulnerability scanning, and tests.
 - Follows Windows app theme preference for the native settings window.
 - Ships English and Spanish UI text from JSON localization resources.

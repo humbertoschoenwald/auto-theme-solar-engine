@@ -7,7 +7,8 @@ product overview stays short while the update model remains explicit.
 
 Use the per-user entrypoint when the app should live under the current user's
 profile and update without requiring elevation. This is the recommended install
-mode. Use a normal PowerShell session.
+mode. Use a normal PowerShell session. Each block launches the downloaded
+executable automatically.
 
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
