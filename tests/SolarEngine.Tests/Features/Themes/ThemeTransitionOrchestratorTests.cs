@@ -82,7 +82,7 @@ public sealed class ThemeTransitionOrchestratorTests
     {
         SolarSchedule baseSchedule = CreateStandardDaySchedule();
         _ = Assert.NotNull(baseSchedule.SunsetLocal);
-        DateTime momentInsideExtraMinute = baseSchedule.SunsetLocal.Value.AddSeconds(30);
+        DateTime momentInsideExtraMinute = AlignWithBaselineDate(baseSchedule.SunsetLocal.Value).AddSeconds(30);
 
         using TestContext context = new();
         using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator(momentInsideExtraMinute);
@@ -102,7 +102,7 @@ public sealed class ThemeTransitionOrchestratorTests
     {
         SolarSchedule baseSchedule = CreateStandardDaySchedule();
         _ = Assert.NotNull(baseSchedule.SunsetLocal);
-        DateTime momentAfterRawSunset = baseSchedule.SunsetLocal.Value.AddSeconds(30);
+        DateTime momentAfterRawSunset = AlignWithBaselineDate(baseSchedule.SunsetLocal.Value).AddSeconds(30);
 
         using TestContext context = new();
         using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator(momentAfterRawSunset);
@@ -138,6 +138,11 @@ public sealed class ThemeTransitionOrchestratorTests
 
         Assert.True(scheduleResult.IsSuccess, $"{scheduleResult.Error.Code}: {scheduleResult.Error.Description}");
         return scheduleResult.Value;
+    }
+
+    private static DateTime AlignWithBaselineDate(DateTime dateTime)
+    {
+        return BaselineEquinoxDate.ToDateTime(TimeOnly.FromDateTime(dateTime));
     }
 
     private sealed class TestContext : IDisposable
