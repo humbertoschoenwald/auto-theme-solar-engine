@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## v26.04.03 - 2026-04-16
+
 ### Fixes
 
 - **updates:** bootstrap direct program files installs (09259ce)
