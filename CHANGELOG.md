@@ -17,6 +17,7 @@
 - **ci:** install pnpm from the active node runtime (8368929)
 - **ci:** resolve pnpm from npm global prefix (6f4652f)
 - **tooling:** use cspell-cli in lint scripts (45a9e7c)
+- **themes:** make solar schedule timezone explicit (bee39aa)
 
 ### Refactoring
 
@@ -29,10 +30,12 @@
 - **adr:** establish adr-first doctrine (6542643)
 - **bibliography:** update pnpm bootstrap source (b3a33dd)
 - **doctrine:** codify adr-first repository rules (e1a96fb)
+- **updates:** prefer local appdata installs (7090b79)
 
 ### Tests
 
 - **tests:** make sunset offset checks timezone-stable (8fce025)
+- **updates:** cover silent GitHub updater flow (180c572)
 
 ### CI
 
@@ -41,6 +44,7 @@
 ### Build
 
 - **tooling:** enforce preview validation locally and in CI (790c52c)
+- **app:** set assembly version to 26.04.02 (595a360)
 
 ### Chores
 
