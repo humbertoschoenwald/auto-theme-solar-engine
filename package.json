@@ -6,7 +6,7 @@
     "node": "25.x"
   },
   "scripts": {
-    "lint": "pnpm run lint:eslint && pnpm run lint:prettier && pnpm run lint:spelling",
+    "lint": "eslint . && prettier . --check && cspell --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",
     "lint:eslint": "eslint .",
     "lint:prettier": "prettier . --check",
     "lint:prettier:fix": "prettier . --write",
