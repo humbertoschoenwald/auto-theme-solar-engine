@@ -17,9 +17,15 @@ wrong delivery flavor by accident.
   `Updates` tab.
 - Update checks use GitHub Releases and look only for tags newer than the
   current CalVer tag.
+- The preferred install mode is a per-user `LocalAppData` install because it
+  allows silent updates without elevation. `Program Files` remains a supported
+  opt-in path for users who explicitly want a machine-oriented install.
 - The updater must match the installed delivery flavor:
   - self-contained installs update only from self-contained assets,
   - framework-dependent installs update only from framework-dependent assets.
+- The authoritative install target is the path the user chose. The updater must
+  keep replacing the executable recorded by the current install metadata and may
+  not silently migrate the app to a different directory.
 - Versioned release asset names remain intact. The updater downloads the newer
   executable by its release asset name instead of overwriting the currently
   running executable in place.
@@ -44,8 +50,8 @@ wrong delivery flavor by accident.
 - The install directory must contain enough metadata for the updater to resolve
   the current install flavor and executable target deterministically.
 - The repository ships PowerShell-based install entrypoints for both:
-  - a per-user install under LocalAppData,
-  - a machine-oriented install under Program Files.
+  - a recommended per-user install under LocalAppData,
+  - an optional machine-oriented install under Program Files.
 - Silent updates are a first-class requirement. If an install location requires
   extra privileges, that requirement must be handled by the install model rather
   than surfaced as ad hoc runtime prompts.

@@ -23,10 +23,15 @@ The app runs in the notification area, calculates the solar schedule for your ex
 ## Installation
 
 1. Download one of the Windows x64 assets from the [latest release](https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/latest):
-   - `auto-theme-solar-engine-win-x64-self-contained-v26.04.01.exe` includes the required .NET runtime.
-   - `auto-theme-solar-engine-win-x64-framework-dependent-v26.04.01.exe` requires the .NET Desktop Runtime or SDK to be installed.
-2. Run it. No installer is required.
-3. Enter your coordinates manually or allow Windows location access.
+   - `auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe` includes the required .NET runtime.
+   - `auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe` requires the .NET Desktop Runtime or SDK to be installed.
+2. Choose an install path:
+   - `LocalAppData` is the recommended per-user path and updates silently without elevation.
+   - `Program Files` is available for machine-oriented installs from an elevated PowerShell session.
+3. Use the matching PowerShell entrypoint from [docs/install/README.md](docs/install/README.md):
+   - `pwsh -NoLogo -NoProfile -File ./scripts/install-local-appdata.ps1 -SourceExecutablePath .\\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe -LaunchAfterInstall`
+   - `pwsh -NoLogo -NoProfile -File ./scripts/install-program-files.ps1 -SourceExecutablePath .\\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe -LaunchAfterInstall`
+4. Enter your coordinates manually or allow Windows location access.
 
 ## Privacy
 

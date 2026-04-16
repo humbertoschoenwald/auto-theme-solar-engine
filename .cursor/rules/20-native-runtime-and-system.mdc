@@ -24,5 +24,6 @@ alwaysApply: false
 - RULE: Treat undocumented shell-refresh behavior as a compatibility exception. If you change it, update ADR first and keep graceful fallback behavior.
 - RULE: Keep the settings experience native, tabbed, theme-aware, and directly localizable rather than introducing a heavyweight desktop UI stack.
 - RULE: Automatic updates must preserve the installed delivery flavor and use a deferred replacement step after the current executable exits.
+- RULE: Prefer `LocalAppData` as the default install mode for silent updates, but always respect the user-selected install directory when applying future updates.
 - RULE: Silent update replacement may fall back to app-owned LocalAppData staging when the install directory is not writable.
 - RULE: Silent update relaunch must preserve the effective privilege boundary of the running app.

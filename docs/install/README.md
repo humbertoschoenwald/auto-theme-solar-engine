@@ -7,7 +7,8 @@ automate.
 ## LocalAppData Install
 
 Use the per-user entrypoint when the app should live under the current user's
-profile and update without requiring an elevated helper task.
+profile and update without requiring an elevated helper task. This is the
+recommended install mode.
 
 ```powershell
 pwsh -NoLogo -NoProfile -File ./scripts/install-local-appdata.ps1 `
@@ -36,4 +37,9 @@ pwsh -NoLogo -NoProfile -File ./scripts/install-program-files.ps1 `
   executable name.
 - The installed executable is normalized to `AutoThemeSolarEngine.exe`.
 - The updater uses `installation.json` in the install directory to keep future
-  silent updates on the same release flavor and install mode.
+  silent updates on the same release flavor, install mode, and installed
+  executable path chosen by the user.
+- When the install directory is writable, the updater stages the newer
+  executable beside the current install. If it is not writable, the updater may
+  stage under the app-owned LocalAppData update area before the helper performs
+  the final move.
