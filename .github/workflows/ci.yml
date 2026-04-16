@@ -29,10 +29,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-dotnet-env
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-dotnet-env
 
       - name: Commitlint
         shell: bash
