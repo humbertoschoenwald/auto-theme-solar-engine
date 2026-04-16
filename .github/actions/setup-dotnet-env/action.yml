@@ -21,30 +21,31 @@ runs:
       run: |
         $nodeCommand = Get-Command node -ErrorAction Stop
         $nodeDirectory = Split-Path $nodeCommand.Source -Parent
-        $corepackCommand = Join-Path $nodeDirectory "corepack.cmd"
+        $npmCommand = Join-Path $nodeDirectory "npm.cmd"
 
-        if (-not (Test-Path $corepackCommand)) {
-          $corepackCommand = Join-Path $nodeDirectory "corepack"
+        if (-not (Test-Path $npmCommand)) {
+          $npmCommand = Join-Path $nodeDirectory "npm"
         }
 
-        if (-not (Test-Path $corepackCommand)) {
-          throw "corepack was not found next to node in '$nodeDirectory'."
+        if (-not (Test-Path $npmCommand)) {
+          throw "npm was not found next to node in '$nodeDirectory'."
         }
 
-        & $corepackCommand enable
-        & $corepackCommand prepare pnpm@10.33.0 --activate
+        & $npmCommand install --global pnpm@10.33.0
 
-        $pnpmCommand = Join-Path $nodeDirectory "pnpm.cmd"
+        $pnpmBinDirectory = Join-Path $env:APPDATA "npm"
+        $pnpmCommand = Join-Path $pnpmBinDirectory "pnpm.cmd"
 
         if (-not (Test-Path $pnpmCommand)) {
-          $pnpmCommand = Join-Path $nodeDirectory "pnpm"
+          $pnpmCommand = Join-Path $pnpmBinDirectory "pnpm"
         }
 
         if (-not (Test-Path $pnpmCommand)) {
-          throw "pnpm was not found next to node in '$nodeDirectory' after corepack activation."
+          throw "pnpm was not found in '$pnpmBinDirectory' after npm bootstrap."
         }
 
         $nodeDirectory | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        $pnpmBinDirectory | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
         "PNPM_BIN=$pnpmCommand" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
         & $pnpmCommand --version
