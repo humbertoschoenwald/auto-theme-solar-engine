@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## v26.04.02 - 2026-04-16
+
 ### Features
 
 - **ui:** add localized native settings and silent updates (7715698)
