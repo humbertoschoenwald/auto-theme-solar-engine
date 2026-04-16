@@ -22,16 +22,59 @@ The app runs in the notification area, calculates the solar schedule for your ex
 
 ## Installation
 
-1. Download one of the Windows x64 assets from the [latest release](https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/latest):
-   - `auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe` includes the required .NET runtime.
-   - `auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe` requires the .NET Desktop Runtime or SDK to be installed.
-2. Choose an install path:
-   - `LocalAppData` is the recommended per-user path and updates silently without elevation.
-   - `Program Files` is available for machine-oriented installs from an elevated PowerShell session.
-3. Use the matching PowerShell entrypoint from [docs/install/README.md](docs/install/README.md):
-   - `pwsh -NoLogo -NoProfile -File ./scripts/install-local-appdata.ps1 -SourceExecutablePath .\\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe -LaunchAfterInstall`
-   - `pwsh -NoLogo -NoProfile -File ./scripts/install-program-files.ps1 -SourceExecutablePath .\\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe -LaunchAfterInstall`
-4. Enter your coordinates manually or allow Windows location access.
+The app supports two install locations and keeps the downloaded release asset in
+that folder. Pick the release flavor you want and run the matching four
+commands.
+
+### LocalAppData (Recommended)
+
+`LocalAppData` is the recommended per-user path and updates silently without
+elevation. Use a normal PowerShell session.
+
+Self-contained:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+```
+
+Framework-dependent:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+```
+
+### Program Files (PowerShell as Administrator)
+
+`Program Files` remains available for machine-oriented installs. Open
+PowerShell as Administrator, then run one of these blocks. On the first launch,
+the app bootstraps the elevated silent-update task for that install.
+
+Self-contained:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
+Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+```
+
+Framework-dependent:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
+Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+```
+
+After the app opens, enter your coordinates manually or allow Windows location
+access.
 
 ## Privacy
 

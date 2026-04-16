@@ -4,6 +4,7 @@
 # approved Spanish terms that are intentionally present in the repository.
 # Add only stable words that are expected to survive refactors and reviews.
 acceso
+abre
 activa
 adecuado
 actualizado
@@ -173,3 +174,31 @@ nueva
 revisada
 revisión
 versión
+administrador
+arranque
+bloque
+bloques
+carpeta
+correspondiente
+descargado
+dentro
+después
+elige
+elevación
+elevado
+estos
+instalaciones
+máquina
+orientadas
+programfiles
+quieras
+recomendada
+recomendado
+registra
+ruta
+sesión
+silencioso
+silenciosos
+toda
+ubicaciones
+usuario

@@ -20,6 +20,9 @@ wrong delivery flavor by accident.
 - The preferred install mode is a per-user `LocalAppData` install because it
   allows silent updates without elevation. `Program Files` remains a supported
   opt-in path for users who explicitly want a machine-oriented install.
+- Direct download-and-run installs are supported. On first launch, the app
+  records installation metadata from the current executable path instead of
+  forcing a renamed wrapper executable.
 - The updater must match the installed delivery flavor:
   - self-contained installs update only from self-contained assets,
   - framework-dependent installs update only from framework-dependent assets.
@@ -52,6 +55,9 @@ wrong delivery flavor by accident.
 - The repository ships PowerShell-based install entrypoints for both:
   - a recommended per-user install under LocalAppData,
   - an optional machine-oriented install under Program Files.
+- For direct `Program Files` installs, the first elevated launch must bootstrap
+  the updater's scheduled task so later silent replacements can keep the same
+  install directory without prompting the user again.
 - Silent updates are a first-class requirement. If an install location requires
   extra privileges, that requirement must be handled by the install model rather
   than surfaced as ad hoc runtime prompts.

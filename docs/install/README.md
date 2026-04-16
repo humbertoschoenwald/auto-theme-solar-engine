@@ -1,19 +1,28 @@
-# PowerShell Install Entry Points
+# PowerShell Install Commands
 
-The repository keeps installation guidance outside the root README so product
-overview stays short while the update model remains explicit and easy to
-automate.
+The repository keeps installation guidance outside the root README so the
+product overview stays short while the update model remains explicit.
 
 ## LocalAppData Install
 
 Use the per-user entrypoint when the app should live under the current user's
-profile and update without requiring an elevated helper task. This is the
-recommended install mode.
+profile and update without requiring elevation. This is the recommended install
+mode. Use a normal PowerShell session.
 
 ```powershell
-pwsh -NoLogo -NoProfile -File ./scripts/install-local-appdata.ps1 `
-  -SourceExecutablePath .\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe `
-  -LaunchAfterInstall
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+```
+
+Framework-dependent:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
 ```
 
 ## Program Files Install
@@ -21,21 +30,29 @@ pwsh -NoLogo -NoProfile -File ./scripts/install-local-appdata.ps1 `
 Use the machine-oriented entrypoint when the app should live under
 `C:\Program Files\Auto Theme — Solar Engine`.
 
-Run this from an elevated PowerShell session so the script can copy the
-executable into `Program Files` and register the elevated on-demand update
-task.
+Open PowerShell as Administrator and run one of these blocks. On the first
+launch, the app bootstraps the elevated silent-update task for that install.
 
 ```powershell
-pwsh -NoLogo -NoProfile -File ./scripts/install-program-files.ps1 `
-  -SourceExecutablePath .\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe `
-  -LaunchAfterInstall
+New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
+Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+```
+
+Framework-dependent:
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
+Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
 ```
 
 ## Notes
 
-- The install scripts preserve the release flavor recorded in the downloaded
-  executable name.
-- The installed executable is normalized to `AutoThemeSolarEngine.exe`.
+- The downloaded executable stays in the chosen install directory under its
+  release asset name.
 - The updater uses `installation.json` in the install directory to keep future
   silent updates on the same release flavor, install mode, and installed
   executable path chosen by the user.
