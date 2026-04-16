@@ -26,7 +26,7 @@ internal static class GetSolarScheduleQueryHandler
 
             return ValueTask.FromResult(Result<SolarSchedule>.Failure(error));
         }
-        catch (InvalidOperationException exception)
+        catch (UnexpectedStateException exception)
         {
             Error error = new(
                 "solar.schedule.calculation_failed",

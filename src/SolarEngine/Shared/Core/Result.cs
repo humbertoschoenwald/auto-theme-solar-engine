@@ -113,7 +113,7 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
 
     public T Value => IsSuccess
         ? _value!
-        : throw new InvalidOperationException("Access the value only when the result is successful.");
+        : throw new UnexpectedStateException("Access the value only when the result is successful.");
 
     public static Result<T> Success(T value)
     {

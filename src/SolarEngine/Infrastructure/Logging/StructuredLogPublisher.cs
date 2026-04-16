@@ -16,7 +16,7 @@ internal sealed class StructuredLogPublisher(string logPath)
         : throw new ArgumentException("Provide a non-empty log path.", nameof(logPath));
     private readonly string _directoryPath = !string.IsNullOrWhiteSpace(logPath)
         ? Path.GetDirectoryName(Path.GetFullPath(logPath))
-            ?? throw new InvalidOperationException("Resolve the log directory before writing telemetry.")
+            ?? throw new DirectoryNotFoundException("Resolve the log directory before writing telemetry.")
         : throw new ArgumentException("Provide a non-empty log path.", nameof(logPath));
 
     public void Write(string message)

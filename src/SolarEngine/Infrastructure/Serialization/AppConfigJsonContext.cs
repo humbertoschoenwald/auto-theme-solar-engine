@@ -1,9 +1,6 @@
 using System.Text.Json.Serialization;
-using SolarEngine.Features.SystemHost.Domain;
-
 namespace SolarEngine.Infrastructure.Serialization;
 
-[JsonSerializable(typeof(AppConfig))]
 [JsonSerializable(typeof(PersistedAppConfig))]
 [JsonSourceGenerationOptions(
     WriteIndented = true,
