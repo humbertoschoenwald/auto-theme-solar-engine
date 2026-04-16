@@ -16,6 +16,11 @@ namespace SolarEngine.Tests.Features.Themes;
 public sealed class ThemeTransitionOrchestratorTests
 {
     private static readonly DateOnly BaselineEquinoxDate = new(2026, 3, 29);
+    private static readonly TimeZoneInfo BaselineTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+        id: "TestMexicoCity",
+        baseUtcOffset: TimeSpan.FromHours(-6),
+        displayName: "Test Mexico City",
+        standardDisplayName: "Test Mexico City");
 
     /// <summary>
     /// Verifies standard daylight days render the schedule instead of throwing.
@@ -134,7 +139,8 @@ public sealed class ThemeTransitionOrchestratorTests
 
         Result<SolarSchedule> scheduleResult = SolarPositionEngine.Calculate(
             BaselineEquinoxDate,
-            coordinatesResult.Value);
+            coordinatesResult.Value,
+            BaselineTimeZone);
 
         Assert.True(scheduleResult.IsSuccess, $"{scheduleResult.Error.Code}: {scheduleResult.Error.Description}");
         return scheduleResult.Value;
@@ -167,7 +173,9 @@ public sealed class ThemeTransitionOrchestratorTests
                 new ApplyThemeCommandHandler(ThemeMutator),
                 ThemeMutator,
                 new AppLocalization(),
-                new FixedTimeProvider(localNow ?? new DateTime(2026, 3, 29, 12, 0, 0)));
+                new FixedTimeProvider(
+                    localNow ?? new DateTime(2026, 3, 29, 12, 0, 0),
+                    BaselineTimeZone));
         }
 
         public void Dispose()
@@ -195,13 +203,13 @@ public sealed class ThemeTransitionOrchestratorTests
         }
     }
 
-    private sealed class FixedTimeProvider(DateTime localNow) : TimeProvider
+    private sealed class FixedTimeProvider(DateTime localNow, TimeZoneInfo localTimeZone) : TimeProvider
     {
-        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Local;
+        public override TimeZoneInfo LocalTimeZone => localTimeZone;
 
         public override DateTimeOffset GetUtcNow()
         {
-            DateTime utcDateTime = TimeZoneInfo.ConvertTimeToUtc(localNow, TimeZoneInfo.Local);
+            DateTime utcDateTime = TimeZoneInfo.ConvertTimeToUtc(localNow, localTimeZone);
             return new DateTimeOffset(utcDateTime, TimeSpan.Zero);
         }
     }

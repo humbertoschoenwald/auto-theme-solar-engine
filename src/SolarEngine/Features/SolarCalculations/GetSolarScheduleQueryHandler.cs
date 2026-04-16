@@ -14,7 +14,7 @@ internal static class GetSolarScheduleQueryHandler
         try
         {
             Result<SolarSchedule> scheduleResult =
-                SolarPositionEngine.Calculate(query.Date, query.Coordinates);
+                SolarPositionEngine.Calculate(query.Date, query.Coordinates, query.TimeZone);
 
             return ValueTask.FromResult(scheduleResult);
         }

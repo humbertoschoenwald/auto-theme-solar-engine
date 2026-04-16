@@ -198,7 +198,7 @@ internal sealed class ThemeTransitionOrchestrator(
 
         DateOnly today = DateOnly.FromDateTime(timeProvider.GetLocalNow().DateTime);
         Result<SolarSchedule> scheduleResult = await GetSolarScheduleQueryHandler.HandleAsync(
-            new GetSolarScheduleQuery(today, coordinatesResult.Value),
+            new GetSolarScheduleQuery(today, coordinatesResult.Value, timeProvider.LocalTimeZone),
             cancellationToken).ConfigureAwait(false);
 
         if (scheduleResult.IsFailure)
