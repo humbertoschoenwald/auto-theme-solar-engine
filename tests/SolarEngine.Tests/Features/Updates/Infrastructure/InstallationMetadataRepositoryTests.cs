@@ -71,13 +71,13 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     public void BuildPersistedInstallationMetadata_PreservesCurrentExecutableName()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.BuildPersistedInstallationMetadata(
-            @"C:\Program Files\Auto Theme — Solar Engine\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe",
+            @"C:\Program Files\Auto Theme — Solar Engine\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe",
             ReleaseFlavor.SelfContained,
             InstallationMode.ProgramFiles,
             "Auto Theme Solar Engine Silent Update");
 
         Assert.Equal(
-            "auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe",
+            "auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe",
             metadata.InstalledExecutableName);
         Assert.Equal("self-contained", metadata.ReleaseFlavor);
         Assert.Equal("program-files", metadata.InstallationMode);

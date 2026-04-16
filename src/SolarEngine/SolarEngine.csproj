@@ -17,9 +17,9 @@
     <PackageProjectUrl>https://github.com/humbertoschoenwald/auto-theme-solar-engine</PackageProjectUrl>
     <ApplicationIcon>Assets\SolarEngine.ico</ApplicationIcon>
 
-    <Version>26.04.02</Version>
-    <AssemblyVersion>26.04.02</AssemblyVersion>
-    <FileVersion>26.04.02</FileVersion>
+    <Version>26.04.03</Version>
+    <AssemblyVersion>26.04.03</AssemblyVersion>
+    <FileVersion>26.04.03</FileVersion>
 
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>

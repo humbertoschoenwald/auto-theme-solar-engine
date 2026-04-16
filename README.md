@@ -36,8 +36,8 @@ Self-contained:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
 Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 ```
 
 Framework-dependent:
@@ -45,8 +45,8 @@ Framework-dependent:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
 Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
 ```
 
 ### Program Files (PowerShell as Administrator)
@@ -60,8 +60,8 @@ Self-contained:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
 Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.02.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 ```
 
 Framework-dependent:
@@ -69,8 +69,8 @@ Framework-dependent:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
 Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.02/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.02.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
 ```
 
 After the app opens, enter your coordinates manually or allow Windows location
