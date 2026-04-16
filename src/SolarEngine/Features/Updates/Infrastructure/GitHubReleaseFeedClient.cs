@@ -22,8 +22,16 @@ internal sealed class GitHubReleaseFeedClient
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
 
+        return SelectLatestMatchingRelease(document.RootElement, releaseFlavor, currentVersion);
+    }
+
+    internal static (CalVersion Version, string Tag, string AssetName, string AssetUrl)? SelectLatestMatchingRelease(
+        JsonElement releasesElement,
+        ReleaseFlavor releaseFlavor,
+        CalVersion currentVersion)
+    {
         (CalVersion Version, string Tag, string AssetName, string AssetUrl)? bestMatch = null;
-        foreach (JsonElement releaseElement in document.RootElement.EnumerateArray())
+        foreach (JsonElement releaseElement in releasesElement.EnumerateArray())
         {
             if (releaseElement.TryGetProperty("draft", out JsonElement draftElement) && draftElement.GetBoolean())
             {
