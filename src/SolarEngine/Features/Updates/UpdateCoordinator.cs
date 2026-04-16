@@ -5,6 +5,7 @@ using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.Updates.Domain;
 using SolarEngine.Features.Updates.Infrastructure;
 using SolarEngine.Infrastructure.Logging;
+using SolarEngine.Shared.Core;
 
 namespace SolarEngine.Features.Updates;
 
@@ -22,6 +23,23 @@ internal sealed class UpdateCoordinator(
         lock (_snapshotGate)
         {
             return _snapshot ?? BuildEmptySnapshot();
+        }
+    }
+
+    public void EnsureInstallationReady()
+    {
+        try
+        {
+            installationMetadataRepository.EnsureCurrentInstallationRegistered();
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            or UnauthorizedAccessException
+            or FileNotFoundException
+            or Win32Exception
+            or UnexpectedStateException)
+        {
+            logPublisher.Write($"Installation bootstrap skipped: {exception.Message}");
         }
     }
 

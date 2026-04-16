@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using SolarEngine.Features.SystemHost.Domain;
@@ -10,6 +12,7 @@ namespace SolarEngine.Features.Updates.Infrastructure;
 internal sealed class InstallationMetadataRepository(AppPaths appPaths)
 {
     private const string ManifestFileName = "installation.json";
+    private const string ElevatedUpdateTaskName = "Auto Theme Solar Engine Silent Update";
 
     public string HelperScriptPath =>
         Path.Combine(appPaths.DirectoryPath, $"Apply-{AppIdentity.RuntimeFileStem}-Update.ps1");
@@ -18,6 +21,47 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
         Path.Combine(appPaths.DirectoryPath, $"Launch-{AppIdentity.RuntimeFileStem}-After-Update.ps1");
 
     public string UpdateRequestPath => Path.Combine(appPaths.DirectoryPath, "update-request.json");
+
+    public void EnsureCurrentInstallationRegistered()
+    {
+        string processPath = Environment.ProcessPath
+            ?? throw new UnexpectedStateException("Resolve the current executable path before registering installation metadata.");
+        string installDirectory = Path.GetDirectoryName(processPath)
+            ?? throw new UnexpectedStateException("Resolve the current executable directory before registering installation metadata.");
+        string manifestPath = Path.Combine(installDirectory, ManifestFileName);
+
+        if (File.Exists(manifestPath))
+        {
+            return;
+        }
+
+        ReleaseFlavor releaseFlavor = InferReleaseFlavor(processPath);
+        InstallationMode installationMode = InferInstallationMode(installDirectory);
+        string? elevatedTaskName = null;
+
+        EnsureHelperScript();
+
+        if (installationMode == InstallationMode.ProgramFiles)
+        {
+            if (!IsCurrentProcessElevated())
+            {
+                return;
+            }
+
+            RegisterElevatedUpdateTask(ElevatedUpdateTaskName, HelperScriptPath);
+            elevatedTaskName = ElevatedUpdateTaskName;
+        }
+
+        PersistedInstallationMetadata metadata = BuildPersistedInstallationMetadata(
+            processPath,
+            releaseFlavor,
+            installationMode,
+            elevatedTaskName);
+
+        using FileStream stream = new(manifestPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        JsonSerializer.Serialize(stream, metadata, UpdateJsonContext.Default.PersistedInstallationMetadata);
+        stream.Flush(flushToDisk: true);
+    }
 
     public InstallationMetadata Load()
     {
@@ -66,6 +110,50 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
         _ = Directory.CreateDirectory(appPaths.DirectoryPath);
         File.WriteAllText(HelperScriptPath, BuildHelperScript(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         File.WriteAllText(LauncherScriptPath, BuildLauncherScript(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+    }
+
+    internal static PersistedInstallationMetadata BuildPersistedInstallationMetadata(
+        string processPath,
+        ReleaseFlavor releaseFlavor,
+        InstallationMode installationMode,
+        string? elevatedTaskName)
+    {
+        return new PersistedInstallationMetadata
+        {
+            InstalledExecutableName = Path.GetFileName(processPath),
+            ReleaseFlavor = SerializeReleaseFlavor(releaseFlavor),
+            InstallationMode = SerializeInstallationMode(installationMode),
+            ElevatedTaskName = elevatedTaskName
+        };
+    }
+
+    internal static string BuildElevatedTaskRegistrationScript(
+        string taskName,
+        string helperScriptPath,
+        string shellPath,
+        string userId)
+    {
+        return $$"""
+$ErrorActionPreference = "Stop"
+
+$helperScriptPath = {{ToPowerShellLiteral(helperScriptPath)}}
+$shellPath = {{ToPowerShellLiteral(shellPath)}}
+$userId = {{ToPowerShellLiteral(userId)}}
+$arguments = @(
+  "-NoLogo",
+  "-NoProfile",
+  "-NonInteractive",
+  "-ExecutionPolicy", "Bypass",
+  "-WindowStyle", "Hidden",
+  "-File", ('"{0}"' -f $helperScriptPath)
+) -join " "
+
+$action = New-ScheduledTaskAction -Execute $shellPath -Argument $arguments
+$principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+$task = New-ScheduledTask -Action $action -Principal $principal -Settings $settings
+Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject $task -Force | Out-Null
+""";
     }
 
     private static InstallationMetadata InferFromProcess(string processPath, string installDirectory)
@@ -127,6 +215,89 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
         return normalizedDirectory.StartsWith(localAppData, StringComparison.OrdinalIgnoreCase)
             ? InstallationMode.LocalAppData
             : InstallationMode.Unknown;
+    }
+
+    private static void RegisterElevatedUpdateTask(string taskName, string helperScriptPath)
+    {
+        string shellPath = ResolveShellExecutablePath();
+        string currentUserId = WindowsIdentity.GetCurrent().Name
+            ?? throw new UnexpectedStateException("Resolve the current Windows identity before registering the elevated updater task.");
+        string registrationScript = BuildElevatedTaskRegistrationScript(taskName, helperScriptPath, shellPath, currentUserId);
+        string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(registrationScript));
+
+        using Process process = Process.Start(new ProcessStartInfo
+        {
+            FileName = shellPath,
+            Arguments = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}",
+            CreateNoWindow = true,
+            UseShellExecute = false,
+            WindowStyle = ProcessWindowStyle.Hidden
+        }) ?? throw new UnexpectedStateException("Start the elevated updater task registration process before treating this install as update-ready.");
+
+        process.WaitForExit();
+        if (process.ExitCode != 0)
+        {
+            throw new UnexpectedStateException("Register the elevated updater task before treating this install as update-ready.");
+        }
+    }
+
+    private static bool IsCurrentProcessElevated()
+    {
+        using WindowsIdentity identity = WindowsIdentity.GetCurrent();
+        WindowsPrincipal principal = new(identity);
+        return principal.IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    private static string ResolveShellExecutablePath()
+    {
+        string powerShellSevenPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            "PowerShell",
+            "7",
+            "pwsh.exe");
+
+        if (File.Exists(powerShellSevenPath))
+        {
+            return powerShellSevenPath;
+        }
+
+        string windowsPowerShellPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.System),
+            @"WindowsPowerShell\v1.0\powershell.exe");
+
+        if (File.Exists(windowsPowerShellPath))
+        {
+            return windowsPowerShellPath;
+        }
+
+        throw new FileNotFoundException("Resolve a PowerShell executable before registering the elevated updater task.");
+    }
+
+    private static string SerializeReleaseFlavor(ReleaseFlavor releaseFlavor)
+    {
+        return releaseFlavor switch
+        {
+            ReleaseFlavor.SelfContained => "self-contained",
+            ReleaseFlavor.FrameworkDependent => "framework-dependent",
+            ReleaseFlavor.Unknown => "unknown",
+            _ => "unknown"
+        };
+    }
+
+    private static string SerializeInstallationMode(InstallationMode installationMode)
+    {
+        return installationMode switch
+        {
+            InstallationMode.LocalAppData => "local-app-data",
+            InstallationMode.ProgramFiles => "program-files",
+            InstallationMode.Unknown => "unknown",
+            _ => "unknown"
+        };
+    }
+
+    private static string ToPowerShellLiteral(string value)
+    {
+        return $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
     }
 
     private static string BuildHelperScript()

@@ -70,6 +70,7 @@ internal sealed class NativeApplication : IDisposable
             _themeTransitionOrchestrator!.StateChanged += HandleStateChanged;
 
             _applicationLifecycleOrchestrator!.Initialize();
+            _updateCoordinator!.EnsureInstallationReady();
             _settingsWindow = new SettingsWindow(_applicationLifecycleOrchestrator, _localization!, _updateCoordinator!);
             _settingsWindow.UpdatePrepared += ExitApplication;
 
