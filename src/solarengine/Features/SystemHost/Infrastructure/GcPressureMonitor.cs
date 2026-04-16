@@ -24,15 +24,11 @@ internal static class GcPressureMonitor
                     return;
                 }
 
-                // Hiding the native settings window releases a burst of short-lived UI allocations.
-                // A single post-hide compaction keeps the tray process stable in long-running idle scenarios
-                // without putting explicit collections on the normal scheduler hot path.
                 GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Optimized, blocking: true, compacting: true);
             }
             catch
             {
-                // Compaction is best-effort. If the runtime rejects it, the app should continue running normally.
             }
             finally
             {

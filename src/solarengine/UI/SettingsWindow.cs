@@ -441,7 +441,6 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         }
         catch (OperationCanceledException)
         {
-            // Closing or disposing the app can cancel an in-flight apply after the background work already started.
         }
         catch (Exception exception)
         {
@@ -504,7 +503,6 @@ internal sealed class SettingsWindow(ApplicationLifecycleOrchestrator applicatio
         }
         catch (OperationCanceledException)
         {
-            // Location prompts can be canceled externally; the settings window should simply return to idle.
         }
         catch (Exception exception)
         {

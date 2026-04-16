@@ -293,7 +293,6 @@ internal sealed class NativeApplication : IDisposable
         }
         catch (OperationCanceledException) when (IsApplicationShuttingDown())
         {
-            // Shutdown intentionally cancels any background refresh still in flight.
         }
         catch (Exception exception) when (
             exception is IOException

@@ -115,7 +115,6 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
         ? _value!
         : throw new InvalidOperationException("Access the value only when the result is successful.");
 
-    // Keep factory names for call sites where implicit conversions would hide intent.
     public static Result<T> Success(T value)
     {
         return new(value);
@@ -126,7 +125,6 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
         return new(error);
     }
 
-    // Named alternates keep construction explicit where generic inference is unclear.
     public static Result<T> FromValue(T value)
     {
         return new(value);

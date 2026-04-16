@@ -3,8 +3,6 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net11.0-windows10.0.19041.0</TargetFramework>
-
-    <!-- Required for the native Win32 tray/UI host and tightly scoped interop helpers used by the lightweight non-WPF runtime. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <AssemblyName>AutoThemeSolarEngine</AssemblyName>

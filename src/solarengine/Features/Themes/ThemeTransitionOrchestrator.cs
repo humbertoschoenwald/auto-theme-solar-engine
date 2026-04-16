@@ -159,11 +159,9 @@ internal sealed class ThemeTransitionOrchestrator(
         }
         catch (OperationCanceledException) when (_shutdownCancellationTokenSource.IsCancellationRequested)
         {
-            // Disposal and app shutdown intentionally cancel in-flight timer work.
         }
         catch (ObjectDisposedException) when (_isDisposed)
         {
-            // The timer can race with teardown while the process is exiting.
         }
         catch (Exception exception)
         {
