@@ -1,8 +1,15 @@
-# --- NamedEntities ---
-humbe
+# --- NAMED ENTITIES ---
+# RULE: Keep only exact, intentional proper nouns here. This file is for people,
+# brands, organizations, products, and places that are valid for this codebase
+# but should not weaken the general English dictionary.
+AutoThemeSolarEngine
+esbenp
+Humbe
+Humberto
 humberto
 humbertoschoenwald
-schoenwald
-SolarEngine
 Linq
+Schoenwald
 Segoe
+SolarEngine
+solarengine

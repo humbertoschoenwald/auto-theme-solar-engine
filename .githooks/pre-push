@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if command -v pnpm >/dev/null 2>&1; then
+  PNPM_BIN="pnpm"
+elif [[ -n "${APPDATA:-}" && -x "${APPDATA}/npm/pnpm" ]]; then
+  PNPM_BIN="${APPDATA}/npm/pnpm"
+elif [[ -n "${APPDATA:-}" && -f "${APPDATA}/npm/pnpm.cmd" ]]; then
+  PNPM_BIN="${APPDATA}/npm/pnpm.cmd"
+else
+  echo "pnpm is required to run the pre-push quality gate. Install the repository tooling first."
+  exit 1
+fi
+
 echo "Running pre-push quality gate..."
-npm run lint
+"$PNPM_BIN" lint
 
 dotnet restore SolarEngine.slnx
 dotnet format SolarEngine.slnx --verify-no-changes --severity error --no-restore

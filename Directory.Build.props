@@ -1,4 +1,6 @@
 <Project>
+  <!-- Derived from ADR-0007 and ADR-0009. -->
+  <!-- This file operationalizes repository doctrine. It is not an independent policy source. -->
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
     <LangVersion>preview</LangVersion>

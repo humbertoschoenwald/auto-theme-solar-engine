@@ -25,7 +25,7 @@
     <File Path="global.json" />
     <File Path="nuget.config" />
     <File Path="package.json" />
-    <File Path="cSpell.json" />
+    <File Path="cspell.jsonc" />
     <File Path="CHANGELOG.md" />
     <File Path="CONTRIBUTING.md" />
     <File Path="LICENSE" />

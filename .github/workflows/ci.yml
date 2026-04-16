@@ -1,3 +1,5 @@
+# Derived from ADR-0007 and ADR-0008.
+# This file operationalizes repository doctrine. It is not an independent policy source.
 name: CI
 
 on:
@@ -46,11 +48,11 @@ jobs:
             fi
           fi
 
-          npx commitlint --from "$FROM" --to "$TO" --verbose
+          pnpm exec commitlint --from "$FROM" --to "$TO" --verbose
 
       - name: Node quality gate
         shell: bash
-        run: npm run lint
+        run: pnpm lint
 
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION_PATH }}

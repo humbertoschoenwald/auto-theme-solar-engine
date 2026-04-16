@@ -1,5 +1,7 @@
+# Derived from ADR-0007 and ADR-0008.
+# This file operationalizes repository doctrine. It is not an independent policy source.
 name: Setup .NET environment
-description: Setup .NET 11 preview, Node, and project tooling.
+description: Setup .NET 11 preview, Node, pnpm, and project tooling.
 
 inputs:
   dotnet-version:
@@ -23,19 +25,22 @@ runs:
       uses: actions/setup-node@v6
       with:
         node-version: ${{ inputs.node-version }}
-        cache: npm
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v6
+      with:
+        run_install: false
 
     - name: Install Node tooling
       shell: pwsh
       run: |
-        if (Test-Path package-lock.json) {
-          npm ci
-        }
-        elseif (Test-Path package.json) {
-          npm install --no-fund --no-audit
+        if (Test-Path package.json) {
+          pnpm install --frozen-lockfile
         }
         else {
-          Write-Host "No package.json found. Skipping npm install."
+          Write-Host "No package.json found. Skipping pnpm install."
         }
 
     - name: Show SDK info

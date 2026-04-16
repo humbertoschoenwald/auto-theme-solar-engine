@@ -1,0 +1,87 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+
+  // Derived from ADR-0006 and ADR-0008.
+  // This file is an operational projection of repository doctrine, not an independent policy source.
+
+  "version": "0.2",
+  "language": "en-US",
+  "readonly": true,
+  "useGitignore": true,
+  "enableGlobDot": true,
+  "ignoreRandomStrings": true,
+  "validateDirectives": true,
+
+  "dictionaryDefinitions": [
+    {
+      "name": "Spanish",
+      "path": "./.cspell/spanish.txt",
+      "addWords": true,
+      "noSuggest": true
+    },
+    {
+      "name": "NamedEntities",
+      "path": "./.cspell/named-entities.txt",
+      "addWords": true,
+      "noSuggest": true,
+      "supportNonStrictSearches": false
+    },
+    {
+      "name": "Technical",
+      "path": "./.cspell/technical.txt",
+      "addWords": true
+    }
+  ],
+
+  "dictionaries": ["Spanish", "NamedEntities", "Technical"],
+
+  "ignorePaths": [
+    ".git/**",
+    ".cspell/**",
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/target/**",
+    "**/.next/**",
+    "**/.nuxt/**",
+    "**/.svelte-kit/**",
+    "**/.turbo/**",
+    "**/.cache/**",
+    "**/.parcel-cache/**",
+    "**/.vercel/**",
+    "**/bin/**",
+    "**/obj/**",
+    "**/artifacts/**",
+    "**/.venv/**",
+    "**/venv/**",
+    "**/pnpm-lock.yaml",
+    "**/Cargo.lock",
+    "**/composer.lock",
+    "**/poetry.lock",
+    "**/Pipfile.lock",
+    "**/uv.lock",
+    "**/*.min.*",
+    "**/*.ico",
+    "**/*.png",
+    "**/*.jpg",
+    "**/*.jpeg",
+    "**/*.gif",
+    "**/*.svg",
+    "**/*.webp",
+    "**/*.avif",
+    "**/*.pdf",
+    "**/*.zip",
+    "**/*.tar",
+    "**/*.gz",
+    "**/*.7z",
+    "**/*.woff",
+    "**/*.woff2",
+    "**/*.ttf",
+    "**/*.otf",
+    "**/*.dll",
+    "**/*.exe",
+    "**/*.trx"
+  ]
+}

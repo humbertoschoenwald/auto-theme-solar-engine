@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if ! command -v npx >/dev/null 2>&1; then
-  echo "npx is required to validate commit messages. Install Node.js first."
+if command -v pnpm >/dev/null 2>&1; then
+  PNPM_BIN="pnpm"
+elif [[ -n "${APPDATA:-}" && -x "${APPDATA}/npm/pnpm" ]]; then
+  PNPM_BIN="${APPDATA}/npm/pnpm"
+elif [[ -n "${APPDATA:-}" && -f "${APPDATA}/npm/pnpm.cmd" ]]; then
+  PNPM_BIN="${APPDATA}/npm/pnpm.cmd"
+else
+  echo "pnpm is required to validate commit messages. Install the repository tooling first."
   exit 1
 fi
 
-npx --no -- commitlint --edit "$1"
+"$PNPM_BIN" exec commitlint --edit "$1"

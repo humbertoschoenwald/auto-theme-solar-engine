@@ -13,7 +13,7 @@ export default [
       '**/.git/**',
       '**/.vs/**',
       '**/.vscode/**',
-      '**/package-lock.json'
+      '**/pnpm-lock.yaml'
     ]
   },
   {

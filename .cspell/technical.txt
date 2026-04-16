@@ -1,4 +1,8 @@
-# --- Technical ---
+# --- TECHNICAL ---
+# RULE: Add domain jargon, internal acronyms, protocol names, and stack-specific
+# terms here only when they are legitimate project vocabulary and not just typos.
+# If a term belongs to a single tool or library, prefer the project config of
+# that tool before relaxing the global repository dictionary.
 accessibilities
 APMRESUMEAUTOMATIC
 AUTOCHECKBOX
@@ -10,6 +14,7 @@ CLIENTEDGE
 CLIPCHILDREN
 codecoverage
 commitlint
+consoleloggerparameters
 CONTEXTMENU
 coreclr
 covrun
@@ -21,7 +26,6 @@ dwmapi
 DWMSBT
 DWMWA
 DWMWCP
-esult
 geolocation
 geolocator
 Geolocator
@@ -34,20 +38,24 @@ ICONINFORMATION
 ICONWARNING
 illink
 Interprocess
+jsonc
 KEYSELECT
 LASTEXITCODE
 LBUTTONDBLCLK
 LBUTTONUP
 LEFTALIGN
+lockfiles
 lpdw
 lpfn
 lprc
 lpsz
 MAINWINDOW
 MAXIMIZEBOX
+messageloop
 MINIMIZEBOX
 msbuild
 msdia
+Mutex
 netcoreapp
 netframework
 netstandard
@@ -59,7 +67,9 @@ nuxt
 objectmodel
 Omnisharp
 OVERLAPPEDWINDOW
+operationalizes
 Pkgxunit
+Pipfile
 POWERBROADCAST
 RBUTTONUP
 resx
@@ -74,6 +84,7 @@ slnx
 Smto
 snupkg
 softprops
+subkey
 SYSMENU
 SYSTEMBACKDROP
 tdnet
@@ -81,13 +92,18 @@ testadapter
 testhost
 testplatform
 THICKFRAME
+TimeProvider
 TIMECHANGE
 TRAYICON
 Trimmable
 Updatenow
 userosscache
 uxtheme
+venv
 warnaserror
+webp
+Win32
+WPF
 wtsapi
 WTSSESSION
 xunit

@@ -1,12 +1,16 @@
 {
-  "name": "dotnet11-cursor-policy-tooling",
+  "name": "auto-theme-solar-engine-tooling",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": "25.x"
+  },
   "scripts": {
-    "lint": "npm run lint:eslint && npm run lint:prettier && npm run lint:spelling",
+    "lint": "pnpm run lint:eslint && pnpm run lint:prettier && pnpm run lint:spelling",
     "lint:eslint": "eslint .",
     "lint:prettier": "prettier . --check",
     "lint:prettier:fix": "prettier . --write",
-    "lint:spelling": "cspell --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,yml,yaml,ps1}\"",
+    "lint:spelling": "cspell --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",
     "commitlint:last": "commitlint --last --verbose",
     "changelog": "node ./scripts/generate-changelog.mjs"
   },

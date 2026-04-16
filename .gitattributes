@@ -1,7 +1,8 @@
-# Enforce absolute Line Feed (LF) normalization across all text files in the repository index to guarantee deterministic cryptographic hashing and zero-noise diffs across mixed-OS contributor environments.
+# Derived from ADR-0007 and ADR-0008.
+# This file operationalizes repository doctrine. It is not an independent policy source.
+
 * text=auto eol=lf
 
-# Explicitly mark binary assets to prevent Git from attempting text-based diffs or line ending conversions, which corrupts the payload.
 *.ico binary
 *.png binary
 *.jpg binary

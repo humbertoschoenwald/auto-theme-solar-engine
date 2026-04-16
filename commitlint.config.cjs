@@ -1,3 +1,6 @@
+// Derived from ADR-0008.
+// This file operationalizes repository doctrine. It is not an independent policy source.
+
 module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {

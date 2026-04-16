@@ -1,7 +1,8 @@
-# Enforce root boundaries to prevent MSBuild from traversing upward into the host OS looking for conflicting parent configurations.
+# Derived from ADR-0007 and ADR-0009.
+# This file operationalizes repository doctrine. It is not an independent policy source.
+
 root = true
 
-# Normalize core text encoding and whitespace universally to prevent cross-platform diff noise and Git commit hash instability.
 [*]
 charset = utf-8
 end_of_line = lf
@@ -10,8 +11,7 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
-# Overwrite indent sizes for declarative formats to maximize vertical density and readability.
-[*.{json,jsonc,yml,yaml,cjs,mjs,js,xml,csproj,props,targets,sln,slnx,config,nuspec,resx,sh}]
+[*.{json,jsonc,yml,yaml,cjs,mjs,js,xml,csproj,props,targets,sln,slnx,config,nuspec,resx,sh,mdc}]
 indent_size = 2
 
 [*.md]
@@ -22,7 +22,6 @@ indent_size = 2
 indent_size = 4
 
 [*.cs]
-# --- Formatting & Layout ---
 indent_size = 4
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
@@ -31,54 +30,25 @@ csharp_indent_case_contents = true
 csharp_indent_switch_labels = true
 csharp_prefer_braces = true:error
 csharp_prefer_simple_using_statement = true:error
-
-# --- Architecture & Code Density ---
-# Enforce file-scoped namespaces to eliminate horizontal indentation waste.
 csharp_style_namespace_declarations = file_scoped:error
-
-# Enforce explicit types over 'var' unconditionally to maximize readability during PR reviews.
 csharp_style_var_for_built_in_types = false:error
 csharp_style_var_when_type_is_apparent = false:error
 csharp_style_var_elsewhere = false:error
-
-# Enforce primary constructors to eliminate boilerplate field assignment in DI-heavy Vertical Slice Architecture.
 csharp_style_prefer_primary_constructors = true:error
-
-# Enforce the C# 14 'field' keyword to eradicate backing field boilerplate.
 csharp_style_prefer_field_keyword = true:error
-
-# Enforce semi-auto properties to maintain strict encapsulation.
 csharp_style_prefer_semi_auto_properties = true:error
-
-# Enforce modern collection expressions ([]) to unify allocations behind a single, optimized syntax.
 csharp_style_prefer_collection_expression = true:error
-
-# Enforce extended property patterns to flatten conditional logic.
 csharp_style_prefer_extended_property_pattern = true:error
-
-# --- Type Design & Performance ---
-# Enforce explicit accessibility modifiers to eliminate ambiguity in public APIs.
 dotnet_style_require_accessibility_modifiers = always:error
-
-# Enforce static local functions to guarantee zero closure allocations on the heap.
 csharp_prefer_static_local_functions = true:error
-
-# Enforce readonly structs to guarantee immutability and utilize 'in' parameter optimizations.
 csharp_style_prefer_readonly_struct = true:error
-
-# Enforce frozen collections for static read-only data to maximize read performance and CPU cache locality.
 dotnet_style_prefer_frozen_collections = true:error
-
-# Type and Member Qualification
 dotnet_style_predefined_type_for_locals_parameters_members = true:error
 dotnet_style_predefined_type_for_member_access = true:error
 dotnet_style_qualification_for_field = false:error
 dotnet_style_qualification_for_property = false:error
 dotnet_style_qualification_for_method = false:error
 dotnet_style_qualification_for_event = false:error
-
-# --- Naming Conventions (CQRS / DDD / SOLID) ---
-# Define strict naming rules for interfaces.
 dotnet_naming_rule.interfaces_must_be_prefixed_with_i.severity = error
 dotnet_naming_rule.interfaces_must_be_prefixed_with_i.symbols = interface_symbols
 dotnet_naming_rule.interfaces_must_be_prefixed_with_i.style = i_prefix_style
@@ -86,8 +56,6 @@ dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
 dotnet_naming_symbols.interface_symbols.applicable_accessibilities = *
 dotnet_naming_style.i_prefix_style.required_prefix = I
 dotnet_naming_style.i_prefix_style.capitalization = pascal_case
-
-# Enforce CQRS/Feature naming to guarantee architectural alignment.
 dotnet_naming_rule.handlers_must_end_with_handler.severity = error
 dotnet_naming_rule.handlers_must_end_with_handler.symbols = handler_symbols
 dotnet_naming_rule.handlers_must_end_with_handler.style = handler_suffix_style
@@ -96,48 +64,29 @@ dotnet_naming_symbols.handler_symbols.applicable_accessibilities = *
 dotnet_naming_symbols.handler_symbols.required_modifiers = *
 dotnet_naming_style.handler_suffix_style.required_suffix = Handler
 dotnet_naming_style.handler_suffix_style.capitalization = pascal_case
-
-# --- IDE Diagnostics (Strict Rules) ---
 dotnet_diagnostic.IDE0005.severity = error
 dotnet_diagnostic.IDE0055.severity = error
-# Prohibit the ignorance of return values (specifically Result<T>) to guarantee handling of Domain and Flow failures.
 dotnet_diagnostic.IDE0058.severity = error
 dotnet_diagnostic.IDE0060.severity = error
 dotnet_diagnostic.IDE0063.severity = error
 dotnet_diagnostic.IDE0090.severity = error
 dotnet_diagnostic.IDE0160.severity = error
 dotnet_diagnostic.IDE0161.severity = error
-# Elevated to error to match the csharp_style_prefer_primary_constructors requirement.
 dotnet_diagnostic.IDE0290.severity = error
-
-# --- Global Analyzer Categories ---
 dotnet_analyzer_diagnostic.category-Style.severity = warning
 dotnet_analyzer_diagnostic.category-Design.severity = warning
 dotnet_analyzer_diagnostic.category-Maintainability.severity = warning
 dotnet_analyzer_diagnostic.category-Performance.severity = warning
 dotnet_analyzer_diagnostic.category-Reliability.severity = warning
 dotnet_analyzer_diagnostic.category-Security.severity = warning
-
-# --- Critical Security & Performance Diagnostics ---
-# CA1416: Validate platform compatibility to prevent runtime crashes in OS-specific interop.
 dotnet_diagnostic.CA1416.severity = warning
-# CA1835: Prefer Stream.ReadAsync(Memory<byte>) over byte[] arrays to eliminate LOH allocations.
 dotnet_diagnostic.CA1835.severity = warning
-# CA1848: Enforce [LoggerMessage] source generators to eliminate boxing and string allocation in hot logging paths.
 dotnet_diagnostic.CA1848.severity = warning
-# CA2016: Enforce CancellationToken propagation to guarantee graceful shutdown and prevent thread exhaustion.
 dotnet_diagnostic.CA2016.severity = warning
-# CA2012: Enforce proper ValueTask consumption to prevent silent asynchronous state machine corruption.
 dotnet_diagnostic.CA2012.severity = warning
-# CA2000: Enforce strict IDisposable ownership to eliminate unmanaged memory leaks.
 dotnet_diagnostic.CA2000.severity = warning
-# CA2100: Forbid string concatenation in SQL queries to absolutely eradicate SQL injection vectors.
 dotnet_diagnostic.CA2100.severity = warning
-# CA1062: Validate arguments of public methods to uphold defensive programming principles.
 dotnet_diagnostic.CA1062.severity = warning
-
-# --- Suppressions & Intentional Bypasses ---
-# Suppress application-irrelevant API design rules so desktop release builds stay signal-rich.
 dotnet_diagnostic.CA1000.severity = none
 dotnet_diagnostic.CA1024.severity = none
 dotnet_diagnostic.CA1515.severity = none
@@ -148,6 +97,4 @@ dotnet_diagnostic.CA1724.severity = none
 dotnet_diagnostic.CA1822.severity = none
 dotnet_diagnostic.CA2225.severity = none
 dotnet_diagnostic.xUnit2002.severity = none
-
-# Generic catch blocks are intentional around OS and UI boundaries.
 dotnet_diagnostic.CA1031.severity = none

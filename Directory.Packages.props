@@ -1,4 +1,6 @@
 <Project>
+  <!-- Derived from ADR-0007. -->
+  <!-- This file operationalizes repository doctrine. It is not an independent policy source. -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>

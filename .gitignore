@@ -1,39 +1,36 @@
-# Exclude standard MSBuild and .NET CLI compilation outputs to prevent binary pollution in the repository.
+# Derived from ADR-0007 and ADR-0008.
+# This file operationalizes repository doctrine. It is not an independent policy source.
+
 [Bb]in/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
 artifacts/
 
-# Exclude local NuGet package caches and lock artifacts to guarantee deterministic resolution via CI/CD.
 *.nupkg
 *.snupkg
 .nuget/
 project.lock.json
 project.fragment.lock.json
 
-# Exclude IDE-specific configuration and temporary workspace files to prevent local developer state from polluting the shared repository.
 .vs/
 .vscode/*
 !.vscode/settings.json
+!.vscode/launch.json
 *.user
 *.userosscache
 *.suo
 
-# Exclude environment variables and secret files unconditionally to strictly enforce zero-trust security and prevent credential leakage.
 .env
 .env.*
 *.secret
 
-# Exclude MSBuild binary logs to prevent accidental disclosure of build-time environment variables and secrets.
 *.binlog
 
-# Exclude testing telemetry and coverage reports to prevent repository bloat with ephemeral build artifacts.
 [Tt]est[Rr]esult*/
 TestResult.xml
 CodeCoverage/
 
-# Exclude Node.js dependencies, package manager caches, and transient debug logs.
 node_modules/
 .npm/
 .pnpm-store/
@@ -44,14 +41,12 @@ node_modules/
 .yarn/install-state.gz
 npm-cache/
 
-# Exclude Node.js and bundler diagnostic logs.
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.tsbuildinfo
 
-# Exclude local package manager and tool state.
 .parcel-cache/
 .cspellcache
 .next/
@@ -60,6 +55,5 @@ pnpm-debug.log*
 dist/
 coverage/
 
-# Exclude OS-generated indexing and thumbnail artifacts to maintain repository cleanliness.
 .DS_Store
 Thumbs.db

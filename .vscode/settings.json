@@ -1,0 +1,81 @@
+{
+  // Derived from ADR-0000, ADR-0006, ADR-0007, ADR-0008, and ADR-0009.
+  // This file is an operational projection of repository doctrine, not an independent policy source.
+
+  "editor.detectIndentation": false,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 4,
+  "editor.formatOnSave": true,
+  "editor.renderWhitespace": "all",
+
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+  "files.encoding": "utf8",
+  "files.hotExit": "off",
+  "files.associations": {
+    "*.mdc": "markdown"
+  },
+
+  "diffEditor.ignoreTrimWhitespace": false,
+
+  "telemetry.telemetryLevel": "off",
+  "redhat.telemetry.enabled": false,
+
+  "update.mode": "manual",
+  "update.showReleaseNotes": false,
+  "extensions.autoUpdate": false,
+  "extensions.autoCheckUpdates": false,
+
+  "git.allowNoVerifyCommit": false,
+  "git.promptToSaveFilesBeforeCommit": "always",
+  "git.promptToSaveFilesBeforeStash": "always",
+
+  "task.saveBeforeRun": "always",
+  "testing.saveBeforeTest": true,
+
+  "terminal.integrated.confirmOnExit": "hasChildProcesses",
+  "terminal.integrated.confirmOnKill": "always",
+  "terminal.integrated.enableMultiLinePasteWarning": "always",
+  "terminal.integrated.shellIntegration.enabled": true,
+  "terminal.integrated.splitCwd": "inherited",
+  "terminal.integrated.detectLocale": "on",
+  "terminal.integrated.inheritEnv": true,
+
+  "js/ts.format.enabled": false,
+  "js/ts.implicitProjectConfig.checkJs": true,
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "eslint.codeActionsOnSave.mode": "all",
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "prettier.requireConfig": true,
+  "prettier.resolveGlobalModules": false,
+
+  "dotnet.defaultSolution": "SolarEngine.slnx",
+
+  "[csharp]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[markdown]": {
+    "editor.tabSize": 2
+  }
+}
