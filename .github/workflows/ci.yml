@@ -39,24 +39,26 @@ jobs:
         uses: ./.github/actions/setup-dotnet-env
 
       - name: Commitlint
-        shell: bash
+        shell: pwsh
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            FROM="${{ github.event.pull_request.base.sha }}"
-            TO="${{ github.event.pull_request.head.sha }}"
-          else
-            FROM="${{ github.event.before }}"
-            TO="${{ github.sha }}"
-            if [[ "$FROM" == "0000000000000000000000000000000000000000" ]]; then
-              FROM="$(git rev-list --max-parents=0 HEAD)"
-            fi
-          fi
+          if ("${{ github.event_name }}" -eq "pull_request") {
+            $from = "${{ github.event.pull_request.base.sha }}"
+            $to = "${{ github.event.pull_request.head.sha }}"
+          }
+          else {
+            $from = "${{ github.event.before }}"
+            $to = "${{ github.sha }}"
+            if ($from -eq "0000000000000000000000000000000000000000") {
+              $from = git rev-list --max-parents=0 HEAD
+            }
+          }
 
-          pnpm exec commitlint --from "$FROM" --to "$TO" --verbose
+          pnpm exec commitlint --from $from --to $to --verbose
 
       - name: Node quality gate
-        shell: bash
-        run: pnpm lint
+        shell: pwsh
+        run: |
+          pnpm lint
 
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION_PATH }}
