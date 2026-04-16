@@ -6,11 +6,11 @@
     "node": "25.x"
   },
   "scripts": {
-    "lint": "eslint . && prettier . --check && cspell --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",
+    "lint": "eslint . && prettier . --check && cspell-cli --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",
     "lint:eslint": "eslint .",
     "lint:prettier": "prettier . --check",
     "lint:prettier:fix": "prettier . --write",
-    "lint:spelling": "cspell --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",
+    "lint:spelling": "cspell-cli --config cspell.jsonc --no-progress --show-suggestions --cache --relative \"**/*.{cs,csproj,props,targets,slnx,md,txt,json,jsonc,yml,yaml,ps1}\"",
     "commitlint:last": "commitlint --last --verbose",
     "changelog": "node ./scripts/generate-changelog.mjs"
   },
