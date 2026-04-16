@@ -8,6 +8,7 @@ using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.Themes;
 using SolarEngine.Features.Themes.Domain;
 using SolarEngine.Features.Updates;
+using SolarEngine.Features.Updates.Domain;
 using SolarEngine.Infrastructure.Localization;
 using SolarEngine.Infrastructure.Logging;
 using SolarEngine.Shared;
@@ -20,6 +21,7 @@ internal sealed class NativeApplication : IDisposable
 {
     private const string AppName = AppIdentity.RuntimeName;
     private const string SingleInstanceMutexName = @"Local\AutoThemeSolarEngine.SingleInstance";
+    private static readonly TimeSpan AutomaticUpdateCheckInterval = TimeSpan.FromHours(4);
 
     private bool _disposed;
     private Mutex? _instanceMutex;
@@ -30,9 +32,11 @@ internal sealed class NativeApplication : IDisposable
     private StructuredLogPublisher? _structuredLogPublisher;
     private AppLocalization? _localization;
     private UpdateCoordinator? _updateCoordinator;
+    private TimeProvider? _timeProvider;
     private CancellationTokenSource? _applicationLifetimeCancellationTokenSource;
     private TrayIconHost? _trayIconHost;
     private SettingsWindow? _settingsWindow;
+    private Task? _updateMonitoringTask;
     private int _refreshInProgress;
 
     public int Run()
@@ -72,7 +76,6 @@ internal sealed class NativeApplication : IDisposable
             _applicationLifecycleOrchestrator!.Initialize();
             _updateCoordinator!.EnsureInstallationReady();
             _settingsWindow = new SettingsWindow(_applicationLifecycleOrchestrator, _localization!, _updateCoordinator!);
-            _settingsWindow.UpdatePrepared += ExitApplication;
 
             _applicationLifecycleOrchestrator
                 .StartAsync(GetApplicationLifetimeCancellationToken())
@@ -85,10 +88,7 @@ internal sealed class NativeApplication : IDisposable
                 StartBackgroundRefresh(showErrors: false);
             }
 
-            if (_applicationLifecycleOrchestrator.Config.AutomaticUpdatesEnabled)
-            {
-                StartAutomaticUpdateCheck();
-            }
+            StartUpdateMonitoring();
 
             _trayIconHost.SetTooltip(_applicationLifecycleOrchestrator.GetStatusText());
 
@@ -149,11 +149,7 @@ internal sealed class NativeApplication : IDisposable
             _trayIconHost = null;
         }
 
-        if (_settingsWindow is not null)
-        {
-            _settingsWindow.UpdatePrepared -= ExitApplication;
-            _settingsWindow.Close();
-        }
+        _settingsWindow?.Close();
         _settingsWindow = null;
         themeTransitionOrchestrator?.Dispose();
         _applicationLifecycleOrchestrator?.Dispose();
@@ -200,6 +196,7 @@ internal sealed class NativeApplication : IDisposable
         _themeTransitionOrchestrator =
             _serviceProvider.GetRequiredService<ThemeTransitionOrchestrator>();
         _updateCoordinator = _serviceProvider.GetRequiredService<UpdateCoordinator>();
+        _timeProvider = _serviceProvider.GetRequiredService<TimeProvider>();
     }
 
     private bool TryAcquireSingleInstance()
@@ -239,14 +236,17 @@ internal sealed class NativeApplication : IDisposable
         StartBackgroundRefresh(showErrors: false);
     }
 
-    private void StartAutomaticUpdateCheck()
+    private void StartUpdateMonitoring()
     {
-        if (_applicationLifecycleOrchestrator is null || _updateCoordinator is null)
+        if (_applicationLifecycleOrchestrator is null
+            || _updateCoordinator is null
+            || _timeProvider is null
+            || _updateMonitoringTask is not null)
         {
             return;
         }
 
-        _ = CheckForAndApplyUpdatesAsync();
+        _updateMonitoringTask = MonitorUpdatesAsync();
     }
 
     private void HandleStateChanged(object? sender, SchedulerStateChangedEventArgs eventArgs)
@@ -258,11 +258,7 @@ internal sealed class NativeApplication : IDisposable
     private void ExitApplication()
     {
         CancelApplicationLifetime();
-        if (_settingsWindow is not null)
-        {
-            _settingsWindow.UpdatePrepared -= ExitApplication;
-            _settingsWindow.Close();
-        }
+        _settingsWindow?.Close();
         _settingsWindow = null;
         _trayIconHost?.Close();
         _trayIconHost = null;
@@ -347,7 +343,30 @@ internal sealed class NativeApplication : IDisposable
         }
     }
 
-    private async Task CheckForAndApplyUpdatesAsync()
+    private async Task MonitorUpdatesAsync()
+    {
+        try
+        {
+            if (await RefreshUpdateSnapshotAndMaybeApplyAsync().ConfigureAwait(false))
+            {
+                return;
+            }
+
+            using PeriodicTimer timer = new(AutomaticUpdateCheckInterval, _timeProvider!);
+            while (await timer.WaitForNextTickAsync(GetApplicationLifetimeCancellationToken()).ConfigureAwait(false))
+            {
+                if (await RefreshUpdateSnapshotAndMaybeApplyAsync().ConfigureAwait(false))
+                {
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException) when (IsApplicationShuttingDown())
+        {
+        }
+    }
+
+    private async Task<bool> RefreshUpdateSnapshotAndMaybeApplyAsync()
     {
         try
         {
@@ -355,13 +374,25 @@ internal sealed class NativeApplication : IDisposable
             UpdateCoordinator? updateCoordinator = _updateCoordinator;
             if (applicationLifecycleOrchestrator is null || updateCoordinator is null)
             {
-                return;
+                return false;
             }
 
             CancellationToken cancellationToken = GetApplicationLifetimeCancellationToken();
             if (cancellationToken.IsCancellationRequested)
             {
-                return;
+                return false;
+            }
+
+            UpdateStatusSnapshot updateSnapshot = await updateCoordinator
+                .CheckForUpdatesAsync(cancellationToken)
+                .ConfigureAwait(false);
+            _settingsWindow?.RequestRefresh();
+
+            if (!applicationLifecycleOrchestrator.Config.AutomaticUpdatesEnabled
+                || !updateSnapshot.IsUpdateAvailable
+                || cancellationToken.IsCancellationRequested)
+            {
+                return false;
             }
 
             bool updatePrepared = await updateCoordinator
@@ -370,14 +401,16 @@ internal sealed class NativeApplication : IDisposable
 
             if (!updatePrepared || cancellationToken.IsCancellationRequested)
             {
-                return;
+                return false;
             }
 
             _structuredLogPublisher?.Write("Automatic update prepared. Exiting current process to apply the new executable.");
             ExitApplication();
+            return true;
         }
         catch (OperationCanceledException) when (IsApplicationShuttingDown())
         {
+            return false;
         }
         catch (Exception exception) when (
             exception is HttpRequestException
@@ -386,7 +419,10 @@ internal sealed class NativeApplication : IDisposable
             or UnexpectedStateException
             or Win32Exception)
         {
+            _updateCoordinator?.RecordCheckFailure(exception.Message);
+            _settingsWindow?.RequestRefresh();
             _structuredLogPublisher?.Write($"Automatic update check failed: {exception}");
+            return false;
         }
     }
 

@@ -13,4 +13,8 @@ internal sealed record UpdateStatusSnapshot
     public bool IsUpdateAvailable { get; init; }
 
     public string? PendingAssetName { get; init; }
+
+    public DateTimeOffset? LastCheckedAtUtc { get; init; }
+
+    public string? LastCheckErrorMessage { get; init; }
 }

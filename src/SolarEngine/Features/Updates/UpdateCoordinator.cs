@@ -13,9 +13,11 @@ internal sealed class UpdateCoordinator(
     AppPaths appPaths,
     StructuredLogPublisher logPublisher,
     InstallationMetadataRepository installationMetadataRepository,
-    GitHubReleaseFeedClient gitHubReleaseFeedClient)
+    GitHubReleaseFeedClient gitHubReleaseFeedClient,
+    TimeProvider timeProvider) : IDisposable
 {
     private readonly Lock _snapshotGate = new();
+    private readonly SemaphoreSlim _operationGate = new(1, 1);
     private UpdateStatusSnapshot? _snapshot;
 
     public UpdateStatusSnapshot GetSnapshot()
@@ -45,94 +47,119 @@ internal sealed class UpdateCoordinator(
 
     public async ValueTask<UpdateStatusSnapshot> CheckForUpdatesAsync(CancellationToken cancellationToken = default)
     {
-        InstallationMetadata installationMetadata = installationMetadataRepository.Load();
-        CalVersion currentVersion = ResolveCurrentVersion();
-        (CalVersion Version, string Tag, string AssetName, string AssetUrl)? latestRelease =
-            await gitHubReleaseFeedClient
-                .FindLatestMatchingReleaseAsync(installationMetadata.ReleaseFlavor, currentVersion, cancellationToken)
-                .ConfigureAwait(false);
-
-        UpdateStatusSnapshot snapshot = new()
+        await _operationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            CurrentVersion = currentVersion,
-            ReleaseFlavor = installationMetadata.ReleaseFlavor,
-            InstallationMode = installationMetadata.InstallationMode,
-            LatestVersionTag = latestRelease?.Tag,
-            PendingAssetName = latestRelease?.AssetName,
-            IsUpdateAvailable = latestRelease is not null
-        };
+            InstallationMetadata installationMetadata = installationMetadataRepository.Load();
+            CalVersion currentVersion = ResolveCurrentVersion();
+            (CalVersion Version, string Tag, string AssetName, string AssetUrl)? latestRelease =
+                await gitHubReleaseFeedClient
+                    .FindLatestMatchingReleaseAsync(installationMetadata.ReleaseFlavor, currentVersion, cancellationToken)
+                    .ConfigureAwait(false);
 
-        lock (_snapshotGate)
-        {
-            _snapshot = snapshot;
+            UpdateStatusSnapshot snapshot = BuildSnapshot(
+                installationMetadata,
+                currentVersion,
+                latestRelease?.Tag ?? currentVersion.ToTag(),
+                latestRelease?.AssetName,
+                latestRelease is not null);
+
+            lock (_snapshotGate)
+            {
+                _snapshot = snapshot;
+            }
+
+            return snapshot;
         }
-
-        return snapshot;
+        finally
+        {
+            _ = _operationGate.Release();
+        }
     }
 
     public async ValueTask<bool> PrepareAndLaunchUpdateAsync(
         AppConfig configuration,
         CancellationToken cancellationToken = default)
     {
-        InstallationMetadata installationMetadata = installationMetadataRepository.Load();
-        CalVersion currentVersion = ResolveCurrentVersion();
-        (CalVersion Version, string Tag, string AssetName, string AssetUrl)? latestRelease =
-            await gitHubReleaseFeedClient
-                .FindLatestMatchingReleaseAsync(installationMetadata.ReleaseFlavor, currentVersion, cancellationToken)
-                .ConfigureAwait(false);
-
-        if (latestRelease is null)
+        await _operationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            lock (_snapshotGate)
+            InstallationMetadata installationMetadata = installationMetadataRepository.Load();
+            CalVersion currentVersion = ResolveCurrentVersion();
+            (CalVersion Version, string Tag, string AssetName, string AssetUrl)? latestRelease =
+                await gitHubReleaseFeedClient
+                    .FindLatestMatchingReleaseAsync(installationMetadata.ReleaseFlavor, currentVersion, cancellationToken)
+                    .ConfigureAwait(false);
+
+            if (latestRelease is null)
             {
-                _snapshot = new UpdateStatusSnapshot
+                lock (_snapshotGate)
                 {
-                    CurrentVersion = currentVersion,
-                    ReleaseFlavor = installationMetadata.ReleaseFlavor,
-                    InstallationMode = installationMetadata.InstallationMode,
-                    LatestVersionTag = null,
-                    PendingAssetName = null,
-                    IsUpdateAvailable = false
-                };
+                    _snapshot = BuildSnapshot(
+                        installationMetadata,
+                        currentVersion,
+                        currentVersion.ToTag(),
+                        pendingAssetName: null,
+                        isUpdateAvailable: false);
+                }
+
+                return false;
             }
 
-            return false;
+            string stagedExecutablePath = await DownloadReleaseAssetAsync(
+                installationMetadata,
+                latestRelease.Value.AssetName,
+                latestRelease.Value.AssetUrl,
+                cancellationToken).ConfigureAwait(false);
+
+            installationMetadataRepository.EnsureHelperScript();
+            bool launchAfterApply = !TryLaunchRestartLauncher(installationMetadata.InstalledExecutablePath);
+            installationMetadataRepository.SaveUpdateRequest(new PersistedUpdateRequest
+            {
+                ProcessId = Environment.ProcessId,
+                DownloadedExecutablePath = stagedExecutablePath,
+                InstalledExecutablePath = installationMetadata.InstalledExecutablePath,
+                StartWithWindows = configuration.StartWithWindows,
+                LaunchAfterApply = launchAfterApply
+            });
+
+            LaunchHelper(installationMetadata);
+            logPublisher.Write($"Update prepared for {latestRelease.Value.Tag} using asset {latestRelease.Value.AssetName}.");
+
+            lock (_snapshotGate)
+            {
+                _snapshot = BuildSnapshot(
+                    installationMetadata,
+                    currentVersion,
+                    latestRelease.Value.Tag,
+                    latestRelease.Value.AssetName,
+                    isUpdateAvailable: true);
+            }
+
+            return true;
         }
-
-        string stagedExecutablePath = await DownloadReleaseAssetAsync(
-            installationMetadata,
-            latestRelease.Value.AssetName,
-            latestRelease.Value.AssetUrl,
-            cancellationToken).ConfigureAwait(false);
-
-        installationMetadataRepository.EnsureHelperScript();
-        bool launchAfterApply = !TryLaunchRestartLauncher(installationMetadata.InstalledExecutablePath);
-        installationMetadataRepository.SaveUpdateRequest(new PersistedUpdateRequest
+        finally
         {
-            ProcessId = Environment.ProcessId,
-            DownloadedExecutablePath = stagedExecutablePath,
-            InstalledExecutablePath = installationMetadata.InstalledExecutablePath,
-            StartWithWindows = configuration.StartWithWindows,
-            LaunchAfterApply = launchAfterApply
-        });
+            _ = _operationGate.Release();
+        }
+    }
 
-        LaunchHelper(installationMetadata);
-        logPublisher.Write($"Update prepared for {latestRelease.Value.Tag} using asset {latestRelease.Value.AssetName}.");
+    public void RecordCheckFailure(string errorMessage)
+    {
+        InstallationMetadata installationMetadata = installationMetadataRepository.Load();
+        CalVersion currentVersion = ResolveCurrentVersion();
+        UpdateStatusSnapshot currentSnapshot = GetSnapshot();
 
         lock (_snapshotGate)
         {
-            _snapshot = new UpdateStatusSnapshot
-            {
-                CurrentVersion = currentVersion,
-                ReleaseFlavor = installationMetadata.ReleaseFlavor,
-                InstallationMode = installationMetadata.InstallationMode,
-                LatestVersionTag = latestRelease.Value.Tag,
-                PendingAssetName = latestRelease.Value.AssetName,
-                IsUpdateAvailable = true
-            };
+            _snapshot = BuildSnapshot(
+                installationMetadata,
+                currentVersion,
+                currentSnapshot.LatestVersionTag ?? currentVersion.ToTag(),
+                currentSnapshot.PendingAssetName,
+                isUpdateAvailable: false,
+                lastCheckErrorMessage: errorMessage);
         }
-
-        return true;
     }
 
     private async ValueTask<string> DownloadReleaseAssetAsync(
@@ -244,7 +271,35 @@ internal sealed class UpdateCoordinator(
             InstallationMode = installationMetadata.InstallationMode,
             LatestVersionTag = null,
             PendingAssetName = null,
-            IsUpdateAvailable = false
+            IsUpdateAvailable = false,
+            LastCheckedAtUtc = null,
+            LastCheckErrorMessage = null
+        };
+    }
+
+    public void Dispose()
+    {
+        _operationGate.Dispose();
+    }
+
+    private UpdateStatusSnapshot BuildSnapshot(
+        InstallationMetadata installationMetadata,
+        CalVersion currentVersion,
+        string? latestVersionTag,
+        string? pendingAssetName,
+        bool isUpdateAvailable,
+        string? lastCheckErrorMessage = null)
+    {
+        return new UpdateStatusSnapshot
+        {
+            CurrentVersion = currentVersion,
+            ReleaseFlavor = installationMetadata.ReleaseFlavor,
+            InstallationMode = installationMetadata.InstallationMode,
+            LatestVersionTag = latestVersionTag,
+            PendingAssetName = pendingAssetName,
+            IsUpdateAvailable = isUpdateAvailable,
+            LastCheckedAtUtc = timeProvider.GetUtcNow(),
+            LastCheckErrorMessage = lastCheckErrorMessage
         };
     }
 }
