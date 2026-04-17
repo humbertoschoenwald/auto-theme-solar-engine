@@ -2,7 +2,17 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Refactoring
+
+- **ui:** modernize native interop ownership (4ea8b34)
+
+### Documentation
+
+- **doctrine:** codify native interop policy (06b53c6)
+
+### Build
+
+- **tooling:** enforce modern interop policy (35fff2b)
 
 ## v26.04.03 - 2026-04-16
 
