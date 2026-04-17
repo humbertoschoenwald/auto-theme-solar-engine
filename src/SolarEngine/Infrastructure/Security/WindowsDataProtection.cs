@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace SolarEngine.Infrastructure.Security;
 
-internal static class WindowsDataProtection
+internal static partial class WindowsDataProtection
 {
     private const int CryptProtectUiForbidden = 0x1;
 
@@ -101,9 +101,9 @@ internal static class WindowsDataProtection
         }
     }
 
-    [DllImport("crypt32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("crypt32.dll", EntryPoint = "CryptProtectData", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CryptProtectData(
+    private static partial bool CryptProtectData(
         ref DataBlob dataIn,
         string? description,
         nint optionalEntropy,
@@ -112,9 +112,9 @@ internal static class WindowsDataProtection
         int flags,
         out DataBlob dataOut);
 
-    [DllImport("crypt32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("crypt32.dll", EntryPoint = "CryptUnprotectData", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CryptUnprotectData(
+    private static partial bool CryptUnprotectData(
         ref DataBlob dataIn,
         nint description,
         nint optionalEntropy,
@@ -123,6 +123,6 @@ internal static class WindowsDataProtection
         int flags,
         out DataBlob dataOut);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern nint LocalFree(nint handle);
+    [LibraryImport("kernel32.dll", EntryPoint = "LocalFree", SetLastError = true)]
+    private static partial nint LocalFree(nint handle);
 }

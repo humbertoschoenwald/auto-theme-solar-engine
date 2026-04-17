@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace SolarEngine.UI;
 
-internal static class NativeInterop
+internal static partial class NativeInterop
 {
     internal delegate nint WindowProcedure(nint hWnd, uint msg, nint wParam, nint lParam);
 
@@ -188,17 +188,17 @@ internal static class NativeInterop
         public nint hBalloonIcon;
     }
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern nint GetModuleHandle(string? lpModuleName);
+    [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial nint GetModuleHandle(string? lpModuleName);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern ushort RegisterClassEx(ref WindowClassEx windowClass);
+    [LibraryImport("user32.dll", EntryPoint = "RegisterClassExW", SetLastError = true)]
+    internal static partial ushort RegisterClassEx(ref WindowClassEx windowClass);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern uint RegisterWindowMessage(string lpString);
+    [LibraryImport("user32.dll", EntryPoint = "RegisterWindowMessageW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial uint RegisterWindowMessage(string lpString);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern nint CreateWindowEx(
+    [LibraryImport("user32.dll", EntryPoint = "CreateWindowExW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial nint CreateWindowEx(
         int dwExStyle,
         string lpClassName,
         string? lpWindowName,
@@ -212,91 +212,91 @@ internal static class NativeInterop
         nint hInstance,
         nint lpParam);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    internal static extern nint DefWindowProc(nint hWnd, uint msg, nint wParam, nint lParam);
+    [LibraryImport("user32.dll", EntryPoint = "DefWindowProcW", SetLastError = true)]
+    internal static partial nint DefWindowProc(nint hWnd, uint msg, nint wParam, nint lParam);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", EntryPoint = "ShowWindow", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool ShowWindow(nint hWnd, int nCmdShow);
+    internal static partial bool ShowWindow(nint hWnd, int nCmdShow);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", EntryPoint = "UpdateWindow", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool UpdateWindow(nint hWnd);
+    internal static partial bool UpdateWindow(nint hWnd);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", EntryPoint = "DestroyWindow", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool DestroyWindow(nint hWnd);
+    internal static partial bool DestroyWindow(nint hWnd);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    internal static extern int GetMessage(out NativeMessage message, nint hWnd, uint minFilter, uint maxFilter);
+    [LibraryImport("user32.dll", EntryPoint = "GetMessageW", SetLastError = true)]
+    internal static partial int GetMessage(out NativeMessage message, nint hWnd, uint minFilter, uint maxFilter);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "TranslateMessage")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool TranslateMessage(ref NativeMessage message);
+    internal static partial bool TranslateMessage(ref NativeMessage message);
 
-    [DllImport("user32.dll")]
-    internal static extern nint DispatchMessage(ref NativeMessage message);
+    [LibraryImport("user32.dll", EntryPoint = "DispatchMessageW")]
+    internal static partial nint DispatchMessage(ref NativeMessage message);
 
-    [DllImport("user32.dll")]
-    internal static extern void PostQuitMessage(int exitCode);
+    [LibraryImport("user32.dll", EntryPoint = "PostQuitMessage")]
+    internal static partial void PostQuitMessage(int exitCode);
 
-    [DllImport("user32.dll", SetLastError = true)]
+    [LibraryImport("user32.dll", EntryPoint = "PostMessageW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool PostMessage(nint hWnd, uint msg, nint wParam, nint lParam);
+    internal static partial bool PostMessage(nint hWnd, uint msg, nint wParam, nint lParam);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    internal static extern nint SendMessage(nint hWnd, uint msg, nint wParam, nint lParam);
+    [LibraryImport("user32.dll", EntryPoint = "SendMessageW", SetLastError = true)]
+    internal static partial nint SendMessage(nint hWnd, uint msg, nint wParam, nint lParam);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern nint SendMessage(nint hWnd, uint msg, nint wParam, string lParam);
+    [LibraryImport("user32.dll", EntryPoint = "SendMessageW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial nint SendMessage(nint hWnd, uint msg, nint wParam, string lParam);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("user32.dll", EntryPoint = "SetWindowTextW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool SetWindowText(nint hWnd, string text);
+    internal static partial bool SetWindowText(nint hWnd, string text);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    internal static extern int GetWindowTextLength(nint hWnd);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowTextLengthW", SetLastError = true)]
+    internal static partial int GetWindowTextLength(nint hWnd);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern int GetWindowText(nint hWnd, char[] buffer, int maxCount);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowTextW", SetLastError = true)]
+    internal static partial int GetWindowText(nint hWnd, [Out] char[] buffer, int maxCount);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    internal static extern int MessageBox(nint hWnd, string text, string caption, int type);
+    [LibraryImport("user32.dll", EntryPoint = "MessageBoxW", StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial int MessageBox(nint hWnd, string text, string caption, int type);
 
-    [DllImport("user32.dll")]
-    internal static extern nint SetFocus(nint hWnd);
+    [LibraryImport("user32.dll", EntryPoint = "SetFocus")]
+    internal static partial nint SetFocus(nint hWnd);
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern nint LoadIcon(nint hInstance, nint iconName);
+    [LibraryImport("user32.dll", EntryPoint = "LoadIconW", SetLastError = true)]
+    internal static partial nint LoadIcon(nint hInstance, nint iconName);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "SetForegroundWindow")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool SetForegroundWindow(nint hWnd);
+    internal static partial bool SetForegroundWindow(nint hWnd);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "GetCursorPos")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool GetCursorPos(out NativePoint point);
+    internal static partial bool GetCursorPos(out NativePoint point);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "EnableWindow")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool EnableWindow(nint hWnd, [MarshalAs(UnmanagedType.Bool)] bool enable);
+    internal static partial bool EnableWindow(nint hWnd, [MarshalAs(UnmanagedType.Bool)] bool enable);
 
-    [DllImport("user32.dll")]
-    internal static extern nint CreatePopupMenu();
+    [LibraryImport("user32.dll", EntryPoint = "CreatePopupMenu")]
+    internal static partial nint CreatePopupMenu();
 
-    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("user32.dll", EntryPoint = "AppendMenuW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool AppendMenu(nint hMenu, uint flags, nint itemId, string? itemText);
+    internal static partial bool AppendMenu(nint hMenu, uint flags, nint itemId, string? itemText);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    internal static extern int TrackPopupMenuEx(nint hMenu, uint flags, int x, int y, nint hWnd, nint reserved);
+    [LibraryImport("user32.dll", EntryPoint = "TrackPopupMenuEx", SetLastError = true)]
+    internal static partial int TrackPopupMenuEx(nint hMenu, uint flags, int x, int y, nint hWnd, nint reserved);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "DestroyMenu")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool DestroyMenu(nint hMenu);
+    internal static partial bool DestroyMenu(nint hMenu);
 
-    [DllImport("gdi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern nint CreateFont(
+    [LibraryImport("gdi32.dll", EntryPoint = "CreateFontW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial nint CreateFont(
         int height,
         int width,
         int escapement,
@@ -312,56 +312,59 @@ internal static class NativeInterop
         uint pitchAndFamily,
         string faceName);
 
-    [DllImport("gdi32.dll")]
+    [LibraryImport("gdi32.dll", EntryPoint = "DeleteObject")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool DeleteObject(nint handle);
+    internal static partial bool DeleteObject(nint handle);
 
-    [DllImport("gdi32.dll")]
-    internal static extern int SetTextColor(nint hdc, int colorRef);
+    [LibraryImport("gdi32.dll", EntryPoint = "SetTextColor")]
+    internal static partial int SetTextColor(nint hdc, int colorRef);
 
-    [DllImport("gdi32.dll")]
-    internal static extern int SetBkColor(nint hdc, int colorRef);
+    [LibraryImport("gdi32.dll", EntryPoint = "SetBkColor")]
+    internal static partial int SetBkColor(nint hdc, int colorRef);
 
-    [DllImport("gdi32.dll")]
-    internal static extern nint CreateSolidBrush(int colorRef);
+    [LibraryImport("gdi32.dll", EntryPoint = "CreateSolidBrush")]
+    internal static partial nint CreateSolidBrush(int colorRef);
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [LibraryImport("shell32.dll", EntryPoint = "Shell_NotifyIconW", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool Shell_NotifyIcon(uint dwMessage, ref NotifyIconData data);
+    internal static partial bool Shell_NotifyIcon(uint dwMessage, ref NotifyIconData data);
 
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    internal static extern int ExtractIconEx(
+    [LibraryImport("shell32.dll", EntryPoint = "ExtractIconExW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    internal static partial int ExtractIconEx(
         string filePath,
         int iconIndex,
         out nint largeIcon,
         out nint smallIcon,
         int iconCount);
 
-    [DllImport("dwmapi.dll")]
-    internal static extern int DwmSetWindowAttribute(nint hWnd, int attribute, ref int value, int valueSize);
+    [LibraryImport("dwmapi.dll", EntryPoint = "DwmSetWindowAttribute")]
+    internal static partial int DwmSetWindowAttribute(nint hWnd, int attribute, ref int value, int valueSize);
 
-    [DllImport("wtsapi32.dll")]
+    [LibraryImport("wtsapi32.dll", EntryPoint = "WTSRegisterSessionNotification")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool WTSRegisterSessionNotification(nint hWnd, int flags);
+    internal static partial bool WTSRegisterSessionNotification(nint hWnd, int flags);
 
-    [DllImport("wtsapi32.dll")]
+    [LibraryImport("wtsapi32.dll", EntryPoint = "WTSUnRegisterSessionNotification")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool WTSUnRegisterSessionNotification(nint hWnd);
+    internal static partial bool WTSUnRegisterSessionNotification(nint hWnd);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "DestroyIcon")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool DestroyIcon(nint iconHandle);
+    internal static partial bool DestroyIcon(nint iconHandle);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "CopyIcon", SetLastError = true)]
+    internal static partial nint CopyIcon(nint iconHandle);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetClientRect")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool GetClientRect(nint hWnd, out NativeRect rect);
+    internal static partial bool GetClientRect(nint hWnd, out NativeRect rect);
 
-    [DllImport("user32.dll")]
-    internal static extern int FillRect(nint hdc, ref NativeRect rect, nint brushHandle);
+    [LibraryImport("user32.dll", EntryPoint = "FillRect")]
+    internal static partial int FillRect(nint hdc, ref NativeRect rect, nint brushHandle);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll", EntryPoint = "InvalidateRect")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool InvalidateRect(nint hWnd, nint rect, [MarshalAs(UnmanagedType.Bool)] bool erase);
+    internal static partial bool InvalidateRect(nint hWnd, nint rect, [MarshalAs(UnmanagedType.Bool)] bool erase);
 
     internal static int RunMessageLoop()
     {
@@ -403,16 +406,6 @@ internal static class NativeInterop
         _ = SendMessage(hWnd, BM_SETCHECK, isChecked ? BST_CHECKED : BST_UNCHECKED, nint.Zero);
     }
 
-    internal static void ApplyFont(nint hWnd, nint fontHandle)
-    {
-        if (hWnd == nint.Zero || fontHandle == nint.Zero)
-        {
-            return;
-        }
-
-        _ = SendMessage(hWnd, WM_SETFONT, fontHandle, 1);
-    }
-
     internal static string GetWindowString(nint hWnd)
     {
         int length = GetWindowTextLength(hWnd);
@@ -452,7 +445,64 @@ internal static class NativeInterop
         return unchecked((int)SendMessage(hWnd, CB_GETCURSEL, nint.Zero, nint.Zero));
     }
 
-    internal static nint LoadAppIcon(out bool ownsHandle)
+    internal static nint GetHandleOrZero(SafeHandle? handle)
+    {
+        return handle is null || handle.IsInvalid || handle.IsClosed
+            ? nint.Zero
+            : handle.DangerousGetHandle();
+    }
+
+    internal static void ApplyFont(nint hWnd, SafeHandle? fontHandle)
+    {
+        nint nativeHandle = GetHandleOrZero(fontHandle);
+        if (hWnd == nint.Zero || nativeHandle == nint.Zero)
+        {
+            return;
+        }
+
+        _ = SendMessage(hWnd, WM_SETFONT, nativeHandle, 1);
+    }
+
+    internal static SafeGdiObjectHandle CreateFontHandle(
+        int height,
+        int width,
+        int escapement,
+        int orientation,
+        int weight,
+        uint italic,
+        uint underline,
+        uint strikeOut,
+        uint charSet,
+        uint outPrecision,
+        uint clipPrecision,
+        uint quality,
+        uint pitchAndFamily,
+        string faceName)
+    {
+        return SafeGdiObjectHandle.FromHandle(
+            CreateFont(
+                height,
+                width,
+                escapement,
+                orientation,
+                weight,
+                italic,
+                underline,
+                strikeOut,
+                charSet,
+                outPrecision,
+                clipPrecision,
+                quality,
+                pitchAndFamily,
+                faceName));
+    }
+
+    internal static SafeGdiObjectHandle CreateSolidBrushHandle(int colorRef)
+    {
+        return SafeGdiObjectHandle.FromHandle(CreateSolidBrush(colorRef));
+    }
+
+    internal static SafeIconHandle LoadAppIcon()
     {
         string? processPath = Environment.ProcessPath;
         if (!string.IsNullOrWhiteSpace(processPath))
@@ -467,20 +517,24 @@ internal static class NativeInterop
                         _ = DestroyIcon(largeIcon);
                     }
 
-                    ownsHandle = true;
-                    return smallIcon;
+                    return SafeIconHandle.FromHandle(smallIcon);
                 }
 
                 if (largeIcon != nint.Zero)
                 {
-                    ownsHandle = true;
-                    return largeIcon;
+                    return SafeIconHandle.FromHandle(largeIcon);
                 }
             }
         }
 
-        ownsHandle = false;
-        return LoadIcon(nint.Zero, IDI_APPLICATION);
+        nint fallbackIconHandle = LoadIcon(nint.Zero, IDI_APPLICATION);
+        if (fallbackIconHandle == nint.Zero)
+        {
+            return SafeIconHandle.FromHandle(nint.Zero);
+        }
+
+        nint copiedIconHandle = CopyIcon(fallbackIconHandle);
+        return SafeIconHandle.FromHandle(copiedIconHandle);
     }
 
     internal static void ApplyDwmAttributes(nint hWnd, bool useDarkMode = false)

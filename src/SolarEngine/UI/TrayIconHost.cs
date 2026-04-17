@@ -25,9 +25,8 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
     private readonly Lock _tooltipGate = new();
     private bool _disposed;
     private nint _windowHandle;
-    private nint _menuHandle;
-    private nint _iconHandle;
-    private bool _ownsIconHandle;
+    private SafeMenuHandle? _menuHandle;
+    private SafeIconHandle? _iconHandle;
     private string _currentTooltip = appName;
     private string? _pendingTooltip;
     private NativeInterop.NotifyIconData _notifyIconData;
@@ -73,7 +72,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             }
 
             _menuHandle = CreateMenuHandle();
-            _iconHandle = NativeInterop.LoadAppIcon(out _ownsIconHandle);
+            _iconHandle = NativeInterop.LoadAppIcon();
             CreateTrayIcon();
 
             _ = NativeInterop.WTSRegisterSessionNotification(
@@ -217,7 +216,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
         }
     }
 
-    private nint CreateMenuHandle()
+    private SafeMenuHandle CreateMenuHandle()
     {
         nint menuHandle = NativeInterop.CreatePopupMenu();
         if (menuHandle == nint.Zero)
@@ -225,17 +224,18 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the tray menu.");
         }
 
+        SafeMenuHandle safeMenuHandle = SafeMenuHandle.FromHandle(menuHandle);
         if (!NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, OpenCommandId, _localization["tray.open_settings"])
             || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ApplyNowCommandId, _localization["tray.apply_now"])
             || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, RecalculateCommandId, _localization["tray.recalculate_today"])
             || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_SEPARATOR, nint.Zero, null)
             || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ExitCommandId, _localization["tray.exit"]))
         {
-            _ = NativeInterop.DestroyMenu(menuHandle);
+            safeMenuHandle.Dispose();
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to populate the tray menu.");
         }
 
-        return menuHandle;
+        return safeMenuHandle;
     }
 
     private void CreateTrayIcon()
@@ -247,7 +247,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             uID = TrayIconId,
             uFlags = NativeInterop.NIF_MESSAGE | NativeInterop.NIF_ICON | NativeInterop.NIF_TIP,
             uCallbackMessage = NativeInterop.WM_TRAYICON,
-            hIcon = _iconHandle,
+            hIcon = NativeInterop.GetHandleOrZero(_iconHandle),
             szTip = NormalizeTooltip(_currentTooltip),
             szInfo = string.Empty,
             szInfoTitle = string.Empty
@@ -276,7 +276,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             uID = TrayIconId,
             uFlags = NativeInterop.NIF_MESSAGE | NativeInterop.NIF_ICON | NativeInterop.NIF_TIP,
             uCallbackMessage = NativeInterop.WM_TRAYICON,
-            hIcon = _iconHandle,
+            hIcon = NativeInterop.GetHandleOrZero(_iconHandle),
             szTip = NormalizeTooltip(_currentTooltip),
             szInfo = string.Empty,
             szInfoTitle = string.Empty
@@ -323,7 +323,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
         }
 
         int command = NativeInterop.TrackPopupMenuEx(
-            _menuHandle,
+            NativeInterop.GetHandleOrZero(_menuHandle),
             NativeInterop.TPM_LEFTALIGN | NativeInterop.TPM_RETURNCMD | NativeInterop.TPM_NONOTIFY,
             cursor.X,
             cursor.Y,
@@ -338,10 +338,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
     private void RebuildMenu()
     {
-        if (_menuHandle != nint.Zero)
-        {
-            _ = NativeInterop.DestroyMenu(_menuHandle);
-        }
+        _menuHandle?.Dispose();
 
         _menuHandle = CreateMenuHandle();
     }
@@ -413,19 +410,11 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
     private void DisposeNativeResources()
     {
-        if (_menuHandle != nint.Zero)
-        {
-            _ = NativeInterop.DestroyMenu(_menuHandle);
-            _menuHandle = nint.Zero;
-        }
+        _menuHandle?.Dispose();
+        _menuHandle = null;
 
-        if (_ownsIconHandle && _iconHandle != nint.Zero)
-        {
-            _ = NativeInterop.DestroyIcon(_iconHandle);
-        }
-
-        _iconHandle = nint.Zero;
-        _ownsIconHandle = false;
+        _iconHandle?.Dispose();
+        _iconHandle = null;
     }
 
     private static string NormalizeTooltip(string tooltip)

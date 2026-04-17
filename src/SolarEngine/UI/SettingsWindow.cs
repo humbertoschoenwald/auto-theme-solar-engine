@@ -71,10 +71,9 @@ internal sealed class SettingsWindow(
     private SettingsTab _activeTab = SettingsTab.Home;
     private string _selectedLanguageCode = AppLanguageCodes.Default;
     private nint _windowHandle;
-    private nint _fontHandle;
-    private nint _windowIconHandle;
-    private bool _ownsWindowIconHandle;
-    private nint _backgroundBrushHandle;
+    private SafeGdiObjectHandle? _fontHandle;
+    private SafeIconHandle? _windowIconHandle;
+    private SafeGdiObjectHandle? _backgroundBrushHandle;
     private int _backgroundColorRef = ToColorRef(255, 255, 255);
     private int _foregroundColorRef = ToColorRef(0, 0, 0);
     private nint _headerLabelHandle;
@@ -248,7 +247,7 @@ internal sealed class SettingsWindow(
             Instances[_windowHandle] = this;
         }
 
-        _fontHandle = NativeInterop.CreateFont(
+        _fontHandle = NativeInterop.CreateFontHandle(
             -16,
             0,
             0,
@@ -264,11 +263,12 @@ internal sealed class SettingsWindow(
             NativeInterop.DEFAULT_PITCH,
             "Segoe UI");
 
-        _windowIconHandle = NativeInterop.LoadAppIcon(out _ownsWindowIconHandle);
-        if (_windowIconHandle != nint.Zero)
+        _windowIconHandle = NativeInterop.LoadAppIcon();
+        nint windowIconHandle = NativeInterop.GetHandleOrZero(_windowIconHandle);
+        if (windowIconHandle != nint.Zero)
         {
-            _ = NativeInterop.SendMessage(_windowHandle, NativeInterop.WM_SETICON, NativeInterop.ICON_SMALL, _windowIconHandle);
-            _ = NativeInterop.SendMessage(_windowHandle, NativeInterop.WM_SETICON, NativeInterop.ICON_BIG, _windowIconHandle);
+            _ = NativeInterop.SendMessage(_windowHandle, NativeInterop.WM_SETICON, NativeInterop.ICON_SMALL, windowIconHandle);
+            _ = NativeInterop.SendMessage(_windowHandle, NativeInterop.WM_SETICON, NativeInterop.ICON_BIG, windowIconHandle);
         }
 
         CreateControls();
@@ -577,20 +577,17 @@ internal sealed class SettingsWindow(
 
         if (_backgroundColorRef == backgroundColorRef
             && _foregroundColorRef == foregroundColorRef
-            && _backgroundBrushHandle != nint.Zero)
+            && NativeInterop.GetHandleOrZero(_backgroundBrushHandle) != nint.Zero)
         {
             NativeInterop.ApplyDwmAttributes(_windowHandle, themeMode == ThemeMode.Dark);
             return;
         }
 
-        if (_backgroundBrushHandle != nint.Zero)
-        {
-            _ = NativeInterop.DeleteObject(_backgroundBrushHandle);
-        }
+        _backgroundBrushHandle?.Dispose();
 
         _backgroundColorRef = backgroundColorRef;
         _foregroundColorRef = foregroundColorRef;
-        _backgroundBrushHandle = NativeInterop.CreateSolidBrush(_backgroundColorRef);
+        _backgroundBrushHandle = NativeInterop.CreateSolidBrushHandle(_backgroundColorRef);
 
         NativeInterop.ApplyDwmAttributes(_windowHandle, themeMode == ThemeMode.Dark);
         _ = NativeInterop.InvalidateRect(_windowHandle, nint.Zero, erase: true);
@@ -603,26 +600,28 @@ internal sealed class SettingsWindow(
 
     private nint HandleEraseBackground(nint wParam)
     {
-        if (_backgroundBrushHandle == nint.Zero
+        nint backgroundBrushHandle = NativeInterop.GetHandleOrZero(_backgroundBrushHandle);
+        if (backgroundBrushHandle == nint.Zero
             || !NativeInterop.GetClientRect(_windowHandle, out NativeInterop.NativeRect rect))
         {
             return NativeInterop.DefWindowProc(_windowHandle, NativeInterop.WM_ERASEBKGND, wParam, nint.Zero);
         }
 
-        _ = NativeInterop.FillRect(wParam, ref rect, _backgroundBrushHandle);
+        _ = NativeInterop.FillRect(wParam, ref rect, backgroundBrushHandle);
         return 1;
     }
 
     private nint HandleControlColor(nint wParam)
     {
-        if (_backgroundBrushHandle == nint.Zero)
+        nint backgroundBrushHandle = NativeInterop.GetHandleOrZero(_backgroundBrushHandle);
+        if (backgroundBrushHandle == nint.Zero)
         {
             return nint.Zero;
         }
 
         _ = NativeInterop.SetTextColor(wParam, _foregroundColorRef);
         _ = NativeInterop.SetBkColor(wParam, _backgroundColorRef);
-        return _backgroundBrushHandle;
+        return backgroundBrushHandle;
     }
 
     private void HandleLanguageSelectionChanged()
@@ -1234,25 +1233,14 @@ internal sealed class SettingsWindow(
 
     private void DisposeNativeResources()
     {
-        if (_backgroundBrushHandle != nint.Zero)
-        {
-            _ = NativeInterop.DeleteObject(_backgroundBrushHandle);
-            _backgroundBrushHandle = nint.Zero;
-        }
+        _backgroundBrushHandle?.Dispose();
+        _backgroundBrushHandle = null;
 
-        if (_fontHandle != nint.Zero)
-        {
-            _ = NativeInterop.DeleteObject(_fontHandle);
-            _fontHandle = nint.Zero;
-        }
+        _fontHandle?.Dispose();
+        _fontHandle = null;
 
-        if (_ownsWindowIconHandle && _windowIconHandle != nint.Zero)
-        {
-            _ = NativeInterop.DestroyIcon(_windowIconHandle);
-        }
-
-        _windowIconHandle = nint.Zero;
-        _ownsWindowIconHandle = false;
+        _windowIconHandle?.Dispose();
+        _windowIconHandle = null;
         _languageSelectorHandle = nint.Zero;
         _latitudeEditHandle = nint.Zero;
         _longitudeEditHandle = nint.Zero;
