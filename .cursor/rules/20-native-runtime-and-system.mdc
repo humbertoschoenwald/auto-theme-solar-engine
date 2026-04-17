@@ -18,6 +18,9 @@ alwaysApply: false
 
 - RULE: Keep the runtime native and lightweight. Do not introduce WPF, WinForms, MAUI, or another UI framework without a new ADR.
 - RULE: Keep Win32 interop centralized behind native helper boundaries instead of scattering platform calls across feature code.
+- RULE: Use `LibraryImport` for authored Win32 declarations and wrap owned
+  native lifetimes in typed `SafeHandle` helpers instead of naked ownership
+  fields.
 - RULE: Solar scheduling must stay local and deterministic. Do not replace it with external sunrise or weather APIs.
 - RULE: Keep the solar engine on the documented NOAA/Meeus approximation unless ADR explicitly upgrades the precision and complexity budget.
 - RULE: Persist coordinates only through the reduced-precision protected storage path.

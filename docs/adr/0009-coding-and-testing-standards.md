@@ -29,6 +29,11 @@ The current codebase shows a consistent implementation style: small feature-orie
 - Analyzer and formatter policy should enforce only rules that the current SDK,
   `dotnet format`, and `.editorconfig` can actually evaluate in CI.
 - Generic `System.InvalidOperationException` is banned by repository policy. Use `Result<T>`, a more specific framework exception, or a dedicated repository exception that names the broken invariant.
+- Authored P/Invoke declarations must use `LibraryImport`, not `DllImport`.
+- Owned native resources such as icons, menus, brushes, and fonts must not live
+  in naked `nint` fields. Wrap owned lifetimes in repository-approved
+  `SafeHandle` types and keep raw integers only for borrowed OS handles or
+  transient message parameters.
 - Prefer measurable modern platform guidance where it fits the codebase, such as
   frozen collections for read-heavy lookup tables, structured logging message
   templates, span-friendly parsing on hot paths, and async cancellation
@@ -43,3 +48,6 @@ The current codebase shows a consistent implementation style: small feature-orie
 - Tests become more numerous and targeted, but they also localize regressions better.
 - Code stays smaller because doctrine leaves the implementation layer.
 - Analyzer policy now rejects a class of vague runtime exceptions before they leave a developer machine.
+- Interop code becomes more explicit about ownership boundaries, which adds a
+  small amount of wrapper code in exchange for safer cleanup and cleaner Native
+  AOT alignment.

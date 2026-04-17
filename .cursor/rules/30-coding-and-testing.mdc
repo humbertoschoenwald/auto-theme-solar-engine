@@ -22,6 +22,10 @@ alwaysApply: false
 - RULE: Use `Result` or `Result<T>` for expected failures. Reserve exceptions for invalid states and boundary failures.
 - RULE: Prefer early returns over deeply nested ternaries when validating or normalizing inputs.
 - RULE: Do not use `System.InvalidOperationException`. Use `Result<T>`, a more specific framework exception, or a dedicated repository exception that names the broken invariant.
+- RULE: Do not author new `DllImport` declarations. Use `LibraryImport`.
+- RULE: Do not keep owned native resources in naked `nint` fields. Use typed
+  `SafeHandle` wrappers for owned icons, menus, fonts, brushes, and similar
+  resources.
 - RULE: Do not add EF Core, Dapper, or relational database plumbing unless a concrete repository feature introduces relational persistence and ADR is updated accordingly.
 - RULE: Repository-only forbidden-type checks must scan authored source under `src/` and `tests/`, not generated files under `obj/` or `bin/`.
 - RULE: Keep comments sparse. Repository rationale belongs in ADR. Inline comments are for local hazards only.

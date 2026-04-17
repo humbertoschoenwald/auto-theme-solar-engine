@@ -24,6 +24,9 @@ The code shows this decision in `NativeApplication`, `TrayIconHost`, `SettingsWi
   - a native settings window built from Win32 controls,
   - a tray icon context menu.
 - Interop helpers live in a dedicated `NativeInterop` boundary. Add new Win32 calls there instead of scattering platform calls throughout feature code.
+- Native interop declarations use `LibraryImport`, and owned Win32 resources
+  such as icons, menus, fonts, and brushes stay behind typed `SafeHandle`
+  wrappers instead of naked ownership-bearing `nint` fields.
 - Lightweight runtime behavior is a product requirement. When the native settings window is hidden, the app may schedule one best-effort GC compaction to reclaim short-lived UI allocations without making explicit collection part of the normal hot path.
 - Native window styling should stay minimal and stable. Lightweight shell integration takes priority over decorative framework features.
 
