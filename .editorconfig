@@ -75,6 +75,7 @@ dotnet_diagnostic.IDE0160.severity = error
 dotnet_diagnostic.IDE0161.severity = error
 dotnet_diagnostic.IDE0290.severity = error
 dotnet_diagnostic.RS0030.severity = error
+dotnet_diagnostic.SYSLIB1054.severity = error
 dotnet_analyzer_diagnostic.category-Style.severity = warning
 dotnet_analyzer_diagnostic.category-Design.severity = warning
 dotnet_analyzer_diagnostic.category-Maintainability.severity = warning

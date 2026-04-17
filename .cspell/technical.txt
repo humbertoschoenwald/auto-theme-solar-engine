@@ -22,6 +22,7 @@ covrunarm
 DEFPUSHBUTTON
 dependencyinjection
 dpapi
+dllimport
 dwmapi
 DWMSBT
 DWMWA
@@ -60,6 +61,7 @@ Mutex
 netcoreapp
 netframework
 netstandard
+nint
 newtonsoft
 nonfinite
 NONOTIFY
