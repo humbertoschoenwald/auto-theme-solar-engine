@@ -5,6 +5,7 @@
 ### Refactoring
 
 - **ui:** modernize native interop ownership (4ea8b34)
+- **app:** rename branding and local install path (5b3cd46)
 
 ### Documentation
 
