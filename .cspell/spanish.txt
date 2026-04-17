@@ -211,3 +211,9 @@ pantalla
 revisa
 falló
 reintentará
+auxiliares
+pega
+pegado
+ejecutarlo
+presiona
+correrlo

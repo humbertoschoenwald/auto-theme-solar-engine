@@ -71,17 +71,17 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     public void BuildPersistedInstallationMetadata_PreservesCurrentExecutableName()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.BuildPersistedInstallationMetadata(
-            @"C:\Program Files\Auto Theme — Solar Engine\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe",
+            @"C:\Program Files\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe",
             ReleaseFlavor.SelfContained,
             InstallationMode.ProgramFiles,
-            "Auto Theme Solar Engine Silent Update");
+            "AutoThemeSolarEngine Silent Update");
 
         Assert.Equal(
             "auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe",
             metadata.InstalledExecutableName);
         Assert.Equal("self-contained", metadata.ReleaseFlavor);
         Assert.Equal("program-files", metadata.InstallationMode);
-        Assert.Equal("Auto Theme Solar Engine Silent Update", metadata.ElevatedTaskName);
+        Assert.Equal("AutoThemeSolarEngine Silent Update", metadata.ElevatedTaskName);
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     public void BuildElevatedTaskRegistrationScript_UsesCurrentHelperAndInteractivePrincipal()
     {
         string script = InstallationMetadataRepository.BuildElevatedTaskRegistrationScript(
-            "Auto Theme Solar Engine Silent Update",
+            "AutoThemeSolarEngine Silent Update",
             @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\Apply-SolarEngine-Update.ps1",
             @"C:\Program Files\PowerShell\7\pwsh.exe",
             @"MACHINE\tester");
@@ -101,7 +101,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
         Assert.Contains(@"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\Apply-SolarEngine-Update.ps1", script, StringComparison.Ordinal);
         Assert.Contains(@"C:\Program Files\PowerShell\7\pwsh.exe", script, StringComparison.Ordinal);
         Assert.Contains(@"MACHINE\tester", script, StringComparison.Ordinal);
-        Assert.Contains("Register-ScheduledTask -TaskName 'Auto Theme Solar Engine Silent Update' -InputObject $task -Force | Out-Null", script, StringComparison.Ordinal);
+        Assert.Contains("Register-ScheduledTask -TaskName 'AutoThemeSolarEngine Silent Update' -InputObject $task -Force | Out-Null", script, StringComparison.Ordinal);
     }
 
     /// <summary>

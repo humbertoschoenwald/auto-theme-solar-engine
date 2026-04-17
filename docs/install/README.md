@@ -7,12 +7,16 @@ product overview stays short while the update model remains explicit.
 
 Use the per-user entrypoint when the app should live under the current user's
 profile and update without requiring elevation. This is the recommended install
-mode. Use a normal PowerShell session. Each block launches the downloaded
-executable automatically.
+mode. Use a normal PowerShell session.
+
+Paste the whole block. If your PowerShell session leaves the pasted block
+buffered, press Enter once to run it.
+
+Self-contained (Recommended):
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
+Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 ```
@@ -20,32 +24,8 @@ Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 Framework-dependent:
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
-```
-
-## Program Files Install
-
-Use the machine-oriented entrypoint when the app should live under
-`C:\Program Files\Auto Theme — Solar Engine`.
-
-Open PowerShell as Administrator and run one of these blocks. On the first
-launch, the app bootstraps the elevated silent-update task for that install.
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
-Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
-```
-
-Framework-dependent:
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
-Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
+Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
 Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
 ```
@@ -54,6 +34,10 @@ Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.e
 
 - The downloaded executable stays in the chosen install directory under its
   release asset name.
+- The install directory is `%LocalAppData%\AutoThemeSolarEngine`.
+- The same directory keeps `config.json`, `installation.json`,
+  `AutoThemeSolarEngine.log`, `Apply-SolarEngine-Update.ps1`, and
+  `Launch-SolarEngine-After-Update.ps1`.
 - The updater uses `installation.json` in the install directory to keep future
   silent updates on the same release flavor, install mode, and installed
   executable path chosen by the user.

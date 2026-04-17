@@ -12,7 +12,7 @@ namespace SolarEngine.Features.Updates.Infrastructure;
 internal sealed class InstallationMetadataRepository(AppPaths appPaths)
 {
     private const string ManifestFileName = "installation.json";
-    private const string ElevatedUpdateTaskName = "Auto Theme Solar Engine Silent Update";
+    private const string ElevatedUpdateTaskName = "AutoThemeSolarEngine Silent Update";
 
     public string HelperScriptPath =>
         Path.Combine(appPaths.DirectoryPath, $"Apply-{AppIdentity.RuntimeFileStem}-Update.ps1");

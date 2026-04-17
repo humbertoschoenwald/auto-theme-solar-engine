@@ -1,4 +1,4 @@
-# Contributing to Auto Theme Solar Engine
+# Contributing to AutoThemeSolarEngine
 
 This file is a convenience guide. Canonical repository doctrine lives in `docs/adr/**/*.md`.
 

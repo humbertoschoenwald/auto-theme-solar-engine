@@ -1,4 +1,4 @@
-# Auto Theme — Solar Engine
+# AutoThemeSolarEngine
 
 [![Release](https://img.shields.io/github/v/release/humbertoschoenwald/auto-theme-solar-engine?display_name=tag&label=release)](https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/latest)
 [![CI](https://github.com/humbertoschoenwald/auto-theme-solar-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/humbertoschoenwald/auto-theme-solar-engine/actions/workflows/ci.yml)
@@ -22,20 +22,24 @@ The app runs in the notification area, calculates the solar schedule for your ex
 
 ## Installation
 
-The app supports two install locations and keeps the downloaded release asset in
-that folder. Pick the release flavor you want and run the matching four
-commands. Each block ends by launching the downloaded executable automatically.
+The app keeps the downloaded release asset, `config.json`,
+`installation.json`, `AutoThemeSolarEngine.log`, and the update helper scripts
+inside `LocalAppData\AutoThemeSolarEngine`. Pick the release flavor you want
+and run the matching block in a normal PowerShell session.
+
+Paste the whole block. If your PowerShell session leaves the pasted block
+buffered, press Enter once to run it.
 
 ### LocalAppData (Recommended)
 
 `LocalAppData` is the recommended per-user path and updates silently without
-elevation. Use a normal PowerShell session.
+elevation.
 
-Self-contained:
+Self-contained (Recommended):
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
+Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 ```
@@ -43,32 +47,8 @@ Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
 Framework-dependent:
 
 ```powershell
-New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Set-Location "$env:LOCALAPPDATA\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
-```
-
-### Program Files (PowerShell as Administrator)
-
-`Program Files` remains available for machine-oriented installs. Open
-PowerShell as Administrator, then run one of these blocks. On the first launch,
-the app bootstraps the elevated silent-update task for that install.
-
-Self-contained:
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
-Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
-```
-
-Framework-dependent:
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:ProgramFiles\Auto Theme — Solar Engine"
-Set-Location "$env:ProgramFiles\Auto Theme — Solar Engine"
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
+Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
 Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
 ```

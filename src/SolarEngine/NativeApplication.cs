@@ -110,7 +110,7 @@ internal sealed class NativeApplication : IDisposable
             or UnexpectedStateException
             or Win32Exception)
         {
-            HandleStartupFailure(appPaths, exception, "Auto Theme Solar Engine failed during startup.");
+            HandleStartupFailure(appPaths, exception, "AutoThemeSolarEngine failed during startup.");
             return -1;
         }
         finally

@@ -26,8 +26,7 @@ wrong delivery flavor by accident.
   the latest known matching version and current status instead of remaining in
   a perpetual `not checked yet` state.
 - The preferred install mode is a per-user `LocalAppData` install because it
-  allows silent updates without elevation. `Program Files` remains a supported
-  opt-in path for users who explicitly want a machine-oriented install.
+  allows silent updates without elevation.
 - Direct download-and-run installs are supported. On first launch, the app
   records installation metadata from the current executable path instead of
   forcing a renamed wrapper executable.
@@ -37,6 +36,12 @@ wrong delivery flavor by accident.
 - The authoritative install target is the path the user chose. The updater must
   keep replacing the executable recorded by the current install metadata and may
   not silently migrate the app to a different directory.
+- For the documented install flow, the chosen directory is
+  `%LocalAppData%\AutoThemeSolarEngine`.
+- The documented install directory keeps the downloaded release asset,
+  `config.json`, `installation.json`, `AutoThemeSolarEngine.log`,
+  `Apply-SolarEngine-Update.ps1`, and `Launch-SolarEngine-After-Update.ps1`
+  together.
 - Versioned release asset names remain intact. The updater downloads the newer
   executable by its release asset name instead of overwriting the currently
   running executable in place.
@@ -60,12 +65,11 @@ wrong delivery flavor by accident.
   privileged swap step from the normal-user relaunch step.
 - The install directory must contain enough metadata for the updater to resolve
   the current install flavor and executable target deterministically.
-- The repository ships PowerShell-based install entrypoints for both:
-  - a recommended per-user install under LocalAppData,
-  - an optional machine-oriented install under Program Files.
-- For direct `Program Files` installs, the first elevated launch must bootstrap
-  the updater's scheduled task so later silent replacements can keep the same
-  install directory without prompting the user again.
+- The repository ships PowerShell-based install entrypoints only for the
+  recommended per-user install under LocalAppData.
+- Existing installs outside the documented LocalAppData path remain a
+  compatibility concern for update matching, but repository install guidance no
+  longer advertises a separate machine-oriented entrypoint.
 - Silent updates are a first-class requirement. If an install location requires
   extra privileges, that requirement must be handled by the install model rather
   than surfaced as ad hoc runtime prompts.
@@ -89,6 +93,6 @@ wrong delivery flavor by accident.
   disabled.
 - **Negative:** Update orchestration now spans runtime code, install scripts,
   release assets, and startup registration.
-- **Risks:** Silent updates to protected install locations require a carefully
-  designed install-time privilege model. A weak model would leave updates
-  partially applied or startup registration pointing at an old executable.
+- **Risks:** Compatibility for pre-existing installs outside the documented
+  LocalAppData path still depends on the updater preserving the recorded
+  executable target.

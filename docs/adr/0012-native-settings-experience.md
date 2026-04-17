@@ -14,7 +14,7 @@ inside the desktop UI while keeping the runtime fully native.
 ## Decision
 
 - The repository and release assets keep the long product name
-  `Auto Theme — Solar Engine`, but the running desktop app uses the short
+  `AutoThemeSolarEngine`, but the running desktop app uses the short
   visible name `Solar Engine` in compact native surfaces such as window titles,
   tray captions, and message boxes.
 - The native settings window uses three top-level tabs:

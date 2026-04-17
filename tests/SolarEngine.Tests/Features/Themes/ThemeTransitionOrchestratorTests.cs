@@ -39,7 +39,7 @@ public sealed class ThemeTransitionOrchestratorTests
 
         Assert.Contains("Sunrise", scheduleText, StringComparison.Ordinal);
         Assert.Contains("Sunset", scheduleText, StringComparison.Ordinal);
-        Assert.DoesNotContain("Auto Theme Solar Engine", statusText, StringComparison.Ordinal);
+        Assert.DoesNotContain("AutoThemeSolarEngine", statusText, StringComparison.Ordinal);
         Assert.Contains("Sunrise", statusText, StringComparison.Ordinal);
         Assert.Contains("Sunset", statusText, StringComparison.Ordinal);
     }
