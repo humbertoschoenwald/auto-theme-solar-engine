@@ -1,21 +1,21 @@
-## v26.04.03 - 2026-04-16
+## v26.04.04 - 2026-04-20
 
-### Fixes
+### Refactoring
 
-- **updates:** bootstrap direct program files installs (09259ce)
-- **updates:** refresh release status in the background (5e10c6f)
-- **ui:** mask coordinates and use a language list (9bd55b1)
+- **ui:** modernize native interop ownership (4ea8b34)
+- **app:** rename branding and local install path (5b3cd46)
+- **app:** normalize runtime naming boundaries (4883adf)
 
 ### Documentation
 
-- **docs:** switch install guide to direct commands (1761d3c)
-- **doctrine:** codify UI privacy and update cadence (2bbcfff)
-- **docs:** clarify install blocks auto-launch (644f9d2)
+- **doctrine:** codify native interop policy (06b53c6)
+- **doctrine:** codify install and coverage guidance (e240fdc)
+
+### Tests
+
+- **tests:** add light validation lane and coverage run (3bbfe09)
 
 ### Build
 
-- **app:** prepare v26.04.03 release (57ed169)
-
-### Chores
-
-- **tooling:** extend cspell dictionaries (0c2834f)
+- **tooling:** enforce modern interop policy (35fff2b)
+- **app:** prepare v26.04.04 package (f7b6c78)

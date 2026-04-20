@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## v26.04.04 - 2026-04-20
+
 ### Refactoring
 
 - **ui:** modernize native interop ownership (4ea8b34)
