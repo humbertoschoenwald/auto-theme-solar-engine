@@ -13,10 +13,10 @@ inside the desktop UI while keeping the runtime fully native.
 
 ## Decision
 
-- The repository and release assets keep the long product name
-  `AutoThemeSolarEngine`, but the running desktop app uses the short
-  visible name `Solar Engine` in compact native surfaces such as window titles,
-  tray captions, and message boxes.
+- Internal identifiers, filesystem-safe names, and release assets keep
+  `AutoThemeSolarEngine`, but user-visible desktop UI surfaces use the
+  display name `Auto Theme Solar Engine` in window titles, tray captions, and
+  message boxes.
 - The native settings window uses three top-level tabs:
   - `Home`
   - `Configuration`
@@ -26,7 +26,8 @@ inside the desktop UI while keeping the runtime fully native.
   resources and an explicit in-app language switcher.
 - The language switcher is a native list selector in the settings window
   rather than an external configuration file edit or a toggle-only shortcut.
-- Runtime status text should describe state, not repeat the long product name.
+- Runtime status text should describe state, not keep repeating the visible
+  product name.
 - The settings window should mirror the currently applied runtime theme mode.
   When the runtime mode is dark, the window uses a dark visual treatment. When
   the runtime mode is light, the window uses a light treatment.
@@ -60,8 +61,8 @@ inside the desktop UI while keeping the runtime fully native.
 
 - **Positive:** The app stays lightweight while gaining clearer navigation and
   better localization control.
-- **Positive:** User-facing branding can stay compact and legible in the
-  desktop runtime without changing repository or release naming.
+- **Positive:** User-facing branding stays explicit and readable in the
+  desktop runtime without sacrificing filesystem-safe internal naming.
 - **Positive:** Coordinate privacy is preserved even when the settings window is
   visible on screen.
 - **Negative:** Theme-aware Win32 drawing and tab state handling add more manual

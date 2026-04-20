@@ -40,8 +40,8 @@ Self-contained (Recommended):
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.04/auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe"
 ```
 
 Framework-dependent:
@@ -49,8 +49,8 @@ Framework-dependent:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.03/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.03.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.04/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe"
+Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe"
 ```
 
 After the app opens, enter your coordinates manually or allow Windows location
@@ -68,3 +68,17 @@ access.
 - Uses strict CI on GitHub Actions with commitlint, cspell, build, analyzers, vulnerability scanning, and tests.
 - Follows Windows app theme preference for the native settings window.
 - Ships English and Spanish UI text from JSON localization resources.
+
+## Coverage
+
+Run `pwsh -NoLogo -NoProfile -File ./scripts/run-coverage.ps1` to generate
+`artifacts/coverage/coverage.xml`.
+
+The repository measures local line and branch coverage and writes the canonical
+report to `artifacts/coverage/coverage.xml`. If you use VS Code, install
+Coverage Gutters and point it at `artifacts/coverage/coverage.xml`. The bundled
+workspace settings already do that for you.
+
+The coverage gate intentionally excludes generated files, native Win32 UI glue,
+DI bootstraps, and OS-bound orchestration that is validated by the heavier
+local lane instead.

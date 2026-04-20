@@ -27,7 +27,16 @@ alwaysApply: false
 - RULE: Preview language features may be adopted only when the pinned SDK compiles them in a normal repository build without unsupported shims.
 - RULE: Do not use C# `union` declarations in product code until the pinned SDK and runtime provide a complete repository-ready path.
 - RULE: Keep Conventional Commits and CalVer `vYY.MM.PATCH`.
-- RULE: Local and remote quality gates must stay aligned.
+- RULE: Local pre-push is the full-fidelity validation lane. Remote CI may run
+  only the light test lane when the heavier checks remain enforced locally.
+- RULE: Local validation must generate
+  `artifacts/coverage/coverage.xml` and report coverage without a minimum
+  percentage gate.
+- RULE: Editor-facing coverage tooling must read the canonical
+  `artifacts/coverage/coverage.xml` artifact instead of ad hoc coverage paths.
+- RULE: Generated code, native shell glue, DI bootstrap files, and OS-bound
+  runtime orchestration without deterministic unit seams must stay out of the
+  coverage denominator and be validated by the heavy local lane instead.
 - RULE: Source-only repository lint is the enforcement path for forbidden constructs that analyzers cannot scope away from generated code.
 - RULE: Release automation belongs to successful pushes to `main` and must remain derived from commit history.
 - RULE: `CHANGELOG.md` must keep an `Unreleased` section between release tags, and release notes must derive from the tagged changelog section.

@@ -15,7 +15,9 @@ The repository already enforces commit quality, spelling, formatting, build heal
   - `dotnet restore`,
   - `dotnet format --verify-no-changes`,
   - release build,
-  - automated tests.
+  - automated tests,
+  - coverage generation to `artifacts/coverage/coverage.xml`,
+  - heavier publish-style validation that simulates the release environment.
 - Remote CI on push and pull request must validate:
   - commit messages,
   - repository linting,
@@ -23,7 +25,16 @@ The repository already enforces commit quality, spelling, formatting, build heal
   - build,
   - format and analyzer gate,
   - dependency vulnerability scan,
-  - automated tests.
+  - the light automated-test lane.
+- The local gate is the full-fidelity superset of remote CI. Remote CI may run
+  only the light test lane when heavier validation remains enforced locally
+  before push.
+- The canonical local coverage artifact is `artifacts/coverage/coverage.xml`
+  so editor tooling such as Coverage Gutters can bind to a stable path.
+- The coverage report measures authored deterministic logic. Generated files,
+  native UI shell glue, dependency-injection bootstraps, and OS-bound runtime
+  orchestration without stable unit seams are excluded from the line-coverage
+  denominator and must instead be covered by the local heavy validation lane.
 - Release automation runs only after CI succeeds for a push to `main`.
 - Versioning uses CalVer in `vYY.MM.PATCH` format.
 - Changelog and release notes are generated from commit history rather than hand-maintained as separate doctrine.
@@ -34,4 +45,5 @@ The repository already enforces commit quality, spelling, formatting, build heal
 
 - `main` is a release-bearing branch, so changes there must already be validated.
 - Commit hygiene and changelog quality are directly linked.
-- Local and remote automation must stay aligned because `main` pushes are trusted operations.
+- Local and remote automation must stay intentionally aligned: local pre-push is
+  stricter, and remote CI remains the lighter online confirmation lane.

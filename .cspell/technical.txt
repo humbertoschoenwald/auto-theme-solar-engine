@@ -4,6 +4,7 @@
 # If a term belongs to a single tool or library, prefer the project config of
 # that tool before relaxing the global repository dictionary.
 accessibilities
+Allman
 APMRESUMEAUTOMATIC
 AUTOCHECKBOX
 AUTOHSCROLL

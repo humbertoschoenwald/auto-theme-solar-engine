@@ -28,6 +28,8 @@ alwaysApply: false
 - RULE: Treat undocumented shell-refresh behavior as a compatibility exception. If you change it, update ADR first and keep graceful fallback behavior.
 - RULE: Keep the settings experience native, tabbed, theme-aware, and directly localizable rather than introducing a heavyweight desktop UI stack.
 - RULE: Use a native language selector for English and Spanish instead of a toggle-only control.
+- RULE: User-visible desktop UI surfaces must use `Auto Theme Solar Engine`.
+  Internal identifiers and filesystem-safe names may keep `AutoThemeSolarEngine`.
 - RULE: Automatic updates must preserve the installed delivery flavor and use a deferred replacement step after the current executable exits.
 - RULE: Update availability must refresh automatically at startup and on the documented bounded background cadence, even when automatic install is disabled.
 - RULE: Prefer `LocalAppData` as the default install mode for silent updates, but always respect the user-selected install directory when applying future updates.

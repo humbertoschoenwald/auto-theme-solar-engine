@@ -30,5 +30,17 @@ alwaysApply: false
 - RULE: Repository-only forbidden-type checks must scan authored source under `src/` and `tests/`, not generated files under `obj/` or `bin/`.
 - RULE: Keep comments sparse. Repository rationale belongs in ADR. Inline comments are for local hazards only.
 - RULE: Public XML docs describe behavior when public APIs exist. They do not restate repository doctrine.
+- RULE: Use Allman braces, four-space indentation, explicit visibility-first
+  modifiers, top-of-file using directives outside namespaces, and repository
+  field naming (`_`, `s_`, `t_`) in authored C#.
+- RULE: Prefer `readonly`, language keywords, `nameof(...)`, PascalCase method
+  names, and at most one blank line in a row.
+- RULE: Repository C# style is a strict superset. Existing stricter rules still
+  win where a broader guideline would allow omitted braces, `var`, or
+  target-typed `new()`.
+- RULE: Keep internal and private types `static` or `sealed` unless derivation
+  is required, and keep primary constructor parameters parameter-shaped.
 - RULE: Tests must be deterministic, granular, and include regressions for bug fixes.
+- RULE: Do not add tautological tests or cardboard stubs. Tests must exercise
+  observable behavior with meaningful collaborators.
 - RULE: Use `TimeProvider` when time affects behavior.
