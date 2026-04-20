@@ -8,9 +8,10 @@ namespace SolarEngine.Tests.Features.SolarCalculations;
 /// <summary>
 /// Verifies solar schedule calculations across ordinary, polar, and offset-sensitive days.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class SolarPositionEngineTests
 {
-    private static readonly DateOnly BaselineEquinoxDate = new(2026, 3, 29);
+    private static readonly DateOnly s_baselineEquinoxDate = new(2026, 3, 29);
 
     /// <summary>
     /// Verifies standard daylight calculations produce sunrise before sunset near UTC.
@@ -22,7 +23,7 @@ public sealed class SolarPositionEngineTests
         Assert.True(coordinatesResult.IsSuccess);
 
         Result<SolarSchedule> scheduleResult =
-            SolarPositionEngine.Calculate(BaselineEquinoxDate, coordinatesResult.Value, TimeZoneInfo.Utc);
+            SolarPositionEngine.Calculate(s_baselineEquinoxDate, coordinatesResult.Value, TimeZoneInfo.Utc);
 
         Assert.True(
             scheduleResult.IsSuccess,

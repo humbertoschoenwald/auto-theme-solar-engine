@@ -2,10 +2,10 @@ namespace SolarEngine.Features.SystemHost.Domain;
 
 internal sealed class AppPaths
 {
-    private static readonly string BaseDirectory = ResolveBaseDirectory();
+    private static readonly string s_baseDirectory = ResolveBaseDirectory();
 
     public AppPaths()
-        : this(BaseDirectory)
+        : this(s_baseDirectory)
     {
     }
 

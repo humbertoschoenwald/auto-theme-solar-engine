@@ -8,8 +8,8 @@ namespace SolarEngine.Features.SystemHost.Infrastructure;
 internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublisher)
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = AppIdentity.RuntimeName;
-    private const string LegacyValueName = AppIdentity.LegacyRuntimeName;
+    private const string ValueName = AppIdentity.StartupValueName;
+    private const string LegacyValueName = AppIdentity.LegacyStartupValueName;
 
     public void SetEnabled(bool enabled, string executablePath)
     {

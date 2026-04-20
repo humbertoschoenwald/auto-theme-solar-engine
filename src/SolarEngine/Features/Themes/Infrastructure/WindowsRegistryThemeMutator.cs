@@ -20,7 +20,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private const string RefreshImmersiveColorPolicyStateExport = "#104";
     private const string FlushMenuThemesExport = "#136";
 
-    private static readonly nint HwndBroadcast = new(0xFFFF);
+    private static readonly nint s_hwndBroadcast = new(0xFFFF);
 
     private const string ShellTrayWindowClassName = "Shell_TrayWnd";
     private const string ShellSecondaryTrayWindowClassName = "Shell_SecondaryTrayWnd";
@@ -202,12 +202,12 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
 
     private static void BroadcastThemeChange(string? parameter)
     {
-        _ = SendMessageTimeoutString(HwndBroadcast, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, 2000, out _);
+        _ = SendMessageTimeoutString(s_hwndBroadcast, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, 2000, out _);
     }
 
     private static void BroadcastWindowMessage(int message)
     {
-        _ = SendMessageTimeoutRaw(HwndBroadcast, message, nint.Zero, nint.Zero, SmtoAbortIfHung, 2000, out _);
+        _ = SendMessageTimeoutRaw(s_hwndBroadcast, message, nint.Zero, nint.Zero, SmtoAbortIfHung, 2000, out _);
     }
 
     private static void RefreshShellWindowByClassName(string className)

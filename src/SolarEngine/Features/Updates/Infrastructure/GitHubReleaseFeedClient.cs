@@ -6,17 +6,17 @@ namespace SolarEngine.Features.Updates.Infrastructure;
 
 internal sealed class GitHubReleaseFeedClient
 {
-    private static readonly Uri ReleasesUri =
+    private static readonly Uri s_releasesUri =
         new("https://api.github.com/repos/humbertoschoenwald/auto-theme-solar-engine/releases");
-    private static readonly HttpClient Client = CreateHttpClient();
+    private static readonly HttpClient s_client = CreateHttpClient();
 
     public async ValueTask<(CalVersion Version, string Tag, string AssetName, string AssetUrl)?> FindLatestMatchingReleaseAsync(
         ReleaseFlavor releaseFlavor,
         CalVersion currentVersion,
         CancellationToken cancellationToken = default)
     {
-        using HttpRequestMessage request = new(HttpMethod.Get, ReleasesUri);
-        using HttpResponseMessage response = await Client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using HttpRequestMessage request = new(HttpMethod.Get, s_releasesUri);
+        using HttpResponseMessage response = await s_client.SendAsync(request, cancellationToken).ConfigureAwait(false);
         _ = response.EnsureSuccessStatusCode();
 
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);

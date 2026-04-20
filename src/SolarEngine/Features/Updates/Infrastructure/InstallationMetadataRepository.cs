@@ -345,8 +345,8 @@ Get-ChildItem -LiteralPath $installedDirectory -Filter "auto-theme-solar-engine-
   Remove-Item -Force -ErrorAction SilentlyContinue
 
 $runKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-$runValueName = "{{AppIdentity.RuntimeName}}"
-$legacyRunValueName = "{{AppIdentity.LegacyRuntimeName}}"
+$runValueName = "{{AppIdentity.StartupValueName}}"
+$legacyRunValueName = "{{AppIdentity.LegacyStartupValueName}}"
 if ($request.StartWithWindows) {
   Set-ItemProperty -Path $runKeyPath -Name $runValueName -Value ('"{0}"' -f $installedPath)
   Remove-ItemProperty -Path $runKeyPath -Name $legacyRunValueName -ErrorAction SilentlyContinue

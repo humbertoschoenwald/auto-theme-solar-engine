@@ -14,11 +14,11 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
     private const int ExitCommandId = 1004;
     private const uint TrayIconId = 1;
 
-    private static readonly Lock InstancesGate = new();
-    private static readonly uint TaskbarCreatedMessage = NativeInterop.RegisterWindowMessage("TaskbarCreated");
-    private static readonly Dictionary<nint, TrayIconHost> Instances = [];
-    private static readonly NativeInterop.WindowProcedure WindowProcedureDelegate = WindowProcedure;
-    private static ushort _windowClassAtom;
+    private static readonly Lock s_instancesGate = new();
+    private static readonly uint s_taskbarCreatedMessage = NativeInterop.RegisterWindowMessage("TaskbarCreated");
+    private static readonly Dictionary<nint, TrayIconHost> s_instances = [];
+    private static readonly NativeInterop.WindowProcedure s_windowProcedureDelegate = WindowProcedure;
+    private static ushort s_windowClassAtom;
 
     private readonly string _appName = appName;
     private readonly AppLocalization _localization = localization;
@@ -66,9 +66,9 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the tray host window.");
             }
 
-            lock (InstancesGate)
+            lock (s_instancesGate)
             {
-                Instances[_windowHandle] = this;
+                s_instances[_windowHandle] = this;
             }
 
             _menuHandle = CreateMenuHandle();
@@ -126,9 +126,9 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
     private static nint WindowProcedure(nint hWnd, uint msg, nint wParam, nint lParam)
     {
-        lock (InstancesGate)
+        lock (s_instancesGate)
         {
-            if (Instances.TryGetValue(hWnd, out TrayIconHost? host))
+            if (s_instances.TryGetValue(hWnd, out TrayIconHost? host))
             {
                 return host.HandleMessage(msg, wParam, lParam);
             }
@@ -139,7 +139,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
     private nint HandleMessage(uint msg, nint wParam, nint lParam)
     {
-        if (msg == TaskbarCreatedMessage)
+        if (msg == s_taskbarCreatedMessage)
         {
             TryRecreateTrayIcon();
             return 0;
@@ -187,7 +187,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
     private static void RegisterWindowClass()
     {
-        if (_windowClassAtom != 0)
+        if (s_windowClassAtom != 0)
         {
             return;
         }
@@ -200,12 +200,12 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             {
                 cbSize = (uint)Marshal.SizeOf<NativeInterop.WindowClassEx>(),
                 hInstance = NativeInterop.GetModuleHandle(null),
-                lpfnWndProc = Marshal.GetFunctionPointerForDelegate(WindowProcedureDelegate),
+                lpfnWndProc = Marshal.GetFunctionPointerForDelegate(s_windowProcedureDelegate),
                 lpszClassName = classNamePointer
             };
 
-            _windowClassAtom = NativeInterop.RegisterClassEx(ref windowClass);
-            if (_windowClassAtom == 0)
+            s_windowClassAtom = NativeInterop.RegisterClassEx(ref windowClass);
+            if (s_windowClassAtom == 0)
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to register the tray host window class.");
             }
@@ -398,9 +398,9 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             _notifyIconData = default;
         }
 
-        lock (InstancesGate)
+        lock (s_instancesGate)
         {
-            _ = Instances.Remove(_windowHandle);
+            _ = s_instances.Remove(_windowHandle);
         }
 
         _windowHandle = nint.Zero;

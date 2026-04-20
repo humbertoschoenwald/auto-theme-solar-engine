@@ -21,7 +21,7 @@ internal sealed class NativeApplication : IDisposable
 {
     private const string AppName = AppIdentity.RuntimeName;
     private const string SingleInstanceMutexName = @"Local\AutoThemeSolarEngine.SingleInstance";
-    private static readonly TimeSpan AutomaticUpdateCheckInterval = TimeSpan.FromHours(4);
+    private static readonly TimeSpan s_automaticUpdateCheckInterval = TimeSpan.FromHours(4);
 
     private bool _disposed;
     private Mutex? _instanceMutex;
@@ -110,7 +110,7 @@ internal sealed class NativeApplication : IDisposable
             or UnexpectedStateException
             or Win32Exception)
         {
-            HandleStartupFailure(appPaths, exception, "AutoThemeSolarEngine failed during startup.");
+            HandleStartupFailure(appPaths, exception, $"{AppIdentity.RuntimeName} failed during startup.");
             return -1;
         }
         finally
@@ -352,7 +352,7 @@ internal sealed class NativeApplication : IDisposable
                 return;
             }
 
-            using PeriodicTimer timer = new(AutomaticUpdateCheckInterval, _timeProvider!);
+            using PeriodicTimer timer = new(s_automaticUpdateCheckInterval, _timeProvider!);
             while (await timer.WaitForNextTickAsync(GetApplicationLifetimeCancellationToken()).ConfigureAwait(false))
             {
                 if (await RefreshUpdateSnapshotAndMaybeApplyAsync().ConfigureAwait(false))

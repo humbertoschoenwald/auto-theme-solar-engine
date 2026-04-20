@@ -8,6 +8,7 @@ namespace SolarEngine.Tests.Features.Updates.Infrastructure;
 /// <summary>
 /// Verifies the generated updater scripts keep the update flow silent and deterministic.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class InstallationMetadataRepositoryTests : IDisposable
 {
     private readonly string _directoryPath = Path.Combine(
@@ -41,7 +42,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
         Assert.Contains("$installedPath = [string]$request.InstalledExecutablePath", helperScript, StringComparison.Ordinal);
         Assert.Contains("Move-Item -LiteralPath $downloadedPath -Destination $installedPath -Force", helperScript, StringComparison.Ordinal);
         Assert.Contains("HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", helperScript, StringComparison.Ordinal);
-        Assert.Contains("$runValueName = \"Solar Engine\"", helperScript, StringComparison.Ordinal);
+        Assert.Contains("$runValueName = \"AutoThemeSolarEngine\"", helperScript, StringComparison.Ordinal);
         Assert.Contains("$legacyRunValueName = \"S\"", helperScript, StringComparison.Ordinal);
         Assert.Contains("auto-theme-solar-engine-win-x64-*.exe", helperScript, StringComparison.Ordinal);
         Assert.Contains("Start-Process -FilePath $installedPath", helperScript, StringComparison.Ordinal);
@@ -71,13 +72,13 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     public void BuildPersistedInstallationMetadata_PreservesCurrentExecutableName()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.BuildPersistedInstallationMetadata(
-            @"C:\Program Files\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe",
+            @"C:\Program Files\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
             ReleaseFlavor.SelfContained,
             InstallationMode.ProgramFiles,
             "AutoThemeSolarEngine Silent Update");
 
         Assert.Equal(
-            "auto-theme-solar-engine-win-x64-self-contained-v26.04.03.exe",
+            "auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
             metadata.InstalledExecutableName);
         Assert.Equal("self-contained", metadata.ReleaseFlavor);
         Assert.Equal("program-files", metadata.InstallationMode);

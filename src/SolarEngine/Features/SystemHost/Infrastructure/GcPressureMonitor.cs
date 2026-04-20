@@ -4,11 +4,11 @@ namespace SolarEngine.Features.SystemHost.Infrastructure;
 
 internal static class GcPressureMonitor
 {
-    private static int _compactionScheduled;
+    private static int s_compactionScheduled;
 
     public static void ScheduleCompaction()
     {
-        if (Interlocked.Exchange(ref _compactionScheduled, 1) == 1)
+        if (Interlocked.Exchange(ref s_compactionScheduled, 1) == 1)
         {
             return;
         }
@@ -32,7 +32,7 @@ internal static class GcPressureMonitor
             }
             finally
             {
-                Volatile.Write(ref _compactionScheduled, 0);
+                Volatile.Write(ref s_compactionScheduled, 0);
             }
         });
     }

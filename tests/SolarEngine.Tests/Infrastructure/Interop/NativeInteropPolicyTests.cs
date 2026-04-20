@@ -10,9 +10,10 @@ namespace SolarEngine.Tests.Infrastructure.Interop;
 /// <summary>
 /// Guards the repository interop policy so authored P/Invoke stays modern and ownership stays explicit.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class NativeInteropPolicyTests
 {
-    private static readonly string RepositoryRoot = Path.GetFullPath(
+    private static readonly string s_repositoryRoot = Path.GetFullPath(
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
 
     /// <summary>
@@ -101,7 +102,7 @@ public sealed class NativeInteropPolicyTests
 
     private static IEnumerable<string> EnumerateSourceFilesUnder(string relativeRoot)
     {
-        string absoluteRoot = Path.Combine(RepositoryRoot, relativeRoot);
+        string absoluteRoot = Path.Combine(s_repositoryRoot, relativeRoot);
         if (!Directory.Exists(absoluteRoot))
         {
             return [];

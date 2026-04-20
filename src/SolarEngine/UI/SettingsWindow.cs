@@ -53,10 +53,10 @@ internal sealed class SettingsWindow(
     private const int CheckUpdatesId = 115;
     private const uint WM_PROCESS_UI_ACTIONS = NativeInterop.WM_APP + 100;
 
-    private static readonly Lock InstancesGate = new();
-    private static readonly Dictionary<nint, SettingsWindow> Instances = [];
-    private static readonly NativeInterop.WindowProcedure WindowProcedureDelegate = WindowProcedure;
-    private static ushort _windowClassAtom;
+    private static readonly Lock s_instancesGate = new();
+    private static readonly Dictionary<nint, SettingsWindow> s_instances = [];
+    private static readonly NativeInterop.WindowProcedure s_windowProcedureDelegate = WindowProcedure;
+    private static ushort s_windowClassAtom;
 
     private readonly ApplicationLifecycleOrchestrator _applicationLifecycleOrchestrator = applicationLifecycleOrchestrator;
     private readonly AppLocalization _localization = localization;
@@ -166,9 +166,9 @@ internal sealed class SettingsWindow(
 
     private static nint WindowProcedure(nint hWnd, uint msg, nint wParam, nint lParam)
     {
-        lock (InstancesGate)
+        lock (s_instancesGate)
         {
-            if (Instances.TryGetValue(hWnd, out SettingsWindow? window))
+            if (s_instances.TryGetValue(hWnd, out SettingsWindow? window))
             {
                 return window.HandleMessage(msg, wParam, lParam);
             }
@@ -242,9 +242,9 @@ internal sealed class SettingsWindow(
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the settings window.");
         }
 
-        lock (InstancesGate)
+        lock (s_instancesGate)
         {
-            Instances[_windowHandle] = this;
+            s_instances[_windowHandle] = this;
         }
 
         _fontHandle = NativeInterop.CreateFontHandle(
@@ -278,7 +278,7 @@ internal sealed class SettingsWindow(
 
     private static void RegisterWindowClass()
     {
-        if (_windowClassAtom != 0)
+        if (s_windowClassAtom != 0)
         {
             return;
         }
@@ -291,13 +291,13 @@ internal sealed class SettingsWindow(
             {
                 cbSize = (uint)Marshal.SizeOf<NativeInterop.WindowClassEx>(),
                 hInstance = NativeInterop.GetModuleHandle(null),
-                lpfnWndProc = Marshal.GetFunctionPointerForDelegate(WindowProcedureDelegate),
+                lpfnWndProc = Marshal.GetFunctionPointerForDelegate(s_windowProcedureDelegate),
                 hbrBackground = NativeInterop.COLOR_WINDOW + 1,
                 lpszClassName = classNamePointer
             };
 
-            _windowClassAtom = NativeInterop.RegisterClassEx(ref windowClass);
-            if (_windowClassAtom == 0)
+            s_windowClassAtom = NativeInterop.RegisterClassEx(ref windowClass);
+            if (s_windowClassAtom == 0)
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to register the settings window class.");
             }
@@ -1222,9 +1222,9 @@ internal sealed class SettingsWindow(
 
     private void HandleDestroy()
     {
-        lock (InstancesGate)
+        lock (s_instancesGate)
         {
-            _ = Instances.Remove(_windowHandle);
+            _ = s_instances.Remove(_windowHandle);
         }
 
         _windowHandle = nint.Zero;

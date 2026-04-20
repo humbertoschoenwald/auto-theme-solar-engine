@@ -8,7 +8,7 @@ internal sealed class StructuredLogPublisher(string logPath)
     internal const int MaxLogBytes = 10 * 1024;
     private const int TimestampAndDelimiterLength = 28;
 
-    private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
+    private static readonly UTF8Encoding s_utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
 
     private readonly Lock _sync = new();
     private readonly string _logPath = !string.IsNullOrWhiteSpace(logPath)
@@ -41,7 +41,7 @@ internal sealed class StructuredLogPublisher(string logPath)
         lock (_sync)
         {
             _ = Directory.CreateDirectory(_directoryPath);
-            File.AppendAllText(_logPath, line, Utf8WithoutBom);
+            File.AppendAllText(_logPath, line, s_utf8WithoutBom);
             TrimLogIfNeeded();
         }
     }

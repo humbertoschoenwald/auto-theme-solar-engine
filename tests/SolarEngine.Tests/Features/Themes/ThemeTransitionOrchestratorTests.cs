@@ -13,10 +13,11 @@ namespace SolarEngine.Tests.Features.Themes;
 /// <summary>
 /// Verifies theme orchestration status text and standard-day application behavior.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class ThemeTransitionOrchestratorTests
 {
-    private static readonly DateOnly BaselineEquinoxDate = new(2026, 3, 29);
-    private static readonly TimeZoneInfo BaselineTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+    private static readonly DateOnly s_baselineEquinoxDate = new(2026, 3, 29);
+    private static readonly TimeZoneInfo s_baselineTimeZone = TimeZoneInfo.CreateCustomTimeZone(
         id: "TestMexicoCity",
         baseUtcOffset: TimeSpan.FromHours(-6),
         displayName: "Test Mexico City",
@@ -138,9 +139,9 @@ public sealed class ThemeTransitionOrchestratorTests
         Assert.True(coordinatesResult.IsSuccess);
 
         Result<SolarSchedule> scheduleResult = SolarPositionEngine.Calculate(
-            BaselineEquinoxDate,
+            s_baselineEquinoxDate,
             coordinatesResult.Value,
-            BaselineTimeZone);
+            s_baselineTimeZone);
 
         Assert.True(scheduleResult.IsSuccess, $"{scheduleResult.Error.Code}: {scheduleResult.Error.Description}");
         return scheduleResult.Value;
@@ -148,7 +149,7 @@ public sealed class ThemeTransitionOrchestratorTests
 
     private static DateTime AlignWithBaselineDate(DateTime dateTime)
     {
-        return BaselineEquinoxDate.ToDateTime(TimeOnly.FromDateTime(dateTime));
+        return s_baselineEquinoxDate.ToDateTime(TimeOnly.FromDateTime(dateTime));
     }
 
     private sealed class TestContext : IDisposable
@@ -175,7 +176,7 @@ public sealed class ThemeTransitionOrchestratorTests
                 new AppLocalization(),
                 new FixedTimeProvider(
                     localNow ?? new DateTime(2026, 3, 29, 12, 0, 0),
-                    BaselineTimeZone));
+                    s_baselineTimeZone));
         }
 
         public void Dispose()
