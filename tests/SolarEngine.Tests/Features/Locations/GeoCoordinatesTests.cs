@@ -7,6 +7,7 @@ namespace SolarEngine.Tests.Features.Locations;
 /// <summary>
 /// Verifies domain coordinate creation guards geographic and numeric invariants.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class GeoCoordinatesTests
 {
     /// <summary>

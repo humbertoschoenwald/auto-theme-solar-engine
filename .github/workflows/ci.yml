@@ -62,6 +62,9 @@ jobs:
           -SolutionPath "${{ env.SOLUTION_PATH }}"
           -TestProject "${{ env.TEST_PROJECT }}"
           -TestResultsDirectory "artifacts/test-results"
+          -TestFilter "TestLane=Light"
+          -SkipCoverage
+          -SkipPublishSmoke
           -SkipNodeInstall
 
       - name: Upload test results

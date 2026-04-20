@@ -7,6 +7,7 @@ namespace SolarEngine.Tests.Infrastructure.Localization;
 /// <summary>
 /// Verifies localization resource selection and fallback behavior.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class JsonLocalizationCatalogTests
 {
     /// <summary>

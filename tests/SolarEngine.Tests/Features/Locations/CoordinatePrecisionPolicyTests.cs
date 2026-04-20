@@ -6,6 +6,7 @@ namespace SolarEngine.Tests.Features.Locations;
 /// <summary>
 /// Verifies coordinate precision policy boundaries and persisted coordinate reduction.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class CoordinatePrecisionPolicyTests
 {
     /// <summary>

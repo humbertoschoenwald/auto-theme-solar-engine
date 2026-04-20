@@ -8,6 +8,7 @@ namespace SolarEngine.Tests.Features.SystemHost.Infrastructure;
 /// <summary>
 /// Verifies configuration persistence privacy and legacy migration behavior.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class ConfigurationRepositoryTests
 {
     /// <summary>

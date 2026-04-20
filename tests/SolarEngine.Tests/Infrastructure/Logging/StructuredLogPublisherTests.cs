@@ -7,6 +7,7 @@ namespace SolarEngine.Tests.Infrastructure.Logging;
 /// <summary>
 /// Verifies structured log persistence under bounded file-size pressure.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class StructuredLogPublisherTests
 {
     /// <summary>

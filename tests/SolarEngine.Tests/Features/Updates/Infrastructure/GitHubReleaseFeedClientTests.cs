@@ -8,6 +8,7 @@ namespace SolarEngine.Tests.Features.Updates.Infrastructure;
 /// <summary>
 /// Verifies GitHub release parsing keeps update delivery pinned to the matching asset flavor.
 /// </summary>
+[Trait("TestLane", "Light")]
 public sealed class GitHubReleaseFeedClientTests
 {
     /// <summary>
