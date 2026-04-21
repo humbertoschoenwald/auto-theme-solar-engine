@@ -17,8 +17,9 @@ Self-contained (Recommended):
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.04/auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe"
+Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
+Start-Process ".\AutoThemeSolarEngine.exe"
 ```
 
 Framework-dependent:
@@ -26,18 +27,17 @@ Framework-dependent:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.04/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe"
+Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
+Start-Process ".\AutoThemeSolarEngine.exe"
 ```
 
 ## Notes
 
-- The downloaded executable stays in the chosen install directory under its
-  release asset name.
 - The install directory is `%LocalAppData%\AutoThemeSolarEngine`.
-- The same directory keeps `config.json`, `installation.json`,
-  `AutoThemeSolarEngine.log`, `Apply-SolarEngine-Update.ps1`, and
-  `Launch-SolarEngine-After-Update.ps1`.
+- The same directory keeps `AutoThemeSolarEngine.exe`, `config.json`,
+  `installation.json`, `AutoThemeSolarEngine.log`,
+  `Apply-SolarEngine-Update.ps1`, and `Launch-SolarEngine-After-Update.ps1`.
 - The updater uses `installation.json` in the install directory to keep future
   silent updates on the same release flavor, install mode, and installed
   executable path chosen by the user.

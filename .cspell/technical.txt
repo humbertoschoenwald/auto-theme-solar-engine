@@ -58,6 +58,7 @@ messageloop
 MINIMIZEBOX
 msbuild
 msdia
+MSVC
 Mutex
 netcoreapp
 netframework
@@ -125,4 +126,6 @@ ADDSTRING
 GETCURSEL
 RESETCONTENT
 SETCURSEL
+SETFOCUS
 SELCHANGE
+KILLFOCUS

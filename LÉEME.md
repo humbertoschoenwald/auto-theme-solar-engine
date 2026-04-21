@@ -22,7 +22,7 @@ La aplicación se ejecuta en el área de notificación, calcula el horario solar
 
 ## Instalación
 
-La aplicación deja el release descargado, `config.json`,
+La aplicación deja `AutoThemeSolarEngine.exe`, `config.json`,
 `installation.json`, `AutoThemeSolarEngine.log` y los scripts auxiliares de
 update dentro de `LocalAppData\AutoThemeSolarEngine`. Elige el flavor que
 quieras y ejecuta el bloque correspondiente en una sesión normal de PowerShell.
@@ -40,8 +40,9 @@ Self-contained (Recomendado):
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.04/auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe"
+Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
+Start-Process ".\AutoThemeSolarEngine.exe"
 ```
 
 Framework-dependent:
@@ -49,8 +50,9 @@ Framework-dependent:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.04/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe"
-Start-Process ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe"
+Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe"
+Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
+Start-Process ".\AutoThemeSolarEngine.exe"
 ```
 
 Después de abrir la app, introduce tus coordenadas manualmente o permite el

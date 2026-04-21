@@ -24,6 +24,12 @@ history is not summarized twice in different ways.
   for that release.
 - Auto-generated changelog maintenance commits must be excluded from future
   changelog sections and marked to skip recursive CI and release loops.
+- Published releases may be marked `YANKED` when a tagged version is known to be
+  defective. A yanked release remains in history, but its changelog heading and
+  GitHub release notes must make that state explicit with an English
+  `YANKED:` reason.
+- Changelog automation must preserve existing manual `YANKED` annotations when
+  regenerating unreleased or release content around older tagged sections.
 
 ## Alternatives Considered
 

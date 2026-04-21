@@ -17,7 +17,10 @@ The repository already enforces commit quality, spelling, formatting, build heal
   - release build,
   - automated tests,
   - coverage generation to `artifacts/coverage/coverage.xml`,
-  - heavier publish-style validation that simulates the release environment.
+  - heavier publish-style validation that simulates the release environment,
+  - a Native AOT self-contained publish smoke,
+  - an updater rehearsal that proves LocalAppData legacy-layout migration and
+    automatic relaunch behavior.
 - Remote CI on push and pull request must validate:
   - commit messages,
   - repository linting,
@@ -47,3 +50,6 @@ The repository already enforces commit quality, spelling, formatting, build heal
 - Commit hygiene and changelog quality are directly linked.
 - Local and remote automation must stay intentionally aligned: local pre-push is
   stricter, and remote CI remains the lighter online confirmation lane.
+- Updater regressions that depend on file replacement, shell launch, or other
+  OS-managed behavior now have a defined local rehearsal lane instead of
+  relying on release-day manual testing.

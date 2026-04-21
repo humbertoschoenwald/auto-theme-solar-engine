@@ -24,10 +24,17 @@ The JavaScript tooling had been managed with npm. The repository now standardize
 - `package.json` must declare a `packageManager` field so automation and contributors resolve the same pnpm version.
 - Repository hooks, local scripts, and GitHub Actions must use pnpm instead of npm for install and script execution.
 - Workspace editor settings may disable telemetry, automatic updates, and indentation guesswork when those defaults reduce repository drift and make saved-file execution deterministic.
-- Windows release publishing remains focused on x64 single-file executables in both self-contained and framework-dependent variants.
+- Windows release publishing remains focused on x64 executable artifacts in two flavors:
+  - a self-contained Native AOT executable,
+  - a framework-dependent CoreCLR executable.
+- Local machines that run the Native AOT publish lane must have the Windows
+  linker prerequisites installed, including the Visual Studio Desktop
+  Development with C++ workload or an equivalent supported MSVC toolchain.
 
 ## Consequences
 
 - Contributors need a working pnpm installation or a workflow that can honor the `packageManager` field.
 - The repository keeps two dependency ecosystems, but each one is pinned through a single declared toolchain.
 - Package-manager drift moves from convention to explicit policy.
+- Native AOT publish validation now depends on a Windows-native toolchain in
+  addition to the .NET SDK.

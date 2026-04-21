@@ -27,24 +27,34 @@ wrong delivery flavor by accident.
   a perpetual `not checked yet` state.
 - The preferred install mode is a per-user `LocalAppData` install because it
   allows silent updates without elevation.
-- Direct download-and-run installs are supported. On first launch, the app
-  records installation metadata from the current executable path instead of
-  forcing a renamed wrapper executable.
+- Direct download-and-run installs are supported, but the documented
+  LocalAppData model normalizes the installed executable target to
+  `AutoThemeSolarEngine.exe` in the install directory instead of preserving the
+  downloaded versioned asset name as the long-term executable path.
 - The updater must match the installed delivery flavor:
   - self-contained installs update only from self-contained assets,
   - framework-dependent installs update only from framework-dependent assets.
+- The self-contained release lane publishes a Native AOT executable. The
+  framework-dependent lane remains a normal CoreCLR executable so machines with
+  an existing desktop runtime still have a lighter download option.
 - The authoritative install target is the path the user chose. The updater must
   keep replacing the executable recorded by the current install metadata and may
   not silently migrate the app to a different directory.
+- For the documented LocalAppData install flow, the authoritative executable
+  target is `%LocalAppData%\AutoThemeSolarEngine\AutoThemeSolarEngine.exe`.
+- Versioned release asset names remain intact only for downloaded release
+  artifacts and staging inputs. They are not the preferred long-term installed
+  executable target in the documented LocalAppData layout.
 - For the documented install flow, the chosen directory is
   `%LocalAppData%\AutoThemeSolarEngine`.
-- The documented install directory keeps the downloaded release asset,
+- The documented install directory keeps `AutoThemeSolarEngine.exe`,
   `config.json`, `installation.json`, `AutoThemeSolarEngine.log`,
   `Apply-SolarEngine-Update.ps1`, and `Launch-SolarEngine-After-Update.ps1`
   together.
-- Versioned release asset names remain intact. The updater downloads the newer
-  executable by its release asset name instead of overwriting the currently
-  running executable in place.
+- Versioned release asset names remain intact on GitHub Releases. The updater
+  downloads the newer executable by its release asset name, stages it beside the
+  install, and then replaces the stable installed executable target after the
+  current process exits.
 - The preferred staging location is the current install directory so the next
   executable lands beside the currently installed one. If that location is not
   writable, the updater may stage under the app-owned LocalAppData update area
@@ -54,11 +64,25 @@ wrong delivery flavor by accident.
   - stopping the running app if needed,
   - waiting briefly after process termination so Windows fully releases the file
     lock before replacement,
-  - replacing the old executable reference with the newly downloaded version,
+  - replacing the stable installed executable target with the newly downloaded
+    version,
   - updating startup registration when the executable path changes,
   - migrating legacy startup value names when runtime branding changes,
+  - migrating legacy versioned LocalAppData installs to
+    `AutoThemeSolarEngine.exe`,
   - cleaning up stale superseded executables left in the install directory,
   - launching the new executable.
+- Existing LocalAppData installs that still point at versioned executable names
+  are migrated automatically during installation metadata normalization and the
+  next silent-update apply cycle.
+- The updater must write its deferred update request before it launches any
+  watcher or helper process so relaunch and replacement observe a complete
+  request file.
+- Helper and relaunch processes must resolve PowerShell through an absolute
+  executable path rather than assuming `pwsh` is available on the user PATH.
+- GitHub Releases may be marked as `YANKED` for defective published versions.
+  YANKED releases remain visible and downloadable, but the updater must not
+  select them as valid automatic-update candidates.
 - The silent update flow should preserve the effective privilege boundary of the
   currently running app when it relaunches. When a protected install location
   requires elevation for file replacement, the design must separate the
@@ -87,6 +111,8 @@ wrong delivery flavor by accident.
 - **Positive:** The updater can move between release versions without violating
   Windows executable locking rules.
 - **Positive:** Users stay on the same runtime flavor they originally installed.
+- **Positive:** The documented LocalAppData install path converges on a stable
+  executable target that is easier to relaunch and migrate.
 - **Positive:** The updater has a documented fallback when the preferred staging
   directory is not writable.
 - **Positive:** Update status stays informative even when automatic install is

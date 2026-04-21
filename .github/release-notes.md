@@ -1,4 +1,8 @@
-## v26.04.04 - 2026-04-20
+## v26.04.04 - 2026-04-20 [YANKED]
+
+> YANKED: Superseded by v26.04.05 because this release can reject a
+> Windows-detected location during `Save and apply` and can leave silent
+> updates staged without relaunching the new executable automatically.
 
 ### Refactoring
 

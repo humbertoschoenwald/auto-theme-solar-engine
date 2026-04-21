@@ -244,3 +244,4 @@ pegado
 ejecutarlo
 presiona
 correrlo
+editar
