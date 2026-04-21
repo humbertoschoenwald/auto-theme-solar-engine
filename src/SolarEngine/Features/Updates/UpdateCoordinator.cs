@@ -11,6 +11,11 @@ namespace SolarEngine.Features.Updates;
 
 internal sealed class UpdateCoordinator : IDisposable
 {
+    private const string FallbackUpdatesDirectoryName = "updates";
+    private const string ScheduledTasksExecutableName = "schtasks.exe";
+    private const int DefaultVersionComponent = 0;
+    private static readonly CalVersion s_unknownVersion = new(DefaultVersionComponent, DefaultVersionComponent, DefaultVersionComponent);
+
     private readonly AppPaths _appPaths;
     private readonly StructuredLogPublisher _logPublisher;
     private readonly InstallationMetadataRepository _installationMetadataRepository;
@@ -264,7 +269,7 @@ internal sealed class UpdateCoordinator : IDisposable
                 $"Direct install-directory staging failed and is falling back to LocalAppData: {exception.Message}");
         }
 
-        string fallbackDirectory = Path.Combine(_appPaths.DirectoryPath, "updates");
+        string fallbackDirectory = Path.Combine(_appPaths.DirectoryPath, FallbackUpdatesDirectoryName);
         _ = Directory.CreateDirectory(fallbackDirectory);
         string fallbackPath = Path.Combine(fallbackDirectory, assetName);
         await DownloadToPathAsync(assetUrl, fallbackPath, cancellationToken).ConfigureAwait(false);
@@ -336,7 +341,7 @@ internal sealed class UpdateCoordinator : IDisposable
     {
         return new ProcessStartInfo
         {
-            FileName = "schtasks.exe",
+            FileName = ScheduledTasksExecutableName,
             Arguments = $"/Run /TN \"{elevatedTaskName}\"",
             CreateNoWindow = true,
             UseShellExecute = false,
@@ -347,7 +352,7 @@ internal sealed class UpdateCoordinator : IDisposable
     private static CalVersion ResolveCurrentVersion()
     {
         Version? version = Assembly.GetExecutingAssembly().GetName().Version;
-        return version is null ? new CalVersion(0, 0, 0) : new CalVersion(version.Major, version.Minor, version.Build);
+        return version is null ? s_unknownVersion : new CalVersion(version.Major, version.Minor, version.Build);
     }
 
     private bool TryLaunchRestartLauncher(string installedExecutablePath)

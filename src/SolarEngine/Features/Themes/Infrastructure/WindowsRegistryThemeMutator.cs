@@ -19,6 +19,20 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private const string UxThemeLibraryName = "uxtheme.dll";
     private const string RefreshImmersiveColorPolicyStateExport = "#104";
     private const string FlushMenuThemesExport = "#136";
+    private const string RegistryKeyResolutionDescription = "Resolve the Personalize registry key before mutating shell theme state.";
+    private const string RegistryFailureCode = "themes.mutator.registry_failure";
+    private const string RegistryFailureDescription = "Isolate registry mutation failures behind a deterministic application contract.";
+    private const string PersistTaskbarPreferenceDescription = "Resolve the application registry key before persisting taskbar appearance preferences.";
+    private const string RestoreTaskbarPreferenceDescription = "Resolve the application registry key before restoring taskbar appearance preferences.";
+    private const string ManageTaskbarPreferenceDescription = "Resolve the application registry key before tracking taskbar appearance ownership.";
+    private const string ImmersiveColorSetParameter = "ImmersiveColorSet";
+    private const string WindowsThemeElementParameter = "WindowsThemeElement";
+    private const string SystemPaletteParameter = "SystemPalette";
+    private const int ThemeRequestTimeoutMilliseconds = 2000;
+    private const int DarkThemeValue = 0;
+    private const int LightThemeValue = 1;
+    private const int ManagedPreferenceEnabledValue = 1;
+    private const uint UpdatePerUserSystemParametersAction = 1;
 
     private static readonly nint s_hwndBroadcast = new(0xFFFF);
 
@@ -41,10 +55,10 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     {
         try
         {
-            int lightValue = mode == ThemeMode.Light ? 1 : 0;
+            int lightValue = mode == ThemeMode.Light ? LightThemeValue : DarkThemeValue;
 
             using RegistryKey personalizeKey = Registry.CurrentUser.CreateSubKey(PersonalizeKeyPath, writable: true)
-                ?? throw new UnexpectedStateException("Resolve the Personalize registry key before mutating shell theme state.");
+                ?? throw new UnexpectedStateException(RegistryKeyResolutionDescription);
 
             personalizeKey.SetValue(AppsUseLightThemeValueName, lightValue, RegistryValueKind.DWord);
             personalizeKey.SetValue(SystemUsesLightThemeValueName, lightValue, RegistryValueKind.DWord);
@@ -59,7 +73,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         catch (Exception exception)
         {
             logPublisher.Write($"Theme mutation failed: {exception.Message}");
-            return Result<ThemeMode>.Failure(new Error("themes.mutator.registry_failure", "Isolate registry mutation failures behind a deterministic application contract."));
+            return Result<ThemeMode>.Failure(new Error(RegistryFailureCode, RegistryFailureDescription));
         }
     }
 
@@ -80,8 +94,8 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
             ? null
             : appsLight switch
             {
-                1 => ThemeMode.Light,
-                0 => ThemeMode.Dark,
+                LightThemeValue => ThemeMode.Light,
+                DarkThemeValue => ThemeMode.Dark,
                 _ => null
             };
     }
@@ -91,7 +105,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         if (mode == ThemeMode.Light)
         {
             StoreDarkModeTaskbarPreferenceIfNeeded(personalizeKey);
-            personalizeKey.SetValue(ColorPrevalenceValueName, 0, RegistryValueKind.DWord);
+            personalizeKey.SetValue(ColorPrevalenceValueName, DarkThemeValue, RegistryValueKind.DWord);
             MarkTaskbarPreferenceAsManaged();
             return;
         }
@@ -125,13 +139,13 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
             return;
         }
 
-        if (IsTaskbarPreferenceCurrentlyManagedByApplication() && currentColorPrevalence == 0)
+        if (IsTaskbarPreferenceCurrentlyManagedByApplication() && currentColorPrevalence == DarkThemeValue)
         {
             return;
         }
 
         using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
-            ?? throw new UnexpectedStateException("Resolve the application registry key before persisting taskbar appearance preferences.");
+            ?? throw new UnexpectedStateException(PersistTaskbarPreferenceDescription);
 
         appKey.SetValue(
             StoredDarkModeColorPrevalenceValueName,
@@ -142,11 +156,11 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private static void RestoreDarkModeTaskbarPreferenceIfNeeded(RegistryKey personalizeKey)
     {
         using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
-            ?? throw new UnexpectedStateException("Resolve the application registry key before restoring taskbar appearance preferences.");
+            ?? throw new UnexpectedStateException(RestoreTaskbarPreferenceDescription);
 
         bool isManagedByApplication =
             TryReadDword(appKey.GetValue(LightModeTaskbarPreferenceManagedValueName), out int managedValue)
-            && managedValue == 1;
+            && managedValue == ManagedPreferenceEnabledValue;
 
         if (!isManagedByApplication)
         {
@@ -164,23 +178,23 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private static void MarkTaskbarPreferenceAsManaged()
     {
         using RegistryKey appKey = Registry.CurrentUser.CreateSubKey(AppKeyPath, writable: true)
-            ?? throw new UnexpectedStateException("Resolve the application registry key before tracking taskbar appearance ownership.");
+            ?? throw new UnexpectedStateException(ManageTaskbarPreferenceDescription);
 
-        appKey.SetValue(LightModeTaskbarPreferenceManagedValueName, 1, RegistryValueKind.DWord);
+        appKey.SetValue(LightModeTaskbarPreferenceManagedValueName, ManagedPreferenceEnabledValue, RegistryValueKind.DWord);
     }
 
     private static bool IsTaskbarPreferenceCurrentlyManagedByApplication()
     {
         using RegistryKey? appKey = Registry.CurrentUser.OpenSubKey(AppKeyPath, writable: false);
         return appKey is not null && TryReadDword(appKey.GetValue(LightModeTaskbarPreferenceManagedValueName), out int managedValue)
-            && managedValue == 1;
+            && managedValue == ManagedPreferenceEnabledValue;
     }
 
     private static void RefreshShellThemeState()
     {
-        BroadcastThemeChange("ImmersiveColorSet");
-        BroadcastThemeChange("WindowsThemeElement");
-        BroadcastThemeChange("SystemPalette");
+        BroadcastThemeChange(ImmersiveColorSetParameter);
+        BroadcastThemeChange(WindowsThemeElementParameter);
+        BroadcastThemeChange(SystemPaletteParameter);
         BroadcastThemeChange(null);
 
         if (TryRefreshImmersiveColorPolicyState())
@@ -202,12 +216,12 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
 
     private static void BroadcastThemeChange(string? parameter)
     {
-        _ = SendMessageTimeoutString(s_hwndBroadcast, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, 2000, out _);
+        _ = SendMessageTimeoutString(s_hwndBroadcast, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
     }
 
     private static void BroadcastWindowMessage(int message)
     {
-        _ = SendMessageTimeoutRaw(s_hwndBroadcast, message, nint.Zero, nint.Zero, SmtoAbortIfHung, 2000, out _);
+        _ = SendMessageTimeoutRaw(s_hwndBroadcast, message, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
     }
 
     private static void RefreshShellWindowByClassName(string className)
@@ -239,27 +253,27 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
 
     private static void RefreshShellWindow(nint windowHandle)
     {
-        BroadcastThemeChangeToWindow(windowHandle, "ImmersiveColorSet");
-        BroadcastThemeChangeToWindow(windowHandle, "WindowsThemeElement");
-        BroadcastThemeChangeToWindow(windowHandle, "SystemPalette");
+        BroadcastThemeChangeToWindow(windowHandle, ImmersiveColorSetParameter);
+        BroadcastThemeChangeToWindow(windowHandle, WindowsThemeElementParameter);
+        BroadcastThemeChangeToWindow(windowHandle, SystemPaletteParameter);
         BroadcastThemeChangeToWindow(windowHandle, null);
 
-        _ = SendMessageTimeoutRaw(windowHandle, WmThemeChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, 2000, out _);
-        _ = SendMessageTimeoutRaw(windowHandle, WmDwmColorizationColorChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, 2000, out _);
-        _ = SendMessageTimeoutRaw(windowHandle, WmSysColorChange, nint.Zero, nint.Zero, SmtoAbortIfHung, 2000, out _);
+        _ = SendMessageTimeoutRaw(windowHandle, WmThemeChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
+        _ = SendMessageTimeoutRaw(windowHandle, WmDwmColorizationColorChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
+        _ = SendMessageTimeoutRaw(windowHandle, WmSysColorChange, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
         _ = RedrawWindow(windowHandle, nint.Zero, nint.Zero, RdwInvalidate | RdwAllChildren | RdwFrame | RdwUpdatenow);
     }
 
     private static void BroadcastThemeChangeToWindow(nint windowHandle, string? parameter)
     {
-        _ = SendMessageTimeoutString(windowHandle, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, 2000, out _);
+        _ = SendMessageTimeoutString(windowHandle, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
     }
 
     private static bool TryUpdatePerUserSystemParameters()
     {
         try
         {
-            return UpdatePerUserSystemParameters(1, true);
+            return UpdatePerUserSystemParameters(UpdatePerUserSystemParametersAction, true);
         }
         catch (EntryPointNotFoundException)
         {

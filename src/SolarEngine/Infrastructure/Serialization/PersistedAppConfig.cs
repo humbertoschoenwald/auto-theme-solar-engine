@@ -2,6 +2,10 @@ namespace SolarEngine.Infrastructure.Serialization;
 
 internal sealed record PersistedAppConfig
 {
+    private const int DefaultLocationPrecisionDecimals = 3;
+    private const string DefaultLanguageCode = "en";
+    private const int DefaultCheckIntervalSeconds = 30;
+
     public string? ProtectedCoordinates { get; init; }
 
     public double? Latitude { get; init; }
@@ -10,7 +14,7 @@ internal sealed record PersistedAppConfig
 
     public bool UseWindowsLocation { get; init; } = true;
 
-    public int LocationPrecisionDecimals { get; init; } = 3;
+    public int LocationPrecisionDecimals { get; init; } = DefaultLocationPrecisionDecimals;
 
     public bool StartWithWindows { get; init; } = true;
 
@@ -22,9 +26,9 @@ internal sealed record PersistedAppConfig
 
     public bool AutomaticUpdatesEnabled { get; init; } = true;
 
-    public string LanguageCode { get; init; } = "en";
+    public string LanguageCode { get; init; } = DefaultLanguageCode;
 
-    public int CheckIntervalSeconds { get; init; } = 30;
+    public int CheckIntervalSeconds { get; init; } = DefaultCheckIntervalSeconds;
 
     public bool IsConfigured { get; init; }
 }

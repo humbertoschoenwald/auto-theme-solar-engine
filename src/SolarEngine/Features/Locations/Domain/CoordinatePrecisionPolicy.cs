@@ -5,6 +5,8 @@ namespace SolarEngine.Features.Locations.Domain;
 internal static class CoordinatePrecisionPolicy
 {
     private const double ComparisonTolerance = 1e-12;
+    private const int DefaultDecimalThreshold = 0;
+    private const double RoundedZero = 0d;
 
     public const int DefaultStoredDecimals = 3;
     public const int MinStoredDecimals = 2;
@@ -12,7 +14,7 @@ internal static class CoordinatePrecisionPolicy
 
     public static int NormalizeDecimals(int decimals)
     {
-        return decimals <= 0
+        return decimals <= DefaultDecimalThreshold
             ? DefaultStoredDecimals
             : Math.Clamp(decimals, MinStoredDecimals, MaxStoredDecimals);
     }
@@ -32,7 +34,7 @@ internal static class CoordinatePrecisionPolicy
     public static double Reduce(double value, int decimals)
     {
         double rounded = Math.Round(value, NormalizeDecimals(decimals), MidpointRounding.AwayFromZero);
-        return Math.Abs(rounded) < ComparisonTolerance ? 0d : rounded;
+        return Math.Abs(rounded) < ComparisonTolerance ? RoundedZero : rounded;
     }
 
     public static string Format(double value, int decimals)

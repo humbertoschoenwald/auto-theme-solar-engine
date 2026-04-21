@@ -7,6 +7,13 @@ namespace SolarEngine.UI;
 
 internal sealed class CoordinateInputState
 {
+    private const string MissingLocationSeedCode = "MissingLocationSeed";
+    private const string MissingLocationSeedDescription = "Detect coordinates or enter manual coordinates before enabling Windows location.";
+    private const string InvalidLatitudeCode = "InvalidLatitude";
+    private const string InvalidLatitudeDescription = "Provide a valid decimal latitude.";
+    private const string InvalidLongitudeCode = "InvalidLongitude";
+    private const string InvalidLongitudeDescription = "Provide a valid decimal longitude.";
+
     private GeoCoordinates? _seed;
 
     public void Load(AppConfig configuration)
@@ -35,6 +42,27 @@ internal sealed class CoordinateInputState
         {
             _seed = coordinatesResult.Value;
         }
+    }
+
+    public bool TryFormatSeed(
+        int locationPrecisionDecimals,
+        out string latitudeText,
+        out string longitudeText)
+    {
+        if (_seed is null)
+        {
+            latitudeText = string.Empty;
+            longitudeText = string.Empty;
+            return false;
+        }
+
+        latitudeText = CoordinatePrecisionPolicy.Format(
+            _seed.Latitude,
+            locationPrecisionDecimals);
+        longitudeText = CoordinatePrecisionPolicy.Format(
+            _seed.Longitude,
+            locationPrecisionDecimals);
+        return true;
     }
 
     public Result<GeoCoordinates> ResolveManualCoordinates(
@@ -97,8 +125,8 @@ internal sealed class CoordinateInputState
             ? coordinatesResult
             : Result<GeoCoordinates>.Failure(
                 Error.Validation(
-                    "MissingLocationSeed",
-                    "Detect coordinates or enter manual coordinates before enabling Windows location."));
+                    MissingLocationSeedCode,
+                    MissingLocationSeedDescription));
     }
 
     internal static Result<GeoCoordinates> ParseCoordinates(string latitudeText, string longitudeText)
@@ -110,7 +138,7 @@ internal sealed class CoordinateInputState
                 out double latitude))
         {
             return Result<GeoCoordinates>.Failure(
-                Error.Validation("InvalidLatitude", "Provide a valid decimal latitude."));
+                Error.Validation(InvalidLatitudeCode, InvalidLatitudeDescription));
         }
 
         if (!double.TryParse(
@@ -120,7 +148,7 @@ internal sealed class CoordinateInputState
                 out double longitude))
         {
             return Result<GeoCoordinates>.Failure(
-                Error.Validation("InvalidLongitude", "Provide a valid decimal longitude."));
+                Error.Validation(InvalidLongitudeCode, InvalidLongitudeDescription));
         }
 
         return GeoCoordinates.Create(latitude, longitude);

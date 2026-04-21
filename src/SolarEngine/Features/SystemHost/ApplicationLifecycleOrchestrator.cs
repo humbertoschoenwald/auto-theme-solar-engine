@@ -20,6 +20,14 @@ internal sealed class ApplicationLifecycleOrchestrator(
     AppLocalization localization,
     StructuredLogPublisher logPublisher) : IDisposable
 {
+    private const string WindowsLocationDisabledCode = "locations.provider.disabled";
+    private const string WindowsLocationDisabledDescription = "Preserve explicit operator intent when Windows location is disabled in configuration.";
+    private const string WindowsLocationAccessDeniedCode = "locations.provider.access_denied";
+    private const string WindowsLocationAccessDeniedDescription = "Preserve user-controlled privacy boundaries when native location access is unavailable.";
+    private const string PersistedWindowsLocationRefreshMessage = "Windows location refreshed and protected coordinates were persisted.";
+    private const string ExecutablePathResolutionDescription = "Resolve the executable path before mutating OS registration state.";
+    private const string WindowsLocationDisabledLogMessage = "Windows location was disabled because native access is unavailable.";
+
     public AppConfig Config { get; private set; } = new();
 
     public SystemLocationAccessState WindowsLocationAccessState { get; private set; } = SystemLocationAccessState.Unknown;
@@ -86,8 +94,8 @@ internal sealed class ApplicationLifecycleOrchestrator(
         if (!Config.UseWindowsLocation)
         {
             return Result<GeoCoordinates>.Failure(new Error(
-                "locations.provider.disabled",
-                "Preserve explicit operator intent when Windows location is disabled in configuration."));
+                WindowsLocationDisabledCode,
+                WindowsLocationDisabledDescription));
         }
 
         Result<GeoCoordinates> coordinatesResult = await DetectCoordinatesCoreAsync(cancellationToken).ConfigureAwait(false);
@@ -110,7 +118,7 @@ internal sealed class ApplicationLifecycleOrchestrator(
 
         await RefreshScheduleAndThemeAsync(cancellationToken).ConfigureAwait(false);
 
-        logPublisher.Write("Windows location refreshed and protected coordinates were persisted.");
+        logPublisher.Write(PersistedWindowsLocationRefreshMessage);
         return Result<GeoCoordinates>.Success(coordinates);
     }
 
@@ -166,7 +174,7 @@ internal sealed class ApplicationLifecycleOrchestrator(
     {
         return Environment.ProcessPath
         ?? Process.GetCurrentProcess().MainModule?.FileName
-        ?? throw new UnexpectedStateException("Resolve the executable path before mutating OS registration state.");
+        ?? throw new UnexpectedStateException(ExecutablePathResolutionDescription);
     }
 
     private void ApplyProcessPriority()
@@ -221,8 +229,8 @@ internal sealed class ApplicationLifecycleOrchestrator(
             ? await getSystemLocationQueryHandler.HandleAsync(new GetSystemLocationQuery(), cancellationToken).ConfigureAwait(false)
             : Result<GeoCoordinates>.Failure(
                 new Error(
-                    "locations.provider.access_denied",
-                    "Preserve user-controlled privacy boundaries when native location access is unavailable."));
+                    WindowsLocationAccessDeniedCode,
+                    WindowsLocationAccessDeniedDescription));
     }
 
     private async ValueTask RefreshWindowsLocationAccessStateAsync(CancellationToken cancellationToken)
@@ -240,6 +248,6 @@ internal sealed class ApplicationLifecycleOrchestrator(
         Config = Config with { UseWindowsLocation = false };
         PersistConfigurationState();
         await RefreshScheduleAsync(cancellationToken).ConfigureAwait(false);
-        logPublisher.Write("Windows location was disabled because native access is unavailable.");
+        logPublisher.Write(WindowsLocationDisabledLogMessage);
     }
 }

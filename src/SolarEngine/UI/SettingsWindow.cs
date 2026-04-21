@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text;
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SystemHost;
 using SolarEngine.Features.SystemHost.Domain;
@@ -32,8 +33,86 @@ internal sealed class SettingsWindow(
     private const string WindowTitle = AppIdentity.RuntimeName;
     private const string DialogCaption = AppIdentity.RuntimeName;
     private const string WindowClassName = "SolarEngine.NativeSettingsWindow";
+    private const string SettingsWindowCreationDescription = "Failed to create the settings window.";
+    private const string SettingsWindowClassRegistrationDescription = "Failed to register the settings window class.";
+    private const string ControlCreationDescriptionFormat = "Failed to create a {0} control.";
+    private const string NativeStaticClassName = "STATIC";
+    private const string NativeEditClassName = "EDIT";
+    private const string NativeButtonClassName = "BUTTON";
+    private const string NativeComboBoxClassName = "COMBOBOX";
+    private const string DefaultFontFaceName = "Segoe UI";
+    private const string InvalidLongitudeCode = "InvalidLongitude";
+    private const string InvalidLocationPrecisionCode = "InvalidLocationPrecision";
+    private const string MissingLocationSeedCode = "MissingLocationSeed";
+    private const string InvalidLocationPrecisionDescriptionFormat = "Provide a whole-number precision between {0} and {1}.";
+    private const string SettingsHeaderKey = "settings.header";
+    private const string SettingsSaveAndApplyKey = "settings.save_and_apply";
+    private const string SettingsHomeTabKey = "settings.tab.home";
+    private const string SettingsConfigurationTabKey = "settings.tab.configuration";
+    private const string SettingsUpdatesTabKey = "settings.tab.updates";
+    private const string SettingsLocationAccessKey = "settings.location_access";
+    private const string SettingsUseWindowsLocationKey = "settings.use_windows_location";
+    private const string SettingsDetectFromWindowsKey = "settings.detect_from_windows";
+    private const string SettingsLatitudeKey = "settings.latitude";
+    private const string SettingsLongitudeKey = "settings.longitude";
+    private const string SettingsPrecisionKey = "settings.precision";
+    private const string SettingsPrivacyHintKey = "settings.privacy_hint";
+    private const string SettingsTodayScheduleKey = "settings.today_schedule";
+    private const string SettingsLanguageKey = "settings.language";
+    private const string SettingsStartWithWindowsKey = "settings.start_with_windows";
+    private const string SettingsOpenInTrayKey = "settings.open_in_tray";
+    private const string SettingsUseHighPriorityKey = "settings.use_high_priority";
+    private const string SettingsExtraMinuteAtSunsetKey = "settings.extra_minute_at_sunset";
+    private const string SettingsRuntimeStatusKey = "settings.runtime_status";
+    private const string SettingsAutomaticUpdatesKey = "settings.install_updates_automatically";
+    private const string SettingsCurrentVersionKey = "settings.current_version";
+    private const string SettingsLatestVersionKey = "settings.latest_version";
+    private const string SettingsUpdateStatusKey = "settings.update_status";
+    private const string SettingsCheckUpdatesKey = "settings.check_updates";
+    private const string SettingsEnglishLanguageOptionKey = "settings.language.option.english";
+    private const string SettingsSpanishLanguageOptionKey = "settings.language.option.spanish";
+    private const string SettingsApplyingThemeKey = "settings.operation.applying_theme";
+    private const string SettingsThemeAppliedMessageKey = "settings.message.theme_applied";
+    private const string SettingsDetectingLocationKey = "settings.operation.detecting_location";
+    private const string SettingsCheckingUpdatesKey = "settings.operation.checking_updates";
+    private const string SettingsNoUpdatesMessageKey = "settings.message.no_updates";
+    private const string SettingsUpdateAvailableMessageKey = "settings.message.update_available";
+    private const string SettingsAlreadyRunningKey = "settings.operation.already_running";
+    private const string SettingsUpdateNotCheckedKey = "settings.update.not_checked";
+    private const string SettingsUpdateCheckFailedKey = "settings.update.check_failed";
+    private const string SettingsUpdateIdleKey = "settings.update.idle";
+    private const string SettingsUpdateAvailableKey = "settings.update.available";
+    private const string SettingsUpdateUpToDateKey = "settings.update.up_to_date";
+    private const string SettingsLocationAccessAllowedKey = "settings.location_access.allowed";
+    private const string SettingsLocationAccessDeniedKey = "settings.location_access.denied";
+    private const string SettingsLocationAccessUnavailableKey = "settings.location_access.unavailable";
+    private const string SettingsLocationAccessUnknownKey = "settings.location_access.unknown";
+    private const int WindowOriginX = 220;
+    private const int WindowOriginY = 160;
     private const int WindowWidth = 520;
     private const int WindowHeight = 680;
+    private const int DefaultWindowStyle = 0;
+    private const int NoControlId = 0;
+    private const int NoExtendedStyle = 0;
+    private const int NormalFontHeight = -16;
+    private const int ZeroColorChannel = 0;
+    private const int DarkThemeColorChannel = 24;
+    private const int LightForegroundColorChannel = 244;
+    private const int FullColorChannel = 255;
+    private const int BusyOperationState = 1;
+    private const int IdleOperationState = 0;
+    private const int LanguageEnglishIndex = 0;
+    private const int LanguageSpanishIndex = 1;
+    private const int DefaultCoordinateMaxCharacters = 18;
+    private const int PrecisionEditMaxCharacters = 1;
+    private const int RegisterClassBackgroundOffset = 1;
+    private const int HandledWindowMessageResult = 1;
+    private const int SelectAllTextEnd = -1;
+    private const ushort NoWindowClassAtom = 0;
+    private const int GreenChannelShift = 8;
+    private const int BlueChannelShift = 16;
+    private const char HiddenCoordinateCharacter = '*';
+    private const char VisibleCoordinateCharacter = '\0';
 
     private const int LanguageSelectorId = 100;
     private const int HomeTabId = 101;
@@ -54,8 +133,49 @@ internal sealed class SettingsWindow(
     private const uint WM_PROCESS_UI_ACTIONS = NativeInterop.WM_APP + 100;
 
     private static readonly Lock s_instancesGate = new();
+    private static readonly nint s_handledWindowMessageResult = nint.Zero;
     private static readonly Dictionary<nint, SettingsWindow> s_instances = [];
     private static readonly NativeInterop.WindowProcedure s_windowProcedureDelegate = WindowProcedure;
+    private static readonly ControlBounds s_headerLabelBounds = new(16, 16, 240, 20);
+    private static readonly ControlBounds s_applyNowButtonBounds = new(354, 12, 150, 32);
+    private static readonly ControlBounds s_homeTabButtonBounds = new(16, 56, 152, 30);
+    private static readonly ControlBounds s_configurationTabButtonBounds = new(184, 56, 152, 30);
+    private static readonly ControlBounds s_updatesTabButtonBounds = new(352, 56, 152, 30);
+    private static readonly ControlBounds s_locationAccessLabelBounds = new(16, 108, 132, 20);
+    private static readonly ControlBounds s_locationAccessValueBounds = new(156, 108, 348, 20);
+    private static readonly ControlBounds s_useWindowsLocationBounds = new(16, 140, 240, 20);
+    private static readonly ControlBounds s_detectLocationButtonBounds = new(324, 136, 180, 28);
+    private static readonly ControlBounds s_latitudeLabelBounds = new(16, 180, 132, 20);
+    private static readonly ControlBounds s_latitudeEditBounds = new(156, 176, 220, 24);
+    private static readonly ControlBounds s_longitudeLabelBounds = new(16, 214, 132, 20);
+    private static readonly ControlBounds s_longitudeEditBounds = new(156, 210, 220, 24);
+    private static readonly ControlBounds s_precisionLabelBounds = new(16, 248, 132, 20);
+    private static readonly ControlBounds s_precisionEditBounds = new(156, 244, 48, 24);
+    private static readonly ControlBounds s_privacyHintBounds = new(216, 248, 288, 20);
+    private static readonly ControlBounds s_todayScheduleLabelBounds = new(16, 292, 160, 20);
+    private static readonly ControlBounds s_todayScheduleValueBounds = new(16, 320, 488, 44);
+    private static readonly ControlBounds s_languageLabelBounds = new(16, 108, 132, 20);
+    private static readonly ControlBounds s_languageSelectorBounds = new(156, 104, 160, 120);
+    private static readonly ControlBounds s_startWithWindowsBounds = new(16, 152, 240, 20);
+    private static readonly ControlBounds s_startMinimizedBounds = new(16, 182, 240, 20);
+    private static readonly ControlBounds s_highPriorityBounds = new(16, 212, 280, 20);
+    private static readonly ControlBounds s_extraMinuteAtSunsetBounds = new(16, 242, 280, 20);
+    private static readonly ControlBounds s_runtimeStatusLabelBounds = new(16, 286, 160, 20);
+    private static readonly ControlBounds s_runtimeStatusValueBounds = new(16, 314, 488, 44);
+    private static readonly ControlBounds s_automaticUpdatesBounds = new(16, 108, 280, 20);
+    private static readonly ControlBounds s_currentVersionLabelBounds = new(16, 150, 132, 20);
+    private static readonly ControlBounds s_currentVersionValueBounds = new(156, 150, 348, 20);
+    private static readonly ControlBounds s_latestVersionLabelBounds = new(16, 182, 132, 20);
+    private static readonly ControlBounds s_latestVersionValueBounds = new(156, 182, 348, 20);
+    private static readonly ControlBounds s_updateStatusLabelBounds = new(16, 214, 132, 20);
+    private static readonly ControlBounds s_updateStatusValueBounds = new(156, 214, 348, 44);
+    private static readonly ControlBounds s_checkUpdatesButtonBounds = new(16, 274, 180, 30);
+    private static readonly int s_darkBackgroundColorRef = ToColorRef(DarkThemeColorChannel, DarkThemeColorChannel, DarkThemeColorChannel);
+    private static readonly int s_lightBackgroundColorRef = ToColorRef(FullColorChannel, FullColorChannel, FullColorChannel);
+    private static readonly int s_darkForegroundColorRef = ToColorRef(LightForegroundColorChannel, LightForegroundColorChannel, LightForegroundColorChannel);
+    private static readonly int s_lightForegroundColorRef = ToColorRef(ZeroColorChannel, ZeroColorChannel, ZeroColorChannel);
+    private static readonly CompositeFormat s_controlCreationCompositeFormat = CompositeFormat.Parse(ControlCreationDescriptionFormat);
+    private static readonly CompositeFormat s_invalidLocationPrecisionCompositeFormat = CompositeFormat.Parse(InvalidLocationPrecisionDescriptionFormat);
     private static ushort s_windowClassAtom;
 
     private readonly ApplicationLifecycleOrchestrator _applicationLifecycleOrchestrator = applicationLifecycleOrchestrator;
@@ -76,8 +196,8 @@ internal sealed class SettingsWindow(
     private SafeGdiObjectHandle? _fontHandle;
     private SafeIconHandle? _windowIconHandle;
     private SafeGdiObjectHandle? _backgroundBrushHandle;
-    private int _backgroundColorRef = ToColorRef(255, 255, 255);
-    private int _foregroundColorRef = ToColorRef(0, 0, 0);
+    private int _backgroundColorRef = s_lightBackgroundColorRef;
+    private int _foregroundColorRef = s_lightForegroundColorRef;
     private nint _headerLabelHandle;
     private nint _languageLabelHandle;
     private nint _languageSelectorHandle;
@@ -185,11 +305,11 @@ internal sealed class SettingsWindow(
         {
             case WM_PROCESS_UI_ACTIONS:
                 DrainUiActions();
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_COMMAND:
                 HandleCommand(NativeInterop.LoWord(wParam), NativeInterop.HiWord(wParam));
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_ERASEBKGND:
                 return HandleEraseBackground(wParam);
@@ -202,11 +322,11 @@ internal sealed class SettingsWindow(
 
             case NativeInterop.WM_CLOSE:
                 HideToTray();
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_DESTROY:
                 HandleDestroy();
-                return 0;
+                return s_handledWindowMessageResult;
 
             default:
                 return NativeInterop.DefWindowProc(_windowHandle, msg, wParam, lParam);
@@ -223,15 +343,15 @@ internal sealed class SettingsWindow(
         RegisterWindowClass();
 
         _windowHandle = NativeInterop.CreateWindowEx(
-            0,
+            DefaultWindowStyle,
             WindowClassName,
             WindowTitle,
             NativeInterop.WS_CAPTION
             | NativeInterop.WS_SYSMENU
             | NativeInterop.WS_MINIMIZEBOX
             | NativeInterop.WS_CLIPCHILDREN,
-            220,
-            160,
+            WindowOriginX,
+            WindowOriginY,
             WindowWidth,
             WindowHeight,
             nint.Zero,
@@ -241,7 +361,7 @@ internal sealed class SettingsWindow(
 
         if (_windowHandle == nint.Zero)
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the settings window.");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), SettingsWindowCreationDescription);
         }
 
         lock (s_instancesGate)
@@ -250,20 +370,20 @@ internal sealed class SettingsWindow(
         }
 
         _fontHandle = NativeInterop.CreateFontHandle(
-            -16,
-            0,
-            0,
-            0,
+            NormalFontHeight,
+            DefaultWindowStyle,
+            DefaultWindowStyle,
+            DefaultWindowStyle,
             NativeInterop.FW_NORMAL,
-            0,
-            0,
-            0,
+            DefaultWindowStyle,
+            DefaultWindowStyle,
+            DefaultWindowStyle,
             NativeInterop.DEFAULT_CHARSET,
             NativeInterop.OUT_DEFAULT_PRECIS,
             NativeInterop.CLIP_DEFAULT_PRECIS,
             NativeInterop.CLEARTYPE_QUALITY,
             NativeInterop.DEFAULT_PITCH,
-            "Segoe UI");
+            DefaultFontFaceName);
 
         _windowIconHandle = NativeInterop.LoadAppIcon();
         nint windowIconHandle = NativeInterop.GetHandleOrZero(_windowIconHandle);
@@ -280,7 +400,7 @@ internal sealed class SettingsWindow(
 
     private static void RegisterWindowClass()
     {
-        if (s_windowClassAtom != 0)
+        if (s_windowClassAtom != NoWindowClassAtom)
         {
             return;
         }
@@ -294,14 +414,14 @@ internal sealed class SettingsWindow(
                 cbSize = (uint)Marshal.SizeOf<NativeInterop.WindowClassEx>(),
                 hInstance = NativeInterop.GetModuleHandle(null),
                 lpfnWndProc = Marshal.GetFunctionPointerForDelegate(s_windowProcedureDelegate),
-                hbrBackground = NativeInterop.COLOR_WINDOW + 1,
+                hbrBackground = NativeInterop.COLOR_WINDOW + RegisterClassBackgroundOffset,
                 lpszClassName = classNamePointer
             };
 
             s_windowClassAtom = NativeInterop.RegisterClassEx(ref windowClass);
-            if (s_windowClassAtom == 0)
+            if (s_windowClassAtom == NoWindowClassAtom)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to register the settings window class.");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), SettingsWindowClassRegistrationDescription);
             }
         }
         finally
@@ -312,78 +432,75 @@ internal sealed class SettingsWindow(
 
     private void CreateControls()
     {
-        _headerLabelHandle = CreateLabel(string.Empty, 16, 16, 240, 20);
-        _applyNowButtonHandle = CreateButton(ApplyNowId, string.Empty, 354, 12, 150, 32, true);
+        _headerLabelHandle = CreateLabel(string.Empty, s_headerLabelBounds);
+        _applyNowButtonHandle = CreateButton(ApplyNowId, string.Empty, s_applyNowButtonBounds, true);
 
-        _homeTabButtonHandle = CreateButton(HomeTabId, string.Empty, 16, 56, 152, 30, false);
-        _configurationTabButtonHandle = CreateButton(ConfigurationTabId, string.Empty, 184, 56, 152, 30, false);
-        _updatesTabButtonHandle = CreateButton(UpdatesTabId, string.Empty, 352, 56, 152, 30, false);
+        _homeTabButtonHandle = CreateButton(HomeTabId, string.Empty, s_homeTabButtonBounds, false);
+        _configurationTabButtonHandle = CreateButton(ConfigurationTabId, string.Empty, s_configurationTabButtonBounds, false);
+        _updatesTabButtonHandle = CreateButton(UpdatesTabId, string.Empty, s_updatesTabButtonBounds, false);
 
-        _locationAccessLabelHandle = CreateLabel(string.Empty, 16, 108, 132, 20, _homeControls);
-        _locationAccessValueHandle = CreateLabel(string.Empty, 156, 108, 348, 20, _homeControls);
-        _useWindowsLocationHandle = CreateCheckBox(UseWindowsLocationId, string.Empty, 16, 140, 240, 20, _homeControls);
-        _detectLocationButtonHandle = CreateButton(DetectLocationId, string.Empty, 324, 136, 180, 28, false, _homeControls);
-        _latitudeLabelHandle = CreateLabel(string.Empty, 16, 180, 132, 20, _homeControls);
-        _latitudeEditHandle = CreateEdit(LatitudeEditId, 156, 176, 220, 24, 18, _homeControls);
-        _longitudeLabelHandle = CreateLabel(string.Empty, 16, 214, 132, 20, _homeControls);
-        _longitudeEditHandle = CreateEdit(LongitudeEditId, 156, 210, 220, 24, 18, _homeControls);
-        NativeInterop.SetPasswordCharacter(_latitudeEditHandle, '*');
-        NativeInterop.SetPasswordCharacter(_longitudeEditHandle, '*');
-        _precisionLabelHandle = CreateLabel(string.Empty, 16, 248, 132, 20, _homeControls);
-        _precisionEditHandle = CreateEdit(PrecisionEditId, 156, 244, 48, 24, 1, _homeControls);
-        _privacyHintLabelHandle = CreateLabel(string.Empty, 216, 248, 288, 20, _homeControls);
-        _todayScheduleLabelHandle = CreateLabel(string.Empty, 16, 292, 160, 20, _homeControls);
-        _todayScheduleHandle = CreateLabel(string.Empty, 16, 320, 488, 44, _homeControls);
+        _locationAccessLabelHandle = CreateLabel(string.Empty, s_locationAccessLabelBounds, _homeControls);
+        _locationAccessValueHandle = CreateLabel(string.Empty, s_locationAccessValueBounds, _homeControls);
+        _useWindowsLocationHandle = CreateCheckBox(UseWindowsLocationId, string.Empty, s_useWindowsLocationBounds, _homeControls);
+        _detectLocationButtonHandle = CreateButton(DetectLocationId, string.Empty, s_detectLocationButtonBounds, false, _homeControls);
+        _latitudeLabelHandle = CreateLabel(string.Empty, s_latitudeLabelBounds, _homeControls);
+        _latitudeEditHandle = CreateEdit(LatitudeEditId, s_latitudeEditBounds, DefaultCoordinateMaxCharacters, _homeControls);
+        _longitudeLabelHandle = CreateLabel(string.Empty, s_longitudeLabelBounds, _homeControls);
+        _longitudeEditHandle = CreateEdit(LongitudeEditId, s_longitudeEditBounds, DefaultCoordinateMaxCharacters, _homeControls);
+        NativeInterop.SetPasswordCharacter(_latitudeEditHandle, HiddenCoordinateCharacter);
+        NativeInterop.SetPasswordCharacter(_longitudeEditHandle, HiddenCoordinateCharacter);
+        _precisionLabelHandle = CreateLabel(string.Empty, s_precisionLabelBounds, _homeControls);
+        _precisionEditHandle = CreateEdit(PrecisionEditId, s_precisionEditBounds, PrecisionEditMaxCharacters, _homeControls);
+        _privacyHintLabelHandle = CreateLabel(string.Empty, s_privacyHintBounds, _homeControls);
+        _todayScheduleLabelHandle = CreateLabel(string.Empty, s_todayScheduleLabelBounds, _homeControls);
+        _todayScheduleHandle = CreateLabel(string.Empty, s_todayScheduleValueBounds, _homeControls);
 
-        _languageLabelHandle = CreateLabel(string.Empty, 16, 108, 132, 20, _configurationControls);
-        _languageSelectorHandle = CreateDropDownList(LanguageSelectorId, 156, 104, 160, 120, _configurationControls);
-        _startWithWindowsHandle = CreateCheckBox(StartWithWindowsId, string.Empty, 16, 152, 240, 20, _configurationControls);
-        _startMinimizedHandle = CreateCheckBox(StartMinimizedId, string.Empty, 16, 182, 240, 20, _configurationControls);
-        _highPriorityHandle = CreateCheckBox(HighPriorityId, string.Empty, 16, 212, 280, 20, _configurationControls);
-        _extraMinuteAtSunsetHandle = CreateCheckBox(ExtraMinuteAtSunsetId, string.Empty, 16, 242, 280, 20, _configurationControls);
-        _runtimeStatusLabelHandle = CreateLabel(string.Empty, 16, 286, 160, 20, _configurationControls);
-        _runtimeStatusHandle = CreateLabel(string.Empty, 16, 314, 488, 44, _configurationControls);
+        _languageLabelHandle = CreateLabel(string.Empty, s_languageLabelBounds, _configurationControls);
+        _languageSelectorHandle = CreateDropDownList(LanguageSelectorId, s_languageSelectorBounds, _configurationControls);
+        _startWithWindowsHandle = CreateCheckBox(StartWithWindowsId, string.Empty, s_startWithWindowsBounds, _configurationControls);
+        _startMinimizedHandle = CreateCheckBox(StartMinimizedId, string.Empty, s_startMinimizedBounds, _configurationControls);
+        _highPriorityHandle = CreateCheckBox(HighPriorityId, string.Empty, s_highPriorityBounds, _configurationControls);
+        _extraMinuteAtSunsetHandle = CreateCheckBox(ExtraMinuteAtSunsetId, string.Empty, s_extraMinuteAtSunsetBounds, _configurationControls);
+        _runtimeStatusLabelHandle = CreateLabel(string.Empty, s_runtimeStatusLabelBounds, _configurationControls);
+        _runtimeStatusHandle = CreateLabel(string.Empty, s_runtimeStatusValueBounds, _configurationControls);
 
-        _automaticUpdatesHandle = CreateCheckBox(AutomaticUpdatesId, string.Empty, 16, 108, 280, 20, _updatesControls);
-        _currentVersionLabelHandle = CreateLabel(string.Empty, 16, 150, 132, 20, _updatesControls);
-        _currentVersionValueHandle = CreateLabel(string.Empty, 156, 150, 348, 20, _updatesControls);
-        _latestVersionLabelHandle = CreateLabel(string.Empty, 16, 182, 132, 20, _updatesControls);
-        _latestVersionValueHandle = CreateLabel(string.Empty, 156, 182, 348, 20, _updatesControls);
-        _updateStatusLabelHandle = CreateLabel(string.Empty, 16, 214, 132, 20, _updatesControls);
-        _updateStatusHandle = CreateLabel(string.Empty, 156, 214, 348, 44, _updatesControls);
-        _checkUpdatesButtonHandle = CreateButton(CheckUpdatesId, string.Empty, 16, 274, 180, 30, false, _updatesControls);
+        _automaticUpdatesHandle = CreateCheckBox(AutomaticUpdatesId, string.Empty, s_automaticUpdatesBounds, _updatesControls);
+        _currentVersionLabelHandle = CreateLabel(string.Empty, s_currentVersionLabelBounds, _updatesControls);
+        _currentVersionValueHandle = CreateLabel(string.Empty, s_currentVersionValueBounds, _updatesControls);
+        _latestVersionLabelHandle = CreateLabel(string.Empty, s_latestVersionLabelBounds, _updatesControls);
+        _latestVersionValueHandle = CreateLabel(string.Empty, s_latestVersionValueBounds, _updatesControls);
+        _updateStatusLabelHandle = CreateLabel(string.Empty, s_updateStatusLabelBounds, _updatesControls);
+        _updateStatusHandle = CreateLabel(string.Empty, s_updateStatusValueBounds, _updatesControls);
+        _checkUpdatesButtonHandle = CreateButton(CheckUpdatesId, string.Empty, s_checkUpdatesButtonBounds, false, _updatesControls);
 
         SetActiveTab(SettingsTab.Home);
         ApplyLocalizedText();
     }
 
-    private nint CreateLabel(string text, int x, int y, int width, int height, List<nint>? group = null)
+    private nint CreateLabel(string text, ControlBounds bounds, List<nint>? group = null)
     {
         return CreateControl(
-            "STATIC",
+            NativeStaticClassName,
             text,
             NativeInterop.SS_LEFT,
-            0,
-            new ControlBounds(x, y, width, height),
-            0,
+            NoExtendedStyle,
+            bounds,
+            NoControlId,
             group);
     }
 
     private nint CreateEdit(
         int controlId,
-        int x,
-        int y,
-        int width,
-        int height,
-        int maxCharacters = 18,
+        ControlBounds bounds,
+        int maxCharacters = DefaultCoordinateMaxCharacters,
         List<nint>? group = null)
     {
         nint editHandle = CreateControl(
-            "EDIT",
+            NativeEditClassName,
             string.Empty,
             NativeInterop.ES_AUTOHSCROLL | NativeInterop.WS_TABSTOP,
             NativeInterop.WS_EX_CLIENTEDGE,
-            new ControlBounds(x, y, width, height),
+            bounds,
             controlId,
             group);
 
@@ -394,36 +511,30 @@ internal sealed class SettingsWindow(
     private nint CreateCheckBox(
         int controlId,
         string text,
-        int x,
-        int y,
-        int width,
-        int height,
+        ControlBounds bounds,
         List<nint>? group = null)
     {
         return CreateControl(
-            "BUTTON",
+            NativeButtonClassName,
             text,
             NativeInterop.BS_AUTOCHECKBOX | NativeInterop.WS_TABSTOP,
-            0,
-            new ControlBounds(x, y, width, height),
+            NoExtendedStyle,
+            bounds,
             controlId,
             group);
     }
 
     private nint CreateDropDownList(
         int controlId,
-        int x,
-        int y,
-        int width,
-        int height,
+        ControlBounds bounds,
         List<nint>? group = null)
     {
         return CreateControl(
-            "COMBOBOX",
+            NativeComboBoxClassName,
             string.Empty,
             NativeInterop.CBS_DROPDOWNLIST | NativeInterop.WS_TABSTOP | NativeInterop.WS_VSCROLL,
-            0,
-            new ControlBounds(x, y, width, height),
+            NoExtendedStyle,
+            bounds,
             controlId,
             group);
     }
@@ -431,10 +542,7 @@ internal sealed class SettingsWindow(
     private nint CreateButton(
         int controlId,
         string text,
-        int x,
-        int y,
-        int width,
-        int height,
+        ControlBounds bounds,
         bool isDefault,
         List<nint>? group = null)
     {
@@ -445,11 +553,11 @@ internal sealed class SettingsWindow(
         }
 
         return CreateControl(
-            "BUTTON",
+            NativeButtonClassName,
             text,
             style,
-            0,
-            new ControlBounds(x, y, width, height),
+            NoExtendedStyle,
+            bounds,
             controlId,
             group);
     }
@@ -481,7 +589,10 @@ internal sealed class SettingsWindow(
         {
             throw new Win32Exception(
                 Marshal.GetLastWin32Error(),
-                $"Failed to create a {className} control.");
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    s_controlCreationCompositeFormat,
+                    className));
         }
 
         NativeInterop.ApplyFont(controlHandle, _fontHandle);
@@ -493,41 +604,41 @@ internal sealed class SettingsWindow(
     private void ApplyLocalizedText()
     {
         _ = NativeInterop.SetWindowText(_windowHandle, WindowTitle);
-        _ = NativeInterop.SetWindowText(_headerLabelHandle, _localization["settings.header"]);
-        _ = NativeInterop.SetWindowText(_applyNowButtonHandle, _localization["settings.save_and_apply"]);
-        _ = NativeInterop.SetWindowText(_homeTabButtonHandle, _localization["settings.tab.home"]);
-        _ = NativeInterop.SetWindowText(_configurationTabButtonHandle, _localization["settings.tab.configuration"]);
-        _ = NativeInterop.SetWindowText(_updatesTabButtonHandle, _localization["settings.tab.updates"]);
+        _ = NativeInterop.SetWindowText(_headerLabelHandle, _localization[SettingsHeaderKey]);
+        _ = NativeInterop.SetWindowText(_applyNowButtonHandle, _localization[SettingsSaveAndApplyKey]);
+        _ = NativeInterop.SetWindowText(_homeTabButtonHandle, _localization[SettingsHomeTabKey]);
+        _ = NativeInterop.SetWindowText(_configurationTabButtonHandle, _localization[SettingsConfigurationTabKey]);
+        _ = NativeInterop.SetWindowText(_updatesTabButtonHandle, _localization[SettingsUpdatesTabKey]);
 
-        _ = NativeInterop.SetWindowText(_locationAccessLabelHandle, _localization["settings.location_access"]);
-        _ = NativeInterop.SetWindowText(_useWindowsLocationHandle, _localization["settings.use_windows_location"]);
-        _ = NativeInterop.SetWindowText(_detectLocationButtonHandle, _localization["settings.detect_from_windows"]);
-        _ = NativeInterop.SetWindowText(_latitudeLabelHandle, _localization["settings.latitude"]);
-        _ = NativeInterop.SetWindowText(_longitudeLabelHandle, _localization["settings.longitude"]);
-        _ = NativeInterop.SetWindowText(_precisionLabelHandle, _localization["settings.precision"]);
-        _ = NativeInterop.SetWindowText(_privacyHintLabelHandle, _localization["settings.privacy_hint"]);
-        _ = NativeInterop.SetWindowText(_todayScheduleLabelHandle, _localization["settings.today_schedule"]);
+        _ = NativeInterop.SetWindowText(_locationAccessLabelHandle, _localization[SettingsLocationAccessKey]);
+        _ = NativeInterop.SetWindowText(_useWindowsLocationHandle, _localization[SettingsUseWindowsLocationKey]);
+        _ = NativeInterop.SetWindowText(_detectLocationButtonHandle, _localization[SettingsDetectFromWindowsKey]);
+        _ = NativeInterop.SetWindowText(_latitudeLabelHandle, _localization[SettingsLatitudeKey]);
+        _ = NativeInterop.SetWindowText(_longitudeLabelHandle, _localization[SettingsLongitudeKey]);
+        _ = NativeInterop.SetWindowText(_precisionLabelHandle, _localization[SettingsPrecisionKey]);
+        _ = NativeInterop.SetWindowText(_privacyHintLabelHandle, _localization[SettingsPrivacyHintKey]);
+        _ = NativeInterop.SetWindowText(_todayScheduleLabelHandle, _localization[SettingsTodayScheduleKey]);
 
-        _ = NativeInterop.SetWindowText(_languageLabelHandle, _localization["settings.language"]);
+        _ = NativeInterop.SetWindowText(_languageLabelHandle, _localization[SettingsLanguageKey]);
         RefreshLanguageSelector();
-        _ = NativeInterop.SetWindowText(_startWithWindowsHandle, _localization["settings.start_with_windows"]);
-        _ = NativeInterop.SetWindowText(_startMinimizedHandle, _localization["settings.open_in_tray"]);
-        _ = NativeInterop.SetWindowText(_highPriorityHandle, _localization["settings.use_high_priority"]);
-        _ = NativeInterop.SetWindowText(_extraMinuteAtSunsetHandle, _localization["settings.extra_minute_at_sunset"]);
-        _ = NativeInterop.SetWindowText(_runtimeStatusLabelHandle, _localization["settings.runtime_status"]);
+        _ = NativeInterop.SetWindowText(_startWithWindowsHandle, _localization[SettingsStartWithWindowsKey]);
+        _ = NativeInterop.SetWindowText(_startMinimizedHandle, _localization[SettingsOpenInTrayKey]);
+        _ = NativeInterop.SetWindowText(_highPriorityHandle, _localization[SettingsUseHighPriorityKey]);
+        _ = NativeInterop.SetWindowText(_extraMinuteAtSunsetHandle, _localization[SettingsExtraMinuteAtSunsetKey]);
+        _ = NativeInterop.SetWindowText(_runtimeStatusLabelHandle, _localization[SettingsRuntimeStatusKey]);
 
-        _ = NativeInterop.SetWindowText(_automaticUpdatesHandle, _localization["settings.install_updates_automatically"]);
-        _ = NativeInterop.SetWindowText(_currentVersionLabelHandle, _localization["settings.current_version"]);
-        _ = NativeInterop.SetWindowText(_latestVersionLabelHandle, _localization["settings.latest_version"]);
-        _ = NativeInterop.SetWindowText(_updateStatusLabelHandle, _localization["settings.update_status"]);
-        _ = NativeInterop.SetWindowText(_checkUpdatesButtonHandle, _localization["settings.check_updates"]);
+        _ = NativeInterop.SetWindowText(_automaticUpdatesHandle, _localization[SettingsAutomaticUpdatesKey]);
+        _ = NativeInterop.SetWindowText(_currentVersionLabelHandle, _localization[SettingsCurrentVersionKey]);
+        _ = NativeInterop.SetWindowText(_latestVersionLabelHandle, _localization[SettingsLatestVersionKey]);
+        _ = NativeInterop.SetWindowText(_updateStatusLabelHandle, _localization[SettingsUpdateStatusKey]);
+        _ = NativeInterop.SetWindowText(_checkUpdatesButtonHandle, _localization[SettingsCheckUpdatesKey]);
     }
 
     private void RefreshLanguageSelector()
     {
         NativeInterop.ResetComboBoxContent(_languageSelectorHandle);
-        NativeInterop.AddComboBoxString(_languageSelectorHandle, _localization["settings.language.option.english"]);
-        NativeInterop.AddComboBoxString(_languageSelectorHandle, _localization["settings.language.option.spanish"]);
+        NativeInterop.AddComboBoxString(_languageSelectorHandle, _localization[SettingsEnglishLanguageOptionKey]);
+        NativeInterop.AddComboBoxString(_languageSelectorHandle, _localization[SettingsSpanishLanguageOptionKey]);
         NativeInterop.SetComboSelection(_languageSelectorHandle, GetLanguageIndex(_selectedLanguageCode));
     }
 
@@ -571,11 +682,11 @@ internal sealed class SettingsWindow(
     {
         ThemeMode themeMode = _applicationLifecycleOrchestrator.GetCurrentThemeMode() ?? ThemeMode.Light;
         int backgroundColorRef = themeMode == ThemeMode.Dark
-            ? ToColorRef(24, 24, 24)
-            : ToColorRef(255, 255, 255);
+            ? s_darkBackgroundColorRef
+            : s_lightBackgroundColorRef;
         int foregroundColorRef = themeMode == ThemeMode.Dark
-            ? ToColorRef(244, 244, 244)
-            : ToColorRef(0, 0, 0);
+            ? s_darkForegroundColorRef
+            : s_lightForegroundColorRef;
 
         if (_backgroundColorRef == backgroundColorRef
             && _foregroundColorRef == foregroundColorRef
@@ -610,7 +721,7 @@ internal sealed class SettingsWindow(
         }
 
         _ = NativeInterop.FillRect(wParam, ref rect, backgroundBrushHandle);
-        return 1;
+        return HandledWindowMessageResult;
     }
 
     private nint HandleControlColor(nint wParam)
@@ -643,13 +754,13 @@ internal sealed class SettingsWindow(
     private static int GetLanguageIndex(string languageCode)
     {
         return string.Equals(languageCode, AppLanguageCodes.Spanish, StringComparison.Ordinal)
-            ? 1
-            : 0;
+            ? LanguageSpanishIndex
+            : LanguageEnglishIndex;
     }
 
     private static string GetLanguageCode(int selectedIndex)
     {
-        return selectedIndex == 1
+        return selectedIndex == LanguageSpanishIndex
             ? AppLanguageCodes.Spanish
             : AppLanguageCodes.English;
     }
@@ -733,7 +844,7 @@ internal sealed class SettingsWindow(
             return;
         }
 
-        if (!TryBeginOperation(_localization["settings.operation.applying_theme"]))
+        if (!TryBeginOperation(_localization[SettingsApplyingThemeKey]))
         {
             return;
         }
@@ -751,7 +862,7 @@ internal sealed class SettingsWindow(
             EnqueueUiAction(() =>
             {
                 RefreshFromModel();
-                ShowMessage(_localization["settings.message.theme_applied"], NativeInterop.MB_ICONINFORMATION);
+                ShowMessage(_localization[SettingsThemeAppliedMessageKey], NativeInterop.MB_ICONINFORMATION);
             });
         }
         catch (OperationCanceledException)
@@ -776,7 +887,7 @@ internal sealed class SettingsWindow(
             return;
         }
 
-        if (!TryBeginOperation(_localization["settings.operation.detecting_location"]))
+        if (!TryBeginOperation(_localization[SettingsDetectingLocationKey]))
         {
             return;
         }
@@ -786,7 +897,7 @@ internal sealed class SettingsWindow(
 
     private void StartCheckForUpdates()
     {
-        if (!TryBeginOperation(_localization["settings.operation.checking_updates"]))
+        if (!TryBeginOperation(_localization[SettingsCheckingUpdatesKey]))
         {
             return;
         }
@@ -808,11 +919,11 @@ internal sealed class SettingsWindow(
 
                 if (!updateSnapshot.IsUpdateAvailable)
                 {
-                    ShowMessage(_localization["settings.message.no_updates"], NativeInterop.MB_ICONINFORMATION);
+                    ShowMessage(_localization[SettingsNoUpdatesMessageKey], NativeInterop.MB_ICONINFORMATION);
                     return;
                 }
 
-                ShowMessage(_localization["settings.message.update_available"], NativeInterop.MB_ICONINFORMATION);
+                ShowMessage(_localization[SettingsUpdateAvailableMessageKey], NativeInterop.MB_ICONINFORMATION);
             });
         }
         catch (OperationCanceledException)
@@ -863,7 +974,7 @@ internal sealed class SettingsWindow(
                         coordinates.Longitude,
                         locationPrecisionDecimals));
                 NativeInterop.SetChecked(_useWindowsLocationHandle, true);
-                SetCoordinateInputsVisible(areVisible: false);
+                SetCoordinateInputsVisible(areVisible: false, clearHiddenText: true);
                 RefreshStatus();
             });
         }
@@ -882,9 +993,9 @@ internal sealed class SettingsWindow(
 
     private bool TryBeginOperation(string statusText)
     {
-        if (Interlocked.CompareExchange(ref _operationInProgress, 1, 0) != 0)
+        if (Interlocked.CompareExchange(ref _operationInProgress, BusyOperationState, IdleOperationState) != IdleOperationState)
         {
-            ShowMessage(_localization["settings.operation.already_running"], NativeInterop.MB_ICONWARNING);
+            ShowMessage(_localization[SettingsAlreadyRunningKey], NativeInterop.MB_ICONWARNING);
             return false;
         }
 
@@ -894,7 +1005,7 @@ internal sealed class SettingsWindow(
 
     private void CompleteOperation()
     {
-        _ = Interlocked.Exchange(ref _operationInProgress, 0);
+        _ = Interlocked.Exchange(ref _operationInProgress, IdleOperationState);
         SetBusy(isBusy: false, statusText: null);
     }
 
@@ -995,7 +1106,7 @@ internal sealed class SettingsWindow(
         NativeInterop.SetChecked(_automaticUpdatesHandle, configuration.AutomaticUpdatesEnabled);
         _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, isWindowsLocationAvailable);
         _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, isWindowsLocationAvailable);
-        SetCoordinateInputsVisible(areVisible: false);
+        SetCoordinateInputsVisible(areVisible: false, clearHiddenText: true);
     }
 
     private Result<AppConfig> ReadConfigurationFromForm()
@@ -1018,18 +1129,18 @@ internal sealed class SettingsWindow(
             return windowsCoordinatesResult.IsFailure
                 ? Result<AppConfig>.Failure(windowsCoordinatesResult.Error)
                 : (Result<AppConfig>)BuildConfiguration(
-                windowsCoordinatesResult.Value,
-                useWindowsLocation,
-                locationPrecisionDecimals);
+                    windowsCoordinatesResult.Value,
+                    useWindowsLocation,
+                    locationPrecisionDecimals);
         }
 
         Result<GeoCoordinates> manualCoordinatesResult = ResolveManualCoordinates();
         return manualCoordinatesResult.IsFailure
             ? Result<AppConfig>.Failure(manualCoordinatesResult.Error)
             : (Result<AppConfig>)BuildConfiguration(
-            manualCoordinatesResult.Value,
-            useWindowsLocation,
-            locationPrecisionDecimals);
+                manualCoordinatesResult.Value,
+                useWindowsLocation,
+                locationPrecisionDecimals);
     }
 
     private Result<GeoCoordinates> ResolveCoordinatesForWindowsLocation(AppConfig currentConfiguration)
@@ -1065,8 +1176,12 @@ internal sealed class SettingsWindow(
         {
             return Result<int>.Failure(
                 Error.Validation(
-                    "InvalidLocationPrecision",
-                    $"Provide a whole-number precision between {CoordinatePrecisionPolicy.MinStoredDecimals} and {CoordinatePrecisionPolicy.MaxStoredDecimals}."));
+                    InvalidLocationPrecisionCode,
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        s_invalidLocationPrecisionCompositeFormat,
+                        CoordinatePrecisionPolicy.MinStoredDecimals,
+                        CoordinatePrecisionPolicy.MaxStoredDecimals)));
         }
 
         if (locationPrecisionDecimals is < CoordinatePrecisionPolicy.MinStoredDecimals
@@ -1074,8 +1189,12 @@ internal sealed class SettingsWindow(
         {
             return Result<int>.Failure(
                 Error.Validation(
-                    "InvalidLocationPrecision",
-                    $"Provide a whole-number precision between {CoordinatePrecisionPolicy.MinStoredDecimals} and {CoordinatePrecisionPolicy.MaxStoredDecimals}."));
+                    InvalidLocationPrecisionCode,
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        s_invalidLocationPrecisionCompositeFormat,
+                        CoordinatePrecisionPolicy.MinStoredDecimals,
+                        CoordinatePrecisionPolicy.MaxStoredDecimals)));
         }
 
         return Result<int>.Success(locationPrecisionDecimals);
@@ -1112,7 +1231,7 @@ internal sealed class SettingsWindow(
 
         bool locationAvailable =
             _applicationLifecycleOrchestrator.WindowsLocationAccessState == SystemLocationAccessState.Allowed;
-        bool isBusy = Volatile.Read(ref _operationInProgress) != 0;
+        bool isBusy = Volatile.Read(ref _operationInProgress) != IdleOperationState;
         _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, locationAvailable && !isBusy);
         _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, locationAvailable && !isBusy);
         _ = NativeInterop.EnableWindow(_checkUpdatesButtonHandle, !isBusy);
@@ -1134,7 +1253,7 @@ internal sealed class SettingsWindow(
         _ = NativeInterop.SetWindowText(
             _latestVersionValueHandle,
             updateSnapshot.LastCheckedAtUtc is null
-                ? _localization["settings.update.not_checked"]
+                ? _localization[SettingsUpdateNotCheckedKey]
                 : updateSnapshot.LatestVersionTag ?? updateSnapshot.CurrentVersion.ToTag());
 
         if (!isBusy)
@@ -1149,28 +1268,28 @@ internal sealed class SettingsWindow(
     {
         if (!string.IsNullOrWhiteSpace(updateSnapshot.LastCheckErrorMessage))
         {
-            return _localization["settings.update.check_failed"];
+            return _localization[SettingsUpdateCheckFailedKey];
         }
 
         if (updateSnapshot.LastCheckedAtUtc is null)
         {
-            return _localization["settings.update.idle"];
+            return _localization[SettingsUpdateIdleKey];
         }
 
         return updateSnapshot.IsUpdateAvailable
-            ? _localization["settings.update.available"]
-            : _localization["settings.update.up_to_date"];
+            ? _localization[SettingsUpdateAvailableKey]
+            : _localization[SettingsUpdateUpToDateKey];
     }
 
     private string GetLocationAccessText(SystemLocationAccessState accessState)
     {
         return accessState switch
         {
-            SystemLocationAccessState.Allowed => _localization["settings.location_access.allowed"],
-            SystemLocationAccessState.Denied => _localization["settings.location_access.denied"],
-            SystemLocationAccessState.Unavailable => _localization["settings.location_access.unavailable"],
-            SystemLocationAccessState.Unknown => _localization["settings.location_access.unknown"],
-            _ => _localization["settings.location_access.unknown"]
+            SystemLocationAccessState.Allowed => _localization[SettingsLocationAccessAllowedKey],
+            SystemLocationAccessState.Denied => _localization[SettingsLocationAccessDeniedKey],
+            SystemLocationAccessState.Unavailable => _localization[SettingsLocationAccessUnavailableKey],
+            SystemLocationAccessState.Unknown => _localization[SettingsLocationAccessUnknownKey],
+            _ => _localization[SettingsLocationAccessUnknownKey]
         };
     }
 
@@ -1198,7 +1317,7 @@ internal sealed class SettingsWindow(
             NativeInterop.GetWindowString(_longitudeEditHandle));
     }
 
-    private void SetCoordinateInputsVisible(bool areVisible)
+    private void SetCoordinateInputsVisible(bool areVisible, bool clearHiddenText = false)
     {
         _coordinateInputsVisible = areVisible;
 
@@ -1207,24 +1326,70 @@ internal sealed class SettingsWindow(
             return;
         }
 
-        char passwordCharacter = areVisible ? '\0' : '*';
+        char passwordCharacter = areVisible ? VisibleCoordinateCharacter : HiddenCoordinateCharacter;
         NativeInterop.SetPasswordCharacter(_latitudeEditHandle, passwordCharacter);
         NativeInterop.SetPasswordCharacter(_longitudeEditHandle, passwordCharacter);
+
+        if (areVisible)
+        {
+            PopulateCoordinateInputsFromSeedIfEmpty();
+            return;
+        }
+
+        if (clearHiddenText)
+        {
+            ClearCoordinateInputs();
+        }
+    }
+
+    private void PopulateCoordinateInputsFromSeedIfEmpty()
+    {
+        if (!string.IsNullOrWhiteSpace(NativeInterop.GetWindowString(_latitudeEditHandle))
+            || !string.IsNullOrWhiteSpace(NativeInterop.GetWindowString(_longitudeEditHandle)))
+        {
+            return;
+        }
+
+        int locationPrecisionDecimals = ResolveCoordinateDisplayPrecision();
+        if (!_coordinateInputState.TryFormatSeed(
+                locationPrecisionDecimals,
+                out string latitudeText,
+                out string longitudeText))
+        {
+            return;
+        }
+
+        _ = NativeInterop.SetWindowText(_latitudeEditHandle, latitudeText);
+        _ = NativeInterop.SetWindowText(_longitudeEditHandle, longitudeText);
+    }
+
+    private void ClearCoordinateInputs()
+    {
+        _ = NativeInterop.SetWindowText(_latitudeEditHandle, string.Empty);
+        _ = NativeInterop.SetWindowText(_longitudeEditHandle, string.Empty);
+    }
+
+    private int ResolveCoordinateDisplayPrecision()
+    {
+        Result<int> locationPrecisionResult = ParseLocationPrecisionFromForm();
+        return locationPrecisionResult.IsSuccess
+            ? locationPrecisionResult.Value
+            : _applicationLifecycleOrchestrator.Config.LocationPrecisionDecimals;
     }
 
     private void FocusInvalidInput(Error error)
     {
         nint controlHandle = _latitudeEditHandle;
 
-        if (string.Equals(error.Code, "InvalidLongitude", StringComparison.Ordinal))
+        if (string.Equals(error.Code, InvalidLongitudeCode, StringComparison.Ordinal))
         {
             controlHandle = _longitudeEditHandle;
         }
-        else if (string.Equals(error.Code, "InvalidLocationPrecision", StringComparison.Ordinal))
+        else if (string.Equals(error.Code, InvalidLocationPrecisionCode, StringComparison.Ordinal))
         {
             controlHandle = _precisionEditHandle;
         }
-        else if (string.Equals(error.Code, "MissingLocationSeed", StringComparison.Ordinal))
+        else if (string.Equals(error.Code, MissingLocationSeedCode, StringComparison.Ordinal))
         {
             controlHandle = _useWindowsLocationHandle;
         }
@@ -1235,7 +1400,7 @@ internal sealed class SettingsWindow(
             || controlHandle == _longitudeEditHandle
             || controlHandle == _precisionEditHandle)
         {
-            _ = NativeInterop.SendMessage(controlHandle, NativeInterop.EM_SETSEL, nint.Zero, -1);
+            _ = NativeInterop.SendMessage(controlHandle, NativeInterop.EM_SETSEL, nint.Zero, SelectAllTextEnd);
         }
     }
 
@@ -1287,7 +1452,7 @@ internal sealed class SettingsWindow(
 
     private static int ToColorRef(byte red, byte green, byte blue)
     {
-        return red | (green << 8) | (blue << 16);
+        return red | (green << GreenChannelShift) | (blue << BlueChannelShift);
     }
 
     private void ThrowIfDisposed()

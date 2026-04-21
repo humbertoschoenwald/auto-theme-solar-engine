@@ -7,6 +7,12 @@ namespace SolarEngine.Features.SystemHost.Infrastructure;
 
 internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublisher)
 {
+    private const string CurrentUserRunKeyErrorMessage = "Resolve the current-user Run key before mutating startup state.";
+    private const char QuoteCharacter = '"';
+    private const string QuoteString = "\"";
+    private const string StartupDisabledLogMessage = "Startup registration disabled.";
+    private const string StartupEnabledLogMessage = "Startup registration enabled.";
+    private const string StartupLegacyRemovedLogMessage = "Legacy startup registration removed.";
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = AppIdentity.StartupValueName;
     private const string LegacyValueName = AppIdentity.LegacyStartupValueName;
@@ -16,7 +22,7 @@ internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublishe
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
 
         using RegistryKey key = Registry.CurrentUser.CreateSubKey(RunKeyPath, writable: true)
-            ?? throw new UnexpectedStateException("Resolve the current-user Run key before mutating startup state.");
+            ?? throw new UnexpectedStateException(CurrentUserRunKeyErrorMessage);
 
         if (enabled)
         {
@@ -26,13 +32,13 @@ internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublishe
             if (!string.Equals(currentValue as string, quotedPath, StringComparison.Ordinal))
             {
                 key.SetValue(ValueName, quotedPath, RegistryValueKind.String);
-                logPublisher.Write("Startup registration enabled.");
+                logPublisher.Write(StartupEnabledLogMessage);
             }
 
             if (key.GetValue(LegacyValueName) is not null)
             {
                 key.DeleteValue(LegacyValueName, throwOnMissingValue: false);
-                logPublisher.Write("Legacy startup registration removed.");
+                logPublisher.Write(StartupLegacyRemovedLogMessage);
             }
 
             return;
@@ -54,15 +60,15 @@ internal sealed class WindowsStartupRegistrar(StructuredLogPublisher logPublishe
 
         if (removedValue)
         {
-            logPublisher.Write("Startup registration disabled.");
+            logPublisher.Write(StartupDisabledLogMessage);
         }
     }
 
     private static string Quote(string path)
     {
         ReadOnlySpan<char> span = path.AsSpan().Trim();
-        return span is ['"', .., '"']
+        return span is [QuoteCharacter, .., QuoteCharacter]
             ? span.ToString()
-            : string.Concat("\"", span, "\"");
+            : string.Concat(QuoteString, span, QuoteString);
     }
 }

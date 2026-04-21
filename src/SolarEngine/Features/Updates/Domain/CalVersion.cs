@@ -2,6 +2,15 @@ namespace SolarEngine.Features.Updates.Domain;
 
 internal readonly record struct CalVersion(int Year, int Month, int Patch) : IComparable<CalVersion>
 {
+    private const string TagPrefix = "v";
+    private const char SegmentSeparator = '.';
+    private const int PrefixLength = 1;
+    private const int SegmentCount = 3;
+    private const int YearIndex = 0;
+    private const int MonthIndex = 1;
+    private const int PatchIndex = 2;
+    private const int EqualComparison = 0;
+
     public static bool TryParse(string? value, out CalVersion version)
     {
         version = default;
@@ -11,16 +20,16 @@ internal readonly record struct CalVersion(int Year, int Month, int Patch) : ICo
         }
 
         ReadOnlySpan<char> span = value.AsSpan().Trim();
-        if (span.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+        if (span.StartsWith(TagPrefix, StringComparison.OrdinalIgnoreCase))
         {
-            span = span[1..];
+            span = span[PrefixLength..];
         }
 
-        string[] parts = span.ToString().Split('.', StringSplitOptions.TrimEntries);
-        if (parts.Length != 3
-            || !int.TryParse(parts[0], out int year)
-            || !int.TryParse(parts[1], out int month)
-            || !int.TryParse(parts[2], out int patch))
+        string[] parts = span.ToString().Split(SegmentSeparator, StringSplitOptions.TrimEntries);
+        if (parts.Length != SegmentCount
+            || !int.TryParse(parts[YearIndex], out int year)
+            || !int.TryParse(parts[MonthIndex], out int month)
+            || !int.TryParse(parts[PatchIndex], out int patch))
         {
             return false;
         }
@@ -32,18 +41,18 @@ internal readonly record struct CalVersion(int Year, int Month, int Patch) : ICo
     public int CompareTo(CalVersion other)
     {
         int yearComparison = Year.CompareTo(other.Year);
-        if (yearComparison != 0)
+        if (yearComparison != EqualComparison)
         {
             return yearComparison;
         }
 
         int monthComparison = Month.CompareTo(other.Month);
-        return monthComparison != 0 ? monthComparison : Patch.CompareTo(other.Patch);
+        return monthComparison != EqualComparison ? monthComparison : Patch.CompareTo(other.Patch);
     }
 
     public string ToTag()
     {
-        return $"v{Year:00}.{Month:00}.{Patch:00}";
+        return $"{TagPrefix}{Year:00}.{Month:00}.{Patch:00}";
     }
 
     public override string ToString()

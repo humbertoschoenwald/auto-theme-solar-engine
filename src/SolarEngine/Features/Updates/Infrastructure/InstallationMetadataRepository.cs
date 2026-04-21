@@ -13,6 +13,148 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
 {
     private const string ManifestFileName = "installation.json";
     private const string ElevatedUpdateTaskName = "AutoThemeSolarEngine Silent Update";
+    private const string UpdateRequestFileName = "update-request.json";
+    private const string SelfContainedFlavorName = "self-contained";
+    private const string FrameworkDependentFlavorName = "framework-dependent";
+    private const string LocalAppDataInstallationModeName = "local-app-data";
+    private const string ProgramFilesInstallationModeName = "program-files";
+    private const string UnknownInstallationModeName = "unknown";
+    private const string CurrentExecutablePathDescription = "Resolve the current executable path before registering installation metadata.";
+    private const string CurrentExecutableDirectoryDescription = "Resolve the current executable directory before registering installation metadata.";
+    private const string InstallationMetadataLoadPathDescription = "Resolve the current executable path before loading installation metadata.";
+    private const string InstallationMetadataDirectoryLoadDescription = "Resolve the current executable directory before loading installation metadata.";
+    private const string CurrentWindowsIdentityDescription = "Resolve the current Windows identity before registering the elevated updater task.";
+    private const string StartRegistrationProcessDescription = "Start the elevated updater task registration process before treating this install as update-ready.";
+    private const string RegistrationProcessExitDescription = "Register the elevated updater task before treating this install as update-ready.";
+    private const string PowerShellResolutionDescription = "Resolve a PowerShell executable before registering the elevated updater task.";
+    private const string ProgramFilesDirectoryName = "PowerShell";
+    private const string PowerShellSevenDirectoryName = "7";
+    private const string PowerShellSevenExecutableName = "pwsh.exe";
+    private const string WindowsPowerShellRelativePath = @"WindowsPowerShell\v1.0\powershell.exe";
+    private const string NoLogoArgument = "-NoLogo";
+    private const string NoProfileArgument = "-NoProfile";
+    private const string NonInteractiveArgument = "-NonInteractive";
+    private const string ExecutionPolicyArgument = "-ExecutionPolicy";
+    private const string BypassExecutionPolicy = "Bypass";
+    private const string EncodedCommandArgument = "-EncodedCommand";
+    private const string CommandArgumentSeparator = " ";
+    private const int SuccessExitCode = 0;
+    private const string ElevatedTaskRegistrationHelperScriptToken = "__HELPER_SCRIPT_PATH__";
+    private const string ElevatedTaskRegistrationShellPathToken = "__SHELL_PATH__";
+    private const string ElevatedTaskRegistrationUserIdToken = "__USER_ID__";
+    private const string ElevatedTaskRegistrationTaskNameToken = "__TASK_NAME__";
+    private const string HelperScriptRequestPathToken = "__REQUEST_PATH__";
+    private const string LauncherScriptStartupValueNameToken = "__STARTUP_VALUE_NAME__";
+    private const string LauncherScriptLegacyStartupValueNameToken = "__LEGACY_STARTUP_VALUE_NAME__";
+    private const string SingleQuote = "'";
+
+    private const string ElevatedTaskRegistrationScriptTemplate = """
+$ErrorActionPreference = "Stop"
+
+$helperScriptPath = __HELPER_SCRIPT_PATH__
+$shellPath = __SHELL_PATH__
+$userId = __USER_ID__
+$arguments = @(
+  "-NoLogo",
+  "-NoProfile",
+  "-NonInteractive",
+  "-ExecutionPolicy", "Bypass",
+  "-WindowStyle", "Hidden",
+  "-File", ('"{0}"' -f $helperScriptPath)
+) -join " "
+
+$action = New-ScheduledTaskAction -Execute $shellPath -Argument $arguments
+$principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+$task = New-ScheduledTask -Action $action -Principal $principal -Settings $settings
+Register-ScheduledTask -TaskName __TASK_NAME__ -InputObject $task -Force | Out-Null
+""";
+
+    private const string HelperScriptTemplate = """
+$ErrorActionPreference = "Stop"
+
+$requestPath = __REQUEST_PATH__
+if (-not (Test-Path -LiteralPath $requestPath)) {
+  exit 0
+}
+
+$request = Get-Content -LiteralPath $requestPath -Raw | ConvertFrom-Json
+
+if ($request.ProcessId -gt 0) {
+  try {
+    Wait-Process -Id $request.ProcessId -Timeout 15 -ErrorAction Stop
+  }
+  catch {
+    Stop-Process -Id $request.ProcessId -Force -ErrorAction SilentlyContinue
+  }
+}
+
+Start-Sleep -Seconds 2
+
+$downloadedPath = [string]$request.DownloadedExecutablePath
+$installedPath = [string]$request.InstalledExecutablePath
+
+if (-not (Test-Path -LiteralPath $downloadedPath)) {
+  Remove-Item -LiteralPath $requestPath -ErrorAction SilentlyContinue
+  exit 1
+}
+
+$installedDirectory = Split-Path -Path $installedPath -Parent
+New-Item -ItemType Directory -Path $installedDirectory -Force | Out-Null
+
+if (Test-Path -LiteralPath $installedPath) {
+  Remove-Item -LiteralPath $installedPath -Force
+}
+
+Move-Item -LiteralPath $downloadedPath -Destination $installedPath -Force
+
+Get-ChildItem -LiteralPath $installedDirectory -Filter "auto-theme-solar-engine-win-x64-*.exe" -ErrorAction SilentlyContinue |
+  Where-Object { -not [System.StringComparer]::OrdinalIgnoreCase.Equals($_.FullName, $installedPath) } |
+  Remove-Item -Force -ErrorAction SilentlyContinue
+
+$runKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$runValueName = "__STARTUP_VALUE_NAME__"
+$legacyRunValueName = "__LEGACY_STARTUP_VALUE_NAME__"
+if ($request.StartWithWindows) {
+  Set-ItemProperty -Path $runKeyPath -Name $runValueName -Value ('"{0}"' -f $installedPath)
+  Remove-ItemProperty -Path $runKeyPath -Name $legacyRunValueName -ErrorAction SilentlyContinue
+}
+else {
+  Remove-ItemProperty -Path $runKeyPath -Name $runValueName -ErrorAction SilentlyContinue
+  Remove-ItemProperty -Path $runKeyPath -Name $legacyRunValueName -ErrorAction SilentlyContinue
+}
+
+Remove-Item -LiteralPath $requestPath -ErrorAction SilentlyContinue
+
+if ($request.LaunchAfterApply) {
+  Start-Process -FilePath $installedPath
+}
+""";
+
+    private const string LauncherScriptTemplate = """
+param(
+  [Parameter(Mandatory = $true)]
+  [string]$RequestPath,
+
+  [Parameter(Mandatory = $true)]
+  [string]$InstalledPath
+)
+
+$ErrorActionPreference = "Stop"
+
+$deadline = (Get-Date).AddMinutes(2)
+
+while ((Get-Date) -lt $deadline) {
+  if (-not (Test-Path -LiteralPath $RequestPath) -and (Test-Path -LiteralPath $InstalledPath)) {
+    Start-Process -FilePath $InstalledPath
+    exit 0
+  }
+
+  Start-Sleep -Milliseconds 500
+}
+
+exit 1
+""";
 
     public string HelperScriptPath =>
         Path.Combine(appPaths.DirectoryPath, $"Apply-{AppIdentity.RuntimeFileStem}-Update.ps1");
@@ -20,14 +162,14 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
     public string LauncherScriptPath =>
         Path.Combine(appPaths.DirectoryPath, $"Launch-{AppIdentity.RuntimeFileStem}-After-Update.ps1");
 
-    public string UpdateRequestPath => Path.Combine(appPaths.DirectoryPath, "update-request.json");
+    public string UpdateRequestPath => Path.Combine(appPaths.DirectoryPath, UpdateRequestFileName);
 
     public void EnsureCurrentInstallationRegistered()
     {
         string processPath = Environment.ProcessPath
-            ?? throw new UnexpectedStateException("Resolve the current executable path before registering installation metadata.");
+            ?? throw new UnexpectedStateException(CurrentExecutablePathDescription);
         string installDirectory = Path.GetDirectoryName(processPath)
-            ?? throw new UnexpectedStateException("Resolve the current executable directory before registering installation metadata.");
+            ?? throw new UnexpectedStateException(CurrentExecutableDirectoryDescription);
         string manifestPath = Path.Combine(installDirectory, ManifestFileName);
         ReleaseFlavor releaseFlavor = InferReleaseFlavor(processPath);
         InstallationMode installationMode = InferInstallationMode(installDirectory);
@@ -75,9 +217,9 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
     public InstallationMetadata Load()
     {
         string processPath = Environment.ProcessPath
-            ?? throw new UnexpectedStateException("Resolve the current executable path before loading installation metadata.");
+            ?? throw new UnexpectedStateException(InstallationMetadataLoadPathDescription);
         string installDirectory = Path.GetDirectoryName(processPath)
-            ?? throw new UnexpectedStateException("Resolve the current executable directory before loading installation metadata.");
+            ?? throw new UnexpectedStateException(InstallationMetadataDirectoryLoadDescription);
         string manifestPath = Path.Combine(installDirectory, ManifestFileName);
 
         PersistedInstallationMetadata? persistedMetadata = File.Exists(manifestPath)
@@ -164,27 +306,11 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
         string shellPath,
         string userId)
     {
-        return $$"""
-$ErrorActionPreference = "Stop"
-
-$helperScriptPath = {{ToPowerShellLiteral(helperScriptPath)}}
-$shellPath = {{ToPowerShellLiteral(shellPath)}}
-$userId = {{ToPowerShellLiteral(userId)}}
-$arguments = @(
-  "-NoLogo",
-  "-NoProfile",
-  "-NonInteractive",
-  "-ExecutionPolicy", "Bypass",
-  "-WindowStyle", "Hidden",
-  "-File", ('"{0}"' -f $helperScriptPath)
-) -join " "
-
-$action = New-ScheduledTaskAction -Execute $shellPath -Argument $arguments
-$principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-$task = New-ScheduledTask -Action $action -Principal $principal -Settings $settings
-Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject $task -Force | Out-Null
-""";
+        return ElevatedTaskRegistrationScriptTemplate
+            .Replace(ElevatedTaskRegistrationHelperScriptToken, ToPowerShellLiteral(helperScriptPath), StringComparison.Ordinal)
+            .Replace(ElevatedTaskRegistrationShellPathToken, ToPowerShellLiteral(shellPath), StringComparison.Ordinal)
+            .Replace(ElevatedTaskRegistrationUserIdToken, ToPowerShellLiteral(userId), StringComparison.Ordinal)
+            .Replace(ElevatedTaskRegistrationTaskNameToken, ToPowerShellLiteral(taskName), StringComparison.Ordinal);
     }
 
     private static InstallationMetadata InferFromProcess(string processPath, string installDirectory)
@@ -205,11 +331,13 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
 
     private static ReleaseFlavor ParseReleaseFlavor(string? value, string processPath)
     {
+        _ = processPath;
+
         return value?.Trim().ToLowerInvariant() switch
         {
-            "self-contained" => ReleaseFlavor.SelfContained,
-            "framework-dependent" => ReleaseFlavor.FrameworkDependent,
-            _ => InferReleaseFlavor(processPath)
+            SelfContainedFlavorName => ReleaseFlavor.SelfContained,
+            FrameworkDependentFlavorName => ReleaseFlavor.SelfContained,
+            _ => ReleaseFlavor.SelfContained
         };
     }
 
@@ -217,20 +345,16 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
     {
         return value?.Trim().ToLowerInvariant() switch
         {
-            "local-app-data" => InstallationMode.LocalAppData,
-            "program-files" => InstallationMode.ProgramFiles,
+            LocalAppDataInstallationModeName => InstallationMode.LocalAppData,
+            ProgramFilesInstallationModeName => InstallationMode.ProgramFiles,
             _ => InferInstallationMode(installDirectory)
         };
     }
 
     private static ReleaseFlavor InferReleaseFlavor(string processPath)
     {
-        string fileName = Path.GetFileName(processPath);
-        return fileName.Contains("framework-dependent", StringComparison.OrdinalIgnoreCase)
-            ? ReleaseFlavor.FrameworkDependent
-            : fileName.Contains("self-contained", StringComparison.OrdinalIgnoreCase)
-                ? ReleaseFlavor.SelfContained
-                : ReleaseFlavor.SelfContained;
+        _ = processPath;
+        return ReleaseFlavor.SelfContained;
     }
 
     private static InstallationMode InferInstallationMode(string installDirectory)
@@ -256,23 +380,31 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
     {
         string shellPath = ResolveShellExecutablePath();
         string currentUserId = WindowsIdentity.GetCurrent().Name
-            ?? throw new UnexpectedStateException("Resolve the current Windows identity before registering the elevated updater task.");
+            ?? throw new UnexpectedStateException(CurrentWindowsIdentityDescription);
         string registrationScript = BuildElevatedTaskRegistrationScript(taskName, helperScriptPath, shellPath, currentUserId);
         string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(registrationScript));
 
         using Process process = Process.Start(new ProcessStartInfo
         {
             FileName = shellPath,
-            Arguments = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}",
+            Arguments = string.Join(
+                CommandArgumentSeparator,
+                NoLogoArgument,
+                NoProfileArgument,
+                NonInteractiveArgument,
+                ExecutionPolicyArgument,
+                BypassExecutionPolicy,
+                EncodedCommandArgument,
+                encodedCommand),
             CreateNoWindow = true,
             UseShellExecute = false,
             WindowStyle = ProcessWindowStyle.Hidden
-        }) ?? throw new UnexpectedStateException("Start the elevated updater task registration process before treating this install as update-ready.");
+        }) ?? throw new UnexpectedStateException(StartRegistrationProcessDescription);
 
         process.WaitForExit();
-        if (process.ExitCode != 0)
+        if (process.ExitCode != SuccessExitCode)
         {
-            throw new UnexpectedStateException("Register the elevated updater task before treating this install as update-ready.");
+            throw new UnexpectedStateException(RegistrationProcessExitDescription);
         }
     }
 
@@ -287,9 +419,9 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
     {
         string powerShellSevenPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            "PowerShell",
-            "7",
-            "pwsh.exe");
+            ProgramFilesDirectoryName,
+            PowerShellSevenDirectoryName,
+            PowerShellSevenExecutableName);
 
         if (File.Exists(powerShellSevenPath))
         {
@@ -298,24 +430,24 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
 
         string windowsPowerShellPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.System),
-            @"WindowsPowerShell\v1.0\powershell.exe");
+            WindowsPowerShellRelativePath);
 
         if (File.Exists(windowsPowerShellPath))
         {
             return windowsPowerShellPath;
         }
 
-        throw new FileNotFoundException("Resolve a PowerShell executable before registering the elevated updater task.");
+        throw new FileNotFoundException(PowerShellResolutionDescription);
     }
 
     private static string SerializeReleaseFlavor(ReleaseFlavor releaseFlavor)
     {
         return releaseFlavor switch
         {
-            ReleaseFlavor.SelfContained => "self-contained",
-            ReleaseFlavor.FrameworkDependent => "framework-dependent",
-            ReleaseFlavor.Unknown => "unknown",
-            _ => "unknown"
+            ReleaseFlavor.SelfContained => SelfContainedFlavorName,
+            ReleaseFlavor.FrameworkDependent => SelfContainedFlavorName,
+            ReleaseFlavor.Unknown => SelfContainedFlavorName,
+            _ => SelfContainedFlavorName
         };
     }
 
@@ -323,16 +455,16 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
     {
         return installationMode switch
         {
-            InstallationMode.LocalAppData => "local-app-data",
-            InstallationMode.ProgramFiles => "program-files",
-            InstallationMode.Unknown => "unknown",
-            _ => "unknown"
+            InstallationMode.LocalAppData => LocalAppDataInstallationModeName,
+            InstallationMode.ProgramFiles => ProgramFilesInstallationModeName,
+            InstallationMode.Unknown => UnknownInstallationModeName,
+            _ => UnknownInstallationModeName
         };
     }
 
     private static string ToPowerShellLiteral(string value)
     {
-        return $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
+        return $"{SingleQuote}{value.Replace(SingleQuote, SingleQuote + SingleQuote, StringComparison.Ordinal)}{SingleQuote}";
     }
 
     private static PersistedInstallationMetadata? LoadPersistedInstallationMetadata(string manifestPath)
@@ -361,93 +493,14 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
 
     private static string BuildHelperScript(string requestPath)
     {
-        return $$"""
-$ErrorActionPreference = "Stop"
-
-$requestPath = {{ToPowerShellLiteral(requestPath)}}
-if (-not (Test-Path -LiteralPath $requestPath)) {
-  exit 0
-}
-
-$request = Get-Content -LiteralPath $requestPath -Raw | ConvertFrom-Json
-
-if ($request.ProcessId -gt 0) {
-  try {
-    Wait-Process -Id $request.ProcessId -Timeout 15 -ErrorAction Stop
-  }
-  catch {
-    Stop-Process -Id $request.ProcessId -Force -ErrorAction SilentlyContinue
-  }
-}
-
-Start-Sleep -Seconds 2
-
-$downloadedPath = [string]$request.DownloadedExecutablePath
-$installedPath = [string]$request.InstalledExecutablePath
-
-if (-not (Test-Path -LiteralPath $downloadedPath)) {
-  Remove-Item -LiteralPath $requestPath -ErrorAction SilentlyContinue
-  exit 1
-}
-
-$installedDirectory = Split-Path -Path $installedPath -Parent
-New-Item -ItemType Directory -Path $installedDirectory -Force | Out-Null
-
-if (Test-Path -LiteralPath $installedPath) {
-  Remove-Item -LiteralPath $installedPath -Force
-}
-
-Move-Item -LiteralPath $downloadedPath -Destination $installedPath -Force
-
-Get-ChildItem -LiteralPath $installedDirectory -Filter "auto-theme-solar-engine-win-x64-*.exe" -ErrorAction SilentlyContinue |
-  Where-Object { -not [System.StringComparer]::OrdinalIgnoreCase.Equals($_.FullName, $installedPath) } |
-  Remove-Item -Force -ErrorAction SilentlyContinue
-
-$runKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-$runValueName = "{{AppIdentity.StartupValueName}}"
-$legacyRunValueName = "{{AppIdentity.LegacyStartupValueName}}"
-if ($request.StartWithWindows) {
-  Set-ItemProperty -Path $runKeyPath -Name $runValueName -Value ('"{0}"' -f $installedPath)
-  Remove-ItemProperty -Path $runKeyPath -Name $legacyRunValueName -ErrorAction SilentlyContinue
-}
-else {
-  Remove-ItemProperty -Path $runKeyPath -Name $runValueName -ErrorAction SilentlyContinue
-  Remove-ItemProperty -Path $runKeyPath -Name $legacyRunValueName -ErrorAction SilentlyContinue
-}
-
-Remove-Item -LiteralPath $requestPath -ErrorAction SilentlyContinue
-
-if ($request.LaunchAfterApply) {
-  Start-Process -FilePath $installedPath
-}
-""";
+        return HelperScriptTemplate
+            .Replace(HelperScriptRequestPathToken, ToPowerShellLiteral(requestPath), StringComparison.Ordinal)
+            .Replace(LauncherScriptStartupValueNameToken, AppIdentity.StartupValueName, StringComparison.Ordinal)
+            .Replace(LauncherScriptLegacyStartupValueNameToken, AppIdentity.LegacyStartupValueName, StringComparison.Ordinal);
     }
 
     private static string BuildLauncherScript()
     {
-        return """
-param(
-  [Parameter(Mandatory = $true)]
-  [string]$RequestPath,
-
-  [Parameter(Mandatory = $true)]
-  [string]$InstalledPath
-)
-
-$ErrorActionPreference = "Stop"
-
-$deadline = (Get-Date).AddMinutes(2)
-
-while ((Get-Date) -lt $deadline) {
-  if (-not (Test-Path -LiteralPath $RequestPath) -and (Test-Path -LiteralPath $InstalledPath)) {
-    Start-Process -FilePath $InstalledPath
-    exit 0
-  }
-
-  Start-Sleep -Milliseconds 500
-}
-
-exit 1
-""";
+        return LauncherScriptTemplate;
     }
 }

@@ -5,6 +5,17 @@ namespace SolarEngine.Features.SolarCalculations.Domain;
 
 internal static class SolarPositionEngine
 {
+    private const string CoordinatesRequiredCode = "solar.schedule.coordinates_required";
+    private const string CoordinatesRequiredDescription = "Require coordinates before evaluating solar events.";
+    private const string LatitudeNonFiniteCode = "solar.schedule.latitude_non_finite";
+    private const string LatitudeNonFiniteDescription = "Reject non-finite latitude values to preserve deterministic solar calculations.";
+    private const string LongitudeNonFiniteCode = "solar.schedule.longitude_non_finite";
+    private const string LongitudeNonFiniteDescription = "Reject non-finite longitude values to preserve deterministic solar calculations.";
+    private const string LatitudeOutOfRangeCode = "solar.schedule.latitude_out_of_range";
+    private const string LatitudeOutOfRangeDescription = "Constrain latitude to the astronomical domain.";
+    private const string LongitudeOutOfRangeCode = "solar.schedule.longitude_out_of_range";
+    private const string LongitudeOutOfRangeDescription = "Constrain longitude to the astronomical domain.";
+    private const string LocalTimestampInvariantDescription = "Resolve a solar event timestamp that lands on the requested local date.";
     private const double Zenith = 90.833d;
     private const double DegreesPerHour = 15d;
     private const double HoursPerDay = 24d;
@@ -26,8 +37,8 @@ internal static class SolarPositionEngine
         {
             return Result<SolarSchedule>.Failure(
                 new Error(
-                    "solar.schedule.coordinates_required",
-                    "Require coordinates before evaluating solar events."));
+                    CoordinatesRequiredCode,
+                    CoordinatesRequiredDescription));
         }
 
         Error validationError = ValidateCoordinates(coordinates);
@@ -178,29 +189,29 @@ internal static class SolarPositionEngine
         if (!double.IsFinite(coordinates.Latitude))
         {
             return new Error(
-                "solar.schedule.latitude_non_finite",
-                "Reject non-finite latitude values to preserve deterministic solar calculations.");
+                LatitudeNonFiniteCode,
+                LatitudeNonFiniteDescription);
         }
 
         if (!double.IsFinite(coordinates.Longitude))
         {
             return new Error(
-                "solar.schedule.longitude_non_finite",
-                "Reject non-finite longitude values to preserve deterministic solar calculations.");
+                LongitudeNonFiniteCode,
+                LongitudeNonFiniteDescription);
         }
 
         if (coordinates.Latitude is < -90d or > 90d)
         {
             return new Error(
-                "solar.schedule.latitude_out_of_range",
-                "Constrain latitude to the astronomical domain.");
+                LatitudeOutOfRangeCode,
+                LatitudeOutOfRangeDescription);
         }
 
         if (coordinates.Longitude is < -180d or > 180d)
         {
             return new Error(
-                "solar.schedule.longitude_out_of_range",
-                "Constrain longitude to the astronomical domain.");
+                LongitudeOutOfRangeCode,
+                LongitudeOutOfRangeDescription);
         }
 
         return Error.None;
@@ -239,7 +250,7 @@ internal static class SolarPositionEngine
         }
 
         return DateOnly.FromDateTime(localDateTime.DateTime) != date
-            ? throw new UnexpectedStateException("Resolve a solar event timestamp that lands on the requested local date.")
+            ? throw new UnexpectedStateException(LocalTimestampInvariantDescription)
             : DateTime.SpecifyKind(localDateTime.DateTime, DateTimeKind.Unspecified);
     }
 

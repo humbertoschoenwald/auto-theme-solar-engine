@@ -6,6 +6,24 @@ namespace SolarEngine.Features.Updates.Infrastructure;
 
 internal sealed class GitHubReleaseFeedClient
 {
+    private const string DraftPropertyName = "draft";
+    private const string TagNamePropertyName = "tag_name";
+    private const string AssetsPropertyName = "assets";
+    private const string AssetNamePropertyName = "name";
+    private const string AssetUrlPropertyName = "browser_download_url";
+    private const string ReleaseNamePropertyName = "name";
+    private const string ReleaseBodyPropertyName = "body";
+    private const string UserAgentProductName = "AutoThemeSolarEngine";
+    private const string UserAgentProductVersion = "1.0";
+    private const string GitHubJsonMediaType = "application/vnd.github+json";
+    private const string SelfContainedAssetMarker = "self-contained";
+    private const string YankedMarker = "YANKED";
+    private const int NotFoundIndex = -1;
+    private const int PreviousCharacterOffset = 1;
+    private const int ComparisonEqual = 0;
+    private const int SearchStartIndex = 0;
+    private const int LowerBoundIndex = 0;
+
     private static readonly Uri s_releasesUri =
         new("https://api.github.com/repos/humbertoschoenwald/auto-theme-solar-engine/releases");
     private static readonly HttpClient s_client = CreateHttpClient();
@@ -33,7 +51,7 @@ internal sealed class GitHubReleaseFeedClient
         (CalVersion Version, string Tag, string AssetName, string AssetUrl)? bestMatch = null;
         foreach (JsonElement releaseElement in releasesElement.EnumerateArray())
         {
-            if (releaseElement.TryGetProperty("draft", out JsonElement draftElement) && draftElement.GetBoolean())
+            if (releaseElement.TryGetProperty(DraftPropertyName, out JsonElement draftElement) && draftElement.GetBoolean())
             {
                 continue;
             }
@@ -43,37 +61,37 @@ internal sealed class GitHubReleaseFeedClient
                 continue;
             }
 
-            if (!releaseElement.TryGetProperty("tag_name", out JsonElement tagElement))
+            if (!releaseElement.TryGetProperty(TagNamePropertyName, out JsonElement tagElement))
             {
                 continue;
             }
 
             string? tag = tagElement.GetString();
-            if (!CalVersion.TryParse(tag, out CalVersion releaseVersion) || releaseVersion.CompareTo(currentVersion) <= 0)
+            if (!CalVersion.TryParse(tag, out CalVersion releaseVersion) || releaseVersion.CompareTo(currentVersion) <= ComparisonEqual)
             {
                 continue;
             }
 
-            if (!releaseElement.TryGetProperty("assets", out JsonElement assetsElement))
+            if (!releaseElement.TryGetProperty(AssetsPropertyName, out JsonElement assetsElement))
             {
                 continue;
             }
 
             foreach (JsonElement assetElement in assetsElement.EnumerateArray())
             {
-                string assetName = assetElement.GetProperty("name").GetString() ?? string.Empty;
+                string assetName = assetElement.GetProperty(AssetNamePropertyName).GetString() ?? string.Empty;
                 if (!MatchesFlavor(assetName, releaseFlavor))
                 {
                     continue;
                 }
 
-                string assetUrl = assetElement.GetProperty("browser_download_url").GetString() ?? string.Empty;
+                string assetUrl = assetElement.GetProperty(AssetUrlPropertyName).GetString() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(assetUrl))
                 {
                     continue;
                 }
 
-                if (bestMatch is null || releaseVersion.CompareTo(bestMatch.Value.Version) > 0)
+                if (bestMatch is null || releaseVersion.CompareTo(bestMatch.Value.Version) > ComparisonEqual)
                 {
                     bestMatch = (releaseVersion, tag!, assetName, assetUrl);
                 }
@@ -86,8 +104,8 @@ internal sealed class GitHubReleaseFeedClient
     private static HttpClient CreateHttpClient()
     {
         HttpClient client = new();
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("AutoThemeSolarEngine", "1.0"));
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(UserAgentProductName, UserAgentProductVersion));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(GitHubJsonMediaType));
         return client;
     }
 
@@ -99,14 +117,13 @@ internal sealed class GitHubReleaseFeedClient
         }
 
         ReadOnlySpan<char> span = value.AsSpan();
-        const string Marker = "YANKED";
-        int index = 0;
+        int index = SearchStartIndex;
 
-        while ((index = value.IndexOf(Marker, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+        while ((index = value.IndexOf(YankedMarker, index, StringComparison.OrdinalIgnoreCase)) >= NotFoundIndex + PreviousCharacterOffset)
         {
-            int previousIndex = index - 1;
-            int nextIndex = index + Marker.Length;
-            bool startBoundary = previousIndex < 0 || !char.IsLetterOrDigit(span[previousIndex]);
+            int previousIndex = index - PreviousCharacterOffset;
+            int nextIndex = index + YankedMarker.Length;
+            bool startBoundary = previousIndex < LowerBoundIndex || !char.IsLetterOrDigit(span[previousIndex]);
             bool endBoundary = nextIndex >= span.Length || !char.IsLetterOrDigit(span[nextIndex]);
 
             if (startBoundary && endBoundary)
@@ -114,7 +131,7 @@ internal sealed class GitHubReleaseFeedClient
                 return true;
             }
 
-            index += Marker.Length;
+            index += YankedMarker.Length;
         }
 
         return false;
@@ -122,10 +139,10 @@ internal sealed class GitHubReleaseFeedClient
 
     private static bool IsYankedRelease(JsonElement releaseElement)
     {
-        string? releaseName = releaseElement.TryGetProperty("name", out JsonElement nameElement)
+        string? releaseName = releaseElement.TryGetProperty(ReleaseNamePropertyName, out JsonElement nameElement)
             ? nameElement.GetString()
             : null;
-        string? releaseBody = releaseElement.TryGetProperty("body", out JsonElement bodyElement)
+        string? releaseBody = releaseElement.TryGetProperty(ReleaseBodyPropertyName, out JsonElement bodyElement)
             ? bodyElement.GetString()
             : null;
 
@@ -134,12 +151,7 @@ internal sealed class GitHubReleaseFeedClient
 
     private static bool MatchesFlavor(string assetName, ReleaseFlavor releaseFlavor)
     {
-        return releaseFlavor switch
-        {
-            ReleaseFlavor.SelfContained => assetName.Contains("self-contained", StringComparison.OrdinalIgnoreCase),
-            ReleaseFlavor.FrameworkDependent => assetName.Contains("framework-dependent", StringComparison.OrdinalIgnoreCase),
-            ReleaseFlavor.Unknown => false,
-            _ => false
-        };
+        _ = releaseFlavor;
+        return assetName.Contains(SelfContainedAssetMarker, StringComparison.OrdinalIgnoreCase);
     }
 }

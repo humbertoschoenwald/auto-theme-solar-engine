@@ -14,6 +14,18 @@ namespace SolarEngine.Features.SystemHost.Infrastructure;
 
 internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPublisher logPublisher)
 {
+    private const string TemporaryFileSuffix = ".tmp";
+    private const string PersistedConfigurationLogMessage = "Configuration persisted.";
+    private const string NormalizedConfigurationLogMessage = "Configuration storage was normalized to reduced-precision protected coordinates.";
+    private const string ProtectedCoordinatePayloadFormat = "{0:R}|{1:R}";
+    private const char ProtectedCoordinateSeparator = '|';
+    private const int ProtectedCoordinateComponentCount = 2;
+    private const int LatitudeIndex = 0;
+    private const int LongitudeIndex = 1;
+    private const string InvalidProtectedCoordinatesPayloadDescription = "Protected coordinates payload is invalid.";
+    private const string InvalidProtectedCoordinatesParseDescription = "Protected coordinates could not be parsed.";
+    private static readonly CompositeFormat s_protectedCoordinatePayloadCompositeFormat = CompositeFormat.Parse(ProtectedCoordinatePayloadFormat);
+
     public AppConfig Load()
     {
         try
@@ -69,7 +81,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
 
         _ = Directory.CreateDirectory(appPaths.DirectoryPath);
 
-        string tempPath = string.Concat(appPaths.ConfigPath, ".tmp");
+        string tempPath = string.Concat(appPaths.ConfigPath, TemporaryFileSuffix);
 
         try
         {
@@ -93,7 +105,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
                 File.Move(tempPath, appPaths.ConfigPath);
             }
 
-            logPublisher.Write("Configuration persisted.");
+            logPublisher.Write(PersistedConfigurationLogMessage);
         }
         catch (IOException)
         {
@@ -166,7 +178,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         try
         {
             Save(runtimeConfiguration);
-            logPublisher.Write("Configuration storage was normalized to reduced-precision protected coordinates.");
+            logPublisher.Write(NormalizedConfigurationLogMessage);
         }
         catch (IOException exception)
         {
@@ -252,7 +264,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
     {
         string payload = string.Format(
             CultureInfo.InvariantCulture,
-            "{0:R}|{1:R}",
+            s_protectedCoordinatePayloadCompositeFormat,
             latitude,
             longitude);
 
@@ -267,16 +279,16 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         byte[] plainBytes = WindowsDataProtection.Unprotect(protectedBytes);
 
         string payload = Encoding.UTF8.GetString(plainBytes);
-        string[] parts = payload.Split('|', StringSplitOptions.TrimEntries);
-        if (parts.Length != 2)
+        string[] parts = payload.Split(ProtectedCoordinateSeparator, StringSplitOptions.TrimEntries);
+        if (parts.Length != ProtectedCoordinateComponentCount)
         {
-            throw new FormatException("Protected coordinates payload is invalid.");
+            throw new FormatException(InvalidProtectedCoordinatesPayloadDescription);
         }
 
-        if (!double.TryParse(parts[0], CultureInfo.InvariantCulture, out double latitude)
-            || !double.TryParse(parts[1], CultureInfo.InvariantCulture, out double longitude))
+        if (!double.TryParse(parts[LatitudeIndex], CultureInfo.InvariantCulture, out double latitude)
+            || !double.TryParse(parts[LongitudeIndex], CultureInfo.InvariantCulture, out double longitude))
         {
-            throw new FormatException("Protected coordinates could not be parsed.");
+            throw new FormatException(InvalidProtectedCoordinatesParseDescription);
         }
 
         Result<GeoCoordinates> coordinates = GeoCoordinates.Create(latitude, longitude);

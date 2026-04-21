@@ -21,6 +21,13 @@ internal sealed class NativeApplication : IDisposable
 {
     private const string AppName = AppIdentity.RuntimeName;
     private const string SingleInstanceMutexName = @"Local\AutoThemeSolarEngine.SingleInstance";
+    private const string AlreadyRunningLocalizationKey = "app.already_running";
+    private const string AutomaticUpdatePreparedLogMessage = "Automatic update prepared. Exiting current process to apply the new executable.";
+    private const int SuccessExitCode = 0;
+    private const int StartupFailureExitCode = -1;
+    private const int BusyRefreshState = 1;
+    private const int IdleRefreshState = 0;
+    private static readonly string s_alreadyRunningFallbackMessage = $"{AppIdentity.RuntimeName} is already running in the notification area.";
     private static readonly TimeSpan s_automaticUpdateCheckInterval = TimeSpan.FromHours(4);
 
     private bool _disposed;
@@ -52,11 +59,11 @@ internal sealed class NativeApplication : IDisposable
             if (!TryAcquireSingleInstance())
             {
                 ShowMessage(
-                    _localization?["app.already_running"]
-                    ?? $"{AppIdentity.RuntimeName} is already running in the notification area.",
+                    _localization?[AlreadyRunningLocalizationKey]
+                    ?? s_alreadyRunningFallbackMessage,
                     NativeInterop.MB_ICONINFORMATION);
 
-                return 0;
+                return SuccessExitCode;
             }
 
             InitializeServices();
@@ -102,7 +109,7 @@ internal sealed class NativeApplication : IDisposable
         }
         catch (OperationCanceledException) when (IsApplicationShuttingDown())
         {
-            return 0;
+            return SuccessExitCode;
         }
         catch (Exception exception) when (
             exception is IOException
@@ -111,7 +118,7 @@ internal sealed class NativeApplication : IDisposable
             or Win32Exception)
         {
             HandleStartupFailure(appPaths, exception, $"{AppIdentity.RuntimeName} failed during startup.");
-            return -1;
+            return StartupFailureExitCode;
         }
         finally
         {
@@ -267,7 +274,7 @@ internal sealed class NativeApplication : IDisposable
     private void StartBackgroundRefresh(bool showErrors)
     {
         if (_applicationLifecycleOrchestrator is null
-            || Interlocked.CompareExchange(ref _refreshInProgress, 1, 0) != 0)
+            || Interlocked.CompareExchange(ref _refreshInProgress, BusyRefreshState, IdleRefreshState) != IdleRefreshState)
         {
             return;
         }
@@ -339,7 +346,7 @@ internal sealed class NativeApplication : IDisposable
         }
         finally
         {
-            _ = Interlocked.Exchange(ref _refreshInProgress, 0);
+            _ = Interlocked.Exchange(ref _refreshInProgress, IdleRefreshState);
         }
     }
 
@@ -404,7 +411,7 @@ internal sealed class NativeApplication : IDisposable
                 return false;
             }
 
-            _structuredLogPublisher?.Write("Automatic update prepared. Exiting current process to apply the new executable.");
+            _structuredLogPublisher?.Write(AutomaticUpdatePreparedLogMessage);
             ExitApplication();
             return true;
         }

@@ -8,6 +8,20 @@ namespace SolarEngine.UI;
 internal sealed class TrayIconHost(string appName, AppLocalization localization)
 {
     private const string WindowClassName = "SolarEngine.TrayHostWindow";
+    private const string TaskbarCreatedMessageName = "TaskbarCreated";
+    private const string TrayHostWindowCreationDescription = "Failed to create the tray host window.";
+    private const string TrayHostClassRegistrationDescription = "Failed to register the tray host window class.";
+    private const string TrayMenuCreationDescription = "Failed to create the tray menu.";
+    private const string TrayMenuPopulationDescription = "Failed to populate the tray menu.";
+    private const string TrayIconCreationDescription = "Failed to create the tray icon.";
+    private const string TrayOpenSettingsKey = "tray.open_settings";
+    private const string TrayApplyNowKey = "tray.apply_now";
+    private const string TrayRecalculateTodayKey = "tray.recalculate_today";
+    private const string TrayExitKey = "tray.exit";
+    private const int NoCommandId = 0;
+    private const int TooltipMaxLength = 127;
+    private const int PostQuitExitCode = 0;
+    private const ushort NoWindowClassAtom = 0;
     private const int OpenCommandId = 1001;
     private const int ApplyNowCommandId = 1002;
     private const int RecalculateCommandId = 1003;
@@ -15,7 +29,8 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
     private const uint TrayIconId = 1;
 
     private static readonly Lock s_instancesGate = new();
-    private static readonly uint s_taskbarCreatedMessage = NativeInterop.RegisterWindowMessage("TaskbarCreated");
+    private static readonly nint s_handledWindowMessageResult = nint.Zero;
+    private static readonly uint s_taskbarCreatedMessage = NativeInterop.RegisterWindowMessage(TaskbarCreatedMessageName);
     private static readonly Dictionary<nint, TrayIconHost> s_instances = [];
     private static readonly NativeInterop.WindowProcedure s_windowProcedureDelegate = WindowProcedure;
     private static ushort s_windowClassAtom;
@@ -48,14 +63,14 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             RegisterWindowClass();
 
             _windowHandle = NativeInterop.CreateWindowEx(
-                0,
+                NoCommandId,
                 WindowClassName,
                 _appName,
-                0,
-                0,
-                0,
-                0,
-                0,
+                NoCommandId,
+                NoCommandId,
+                NoCommandId,
+                NoCommandId,
+                NoCommandId,
                 nint.Zero,
                 nint.Zero,
                 NativeInterop.GetModuleHandle(null),
@@ -63,7 +78,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
             if (_windowHandle == nint.Zero)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the tray host window.");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), TrayHostWindowCreationDescription);
             }
 
             lock (s_instancesGate)
@@ -142,43 +157,43 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
         if (msg == s_taskbarCreatedMessage)
         {
             TryRecreateTrayIcon();
-            return 0;
+            return s_handledWindowMessageResult;
         }
 
         switch (msg)
         {
             case NativeInterop.WM_COMMAND:
                 ExecuteCommand(NativeInterop.LoWord(wParam));
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_TRAYICON:
                 HandleTrayIconMessage((uint)NativeInterop.LoWord(lParam));
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_UPDATE_TOOLTIP:
                 ApplyPendingTooltip();
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_POWERBROADCAST when wParam.ToInt32() == NativeInterop.PBT_APMRESUMEAUTOMATIC:
                 PowerResumed?.Invoke();
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_TIMECHANGE:
                 ClockChanged?.Invoke();
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_WTSSESSION_CHANGE
                 when wParam.ToInt32() is NativeInterop.WTS_SESSION_LOGON or NativeInterop.WTS_SESSION_UNLOCK:
                 SessionActivated?.Invoke();
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_CLOSE:
                 _ = NativeInterop.DestroyWindow(_windowHandle);
-                return 0;
+                return s_handledWindowMessageResult;
 
             case NativeInterop.WM_DESTROY:
                 HandleDestroy();
-                return 0;
+                return s_handledWindowMessageResult;
 
             default:
                 return NativeInterop.DefWindowProc(_windowHandle, msg, wParam, lParam);
@@ -187,7 +202,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
     private static void RegisterWindowClass()
     {
-        if (s_windowClassAtom != 0)
+        if (s_windowClassAtom != NoWindowClassAtom)
         {
             return;
         }
@@ -205,9 +220,9 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             };
 
             s_windowClassAtom = NativeInterop.RegisterClassEx(ref windowClass);
-            if (s_windowClassAtom == 0)
+            if (s_windowClassAtom == NoWindowClassAtom)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to register the tray host window class.");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), TrayHostClassRegistrationDescription);
             }
         }
         finally
@@ -221,18 +236,18 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
         nint menuHandle = NativeInterop.CreatePopupMenu();
         if (menuHandle == nint.Zero)
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the tray menu.");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), TrayMenuCreationDescription);
         }
 
         SafeMenuHandle safeMenuHandle = SafeMenuHandle.FromHandle(menuHandle);
-        if (!NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, OpenCommandId, _localization["tray.open_settings"])
-            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ApplyNowCommandId, _localization["tray.apply_now"])
-            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, RecalculateCommandId, _localization["tray.recalculate_today"])
+        if (!NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, OpenCommandId, _localization[TrayOpenSettingsKey])
+            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ApplyNowCommandId, _localization[TrayApplyNowKey])
+            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, RecalculateCommandId, _localization[TrayRecalculateTodayKey])
             || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_SEPARATOR, nint.Zero, null)
-            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ExitCommandId, _localization["tray.exit"]))
+            || !NativeInterop.AppendMenu(menuHandle, NativeInterop.MF_STRING, ExitCommandId, _localization[TrayExitKey]))
         {
             safeMenuHandle.Dispose();
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to populate the tray menu.");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), TrayMenuPopulationDescription);
         }
 
         return safeMenuHandle;
@@ -255,7 +270,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
         if (!NativeInterop.Shell_NotifyIcon(NativeInterop.NIM_ADD, ref _notifyIconData))
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create the tray icon.");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), TrayIconCreationDescription);
         }
 
         _notifyIconData.uTimeoutOrVersion = NativeInterop.NOTIFYICON_VERSION_4;
@@ -330,7 +345,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
             _windowHandle,
             nint.Zero);
 
-        if (command != 0)
+        if (command != NoCommandId)
         {
             ExecuteCommand(command);
         }
@@ -405,7 +420,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
 
         _windowHandle = nint.Zero;
         DisposeNativeResources();
-        NativeInterop.PostQuitMessage(0);
+        NativeInterop.PostQuitMessage(PostQuitExitCode);
     }
 
     private void DisposeNativeResources()
@@ -420,7 +435,7 @@ internal sealed class TrayIconHost(string appName, AppLocalization localization)
     private static string NormalizeTooltip(string tooltip)
     {
         string normalized = string.IsNullOrWhiteSpace(tooltip) ? AppIdentity.RuntimeName : tooltip.Trim();
-        return normalized.Length <= 127 ? normalized : normalized[..127];
+        return normalized.Length <= TooltipMaxLength ? normalized : normalized[..TooltipMaxLength];
     }
 
     private void ThrowIfDisposed()

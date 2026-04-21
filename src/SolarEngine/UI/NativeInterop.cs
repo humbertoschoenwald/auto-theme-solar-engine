@@ -115,6 +115,23 @@ internal static partial class NativeInterop
     internal const int CLEARTYPE_QUALITY = 5;
     internal const int DEFAULT_PITCH = 0;
     internal const int COLOR_WINDOW = 5;
+    private const int MessageLoopFilterValue = 0;
+    private const int MessageLoopExitResult = 0;
+    private const int MessageLoopFailureResult = -1;
+    private const long WordMask = 0xFFFF;
+    private const int WordShift = 16;
+    private const int BufferTerminatorLength = 1;
+    private const int BufferStartIndex = 0;
+    private const int FontRedrawEnabled = 1;
+    private const int FirstIconIndex = 0;
+    private const int SingleIconRequestCount = 1;
+    private const int Windows10MajorVersion = 10;
+    private const int WindowsVersionMinor = 0;
+    private const int ImmersiveDarkModeBuild = 17763;
+    private const int RoundedCornersBuild = 22000;
+    private const int DarkModeEnabled = 1;
+    private const int DarkModeDisabled = 0;
+    private const int SuccessfulExtractionThreshold = 0;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct NativePoint
@@ -375,13 +392,13 @@ internal static partial class NativeInterop
     {
         while (true)
         {
-            int result = GetMessage(out NativeMessage message, nint.Zero, 0, 0);
-            if (result == 0)
+            int result = GetMessage(out NativeMessage message, nint.Zero, MessageLoopFilterValue, MessageLoopFilterValue);
+            if (result == MessageLoopExitResult)
             {
-                return 0;
+                return MessageLoopExitResult;
             }
 
-            if (result == -1)
+            if (result == MessageLoopFailureResult)
             {
                 return Marshal.GetLastWin32Error();
             }
@@ -393,12 +410,12 @@ internal static partial class NativeInterop
 
     internal static int LoWord(nint value)
     {
-        return unchecked((short)(value.ToInt64() & 0xFFFF));
+        return unchecked((short)(value.ToInt64() & WordMask));
     }
 
     internal static int HiWord(nint value)
     {
-        return unchecked((short)((value.ToInt64() >> 16) & 0xFFFF));
+        return unchecked((short)((value.ToInt64() >> WordShift) & WordMask));
     }
 
     internal static bool GetChecked(nint hWnd)
@@ -414,14 +431,14 @@ internal static partial class NativeInterop
     internal static string GetWindowString(nint hWnd)
     {
         int length = GetWindowTextLength(hWnd);
-        if (length <= 0)
+        if (length <= MessageLoopFilterValue)
         {
             return string.Empty;
         }
 
-        char[] buffer = new char[length + 1];
+        char[] buffer = new char[length + BufferTerminatorLength];
         int copied = GetWindowText(hWnd, buffer, buffer.Length);
-        return copied <= 0 ? string.Empty : new string(buffer, 0, copied);
+        return copied <= MessageLoopFilterValue ? string.Empty : new string(buffer, BufferStartIndex, copied);
     }
 
     internal static void SetPasswordCharacter(nint hWnd, char passwordCharacter)
@@ -465,7 +482,7 @@ internal static partial class NativeInterop
             return;
         }
 
-        _ = SendMessage(hWnd, WM_SETFONT, nativeHandle, 1);
+        _ = SendMessage(hWnd, WM_SETFONT, nativeHandle, FontRedrawEnabled);
     }
 
     internal static SafeGdiObjectHandle CreateFontHandle(
@@ -512,8 +529,8 @@ internal static partial class NativeInterop
         string? processPath = Environment.ProcessPath;
         if (!string.IsNullOrWhiteSpace(processPath))
         {
-            int extracted = ExtractIconEx(processPath, 0, out nint largeIcon, out nint smallIcon, 1);
-            if (extracted > 0)
+            int extracted = ExtractIconEx(processPath, FirstIconIndex, out nint largeIcon, out nint smallIcon, SingleIconRequestCount);
+            if (extracted > SuccessfulExtractionThreshold)
             {
                 if (smallIcon != nint.Zero)
                 {
@@ -549,9 +566,9 @@ internal static partial class NativeInterop
             return;
         }
 
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17763))
+        if (OperatingSystem.IsWindowsVersionAtLeast(Windows10MajorVersion, WindowsVersionMinor, ImmersiveDarkModeBuild))
         {
-            int darkMode = useDarkMode ? 1 : 0;
+            int darkMode = useDarkMode ? DarkModeEnabled : DarkModeDisabled;
             _ = DwmSetWindowAttribute(
                 hWnd,
                 DWMWA_USE_IMMERSIVE_DARK_MODE,
@@ -559,7 +576,7 @@ internal static partial class NativeInterop
                 sizeof(int));
         }
 
-        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        if (OperatingSystem.IsWindowsVersionAtLeast(Windows10MajorVersion, WindowsVersionMinor, RoundedCornersBuild))
         {
             int roundedCorners = DWMWCP_ROUND;
             _ = DwmSetWindowAttribute(

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Infrastructure.Logging;
 using SolarEngine.Shared.Core;
@@ -7,6 +9,23 @@ namespace SolarEngine.Features.Locations.Infrastructure;
 
 internal sealed class WindowsLocationProvider(StructuredLogPublisher logPublisher) : ISystemLocationProvider
 {
+    private const string AccessDeniedCode = "locations.provider.access_denied";
+    private const string AccessDeniedDescription = "Preserve user-controlled privacy boundaries when native location access is unavailable.";
+    private const int AccessStateWindowsMajorVersion = 10;
+    private const int AccessStateWindowsMinorVersion = 0;
+    private const int AccessStateWindowsBuildVersion = 19041;
+    private const int DesiredAccuracyInMeters = 250;
+    private const string LookupFailedCode = "locations.provider.lookup_failed";
+    private const string LookupFailedDescription = "Preserve tray responsiveness when the operating system cannot resolve coordinates.";
+    private const int MaximumAgeMinutes = 5;
+    private const int PositionTimeoutSeconds = 10;
+    private static readonly CompositeFormat s_invalidCoordinatesLogFormat =
+        CompositeFormat.Parse("Windows location returned invalid coordinates: {0}");
+    private static readonly CompositeFormat s_lookupFailedLogFormat =
+        CompositeFormat.Parse("Windows location lookup failed: {0}");
+    private static readonly CompositeFormat s_requestAccessFailedLogFormat =
+        CompositeFormat.Parse("Windows location access request failed: {0}");
+
     public async ValueTask<SystemLocationAccessState> GetAccessStateAsync(CancellationToken cancellationToken = default)
     {
         return await RequestAccessStateAsync(cancellationToken).ConfigureAwait(false);
@@ -19,19 +38,21 @@ internal sealed class WindowsLocationProvider(StructuredLogPublisher logPublishe
         {
             return Result<GeoCoordinates>.Failure(
                 new Error(
-                    "locations.provider.access_denied",
-                    "Preserve user-controlled privacy boundaries when native location access is unavailable."));
+                    AccessDeniedCode,
+                    AccessDeniedDescription));
         }
 
         Geolocator geolocator = new()
         {
-            DesiredAccuracyInMeters = 250
+            DesiredAccuracyInMeters = DesiredAccuracyInMeters
         };
 
         try
         {
             Geoposition position = await geolocator
-                .GetGeopositionAsync(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(5))
+                .GetGeopositionAsync(
+                    TimeSpan.FromSeconds(PositionTimeoutSeconds),
+                    TimeSpan.FromMinutes(MaximumAgeMinutes))
                 .AsTask(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -40,7 +61,11 @@ internal sealed class WindowsLocationProvider(StructuredLogPublisher logPublishe
 
             if (coordinates.IsFailure)
             {
-                logPublisher.Write($"Windows location returned invalid coordinates: {coordinates.Error.Description}");
+                logPublisher.Write(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        s_invalidCoordinatesLogFormat,
+                        coordinates.Error.Description));
             }
 
             return coordinates;
@@ -51,18 +76,25 @@ internal sealed class WindowsLocationProvider(StructuredLogPublisher logPublishe
         }
         catch (Exception exception)
         {
-            logPublisher.Write($"Windows location lookup failed: {exception.Message}");
+            logPublisher.Write(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    s_lookupFailedLogFormat,
+                    exception.Message));
 
             return Result<GeoCoordinates>.Failure(
                 new Error(
-                    "locations.provider.lookup_failed",
-                    "Preserve tray responsiveness when the operating system cannot resolve coordinates."));
+                    LookupFailedCode,
+                    LookupFailedDescription));
         }
     }
 
     private async ValueTask<SystemLocationAccessState> RequestAccessStateAsync(CancellationToken cancellationToken)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
+        if (!OperatingSystem.IsWindowsVersionAtLeast(
+                AccessStateWindowsMajorVersion,
+                AccessStateWindowsMinorVersion,
+                AccessStateWindowsBuildVersion))
         {
             return SystemLocationAccessState.Unavailable;
         }
@@ -84,7 +116,11 @@ internal sealed class WindowsLocationProvider(StructuredLogPublisher logPublishe
         }
         catch (Exception exception)
         {
-            logPublisher.Write($"Windows location access request failed: {exception.Message}");
+            logPublisher.Write(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    s_requestAccessFailedLogFormat,
+                    exception.Message));
             return SystemLocationAccessState.Unavailable;
         }
     }

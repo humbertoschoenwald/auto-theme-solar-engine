@@ -2,13 +2,14 @@ namespace SolarEngine.Shared.Core;
 
 internal readonly struct Result : IEquatable<Result>
 {
+    private const string InvalidErrorStateDescription = "Invalid error state for the given success status.";
     private readonly Error? _error;
 
     private Result(bool isSuccess, Error error)
     {
         if ((isSuccess && error != Error.None) || (!isSuccess && error == Error.None))
         {
-            throw new ArgumentException("Invalid error state for the given success status.", nameof(error));
+            throw new ArgumentException(InvalidErrorStateDescription, nameof(error));
         }
 
         IsSuccess = isSuccess;
@@ -83,6 +84,8 @@ internal readonly struct Result : IEquatable<Result>
 
 internal readonly struct Result<T> : IEquatable<Result<T>>
 {
+    private const string InvalidFailureErrorStateDescription = "Invalid error state for a failure result.";
+    private const string ValueAccessDescription = "Access the value only when the result is successful.";
     private readonly T? _value;
     private readonly Error? _error;
 
@@ -97,7 +100,7 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
     {
         if (error == Error.None)
         {
-            throw new ArgumentException("Invalid error state for a failure result.", nameof(error));
+            throw new ArgumentException(InvalidFailureErrorStateDescription, nameof(error));
         }
 
         _value = default;
@@ -113,7 +116,7 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
 
     public T Value => IsSuccess
         ? _value!
-        : throw new UnexpectedStateException("Access the value only when the result is successful.");
+        : throw new UnexpectedStateException(ValueAccessDescription);
 
     public static Result<T> Success(T value)
     {

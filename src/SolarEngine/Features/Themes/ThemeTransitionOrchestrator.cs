@@ -16,6 +16,24 @@ internal sealed class ThemeTransitionOrchestrator(
     AppLocalization localization,
     TimeProvider timeProvider) : IDisposable
 {
+    private const string ScheduleRefreshInvariantDescription = "Refresh the schedule before exposing solar state.";
+    private const string WaitingConfigurationKey = "status.waiting_configuration";
+    private const string UnknownModeKey = "status.mode_unknown";
+    private const string PolarNightTooltipKey = "status.polar_night_tooltip";
+    private const string MidnightSunTooltipKey = "status.midnight_sun_tooltip";
+    private const string WaitingCoordinatesKey = "status.waiting_coordinates";
+    private const string PolarNightWindowKey = "status.polar_night_window";
+    private const string MidnightSunWindowKey = "status.midnight_sun_window";
+    private const string MissingScheduleLogMessage = "Theme application skipped because no schedule is available.";
+    private const string ScheduleTooltipKey = "status.schedule_tooltip";
+    private const string ScheduleUnavailableTooltipKey = "status.schedule_unavailable_tooltip";
+    private const string ScheduleWindowKey = "status.schedule_window";
+    private const string ScheduleUnavailableWindowKey = "status.schedule_unavailable_window";
+    private const string TimeDisplayFormat = "HH:mm";
+    private const int MinimumCheckIntervalSeconds = 10;
+    private const int MaximumCheckIntervalSeconds = 300;
+    private const double ExtraSunsetMinuteCount = 1d;
+
     private readonly SemaphoreSlim _stateGate = new(1, 1);
     private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
 
@@ -78,7 +96,7 @@ internal sealed class ThemeTransitionOrchestrator(
 
     public SolarSchedule GetTodaySchedule()
     {
-        return _todaySchedule ?? throw new UnexpectedStateException("Refresh the schedule before exposing solar state.");
+        return _todaySchedule ?? throw new UnexpectedStateException(ScheduleRefreshInvariantDescription);
     }
 
     public async ValueTask ApplyCurrentThemeAsync(CancellationToken cancellationToken = default)
@@ -106,15 +124,15 @@ internal sealed class ThemeTransitionOrchestrator(
     {
         if (!_configuration.IsConfigured || _todaySchedule is null)
         {
-            return localization["status.waiting_configuration"];
+            return localization[WaitingConfigurationKey];
         }
 
-        string modeText = (TryGetCurrentMode()?.ToString() ?? localization["status.mode_unknown"]).Trim();
+        string modeText = (TryGetCurrentMode()?.ToString() ?? localization[UnknownModeKey]).Trim();
 
         return _todaySchedule.DaylightCondition switch
         {
-            SolarDaylightCondition.PolarNight => localization.Format("status.polar_night_tooltip", modeText),
-            SolarDaylightCondition.MidnightSun => localization.Format("status.midnight_sun_tooltip", modeText),
+            SolarDaylightCondition.PolarNight => localization.Format(PolarNightTooltipKey, modeText),
+            SolarDaylightCondition.MidnightSun => localization.Format(MidnightSunTooltipKey, modeText),
             SolarDaylightCondition.Standard => BuildStandardStatusText(modeText),
             _ => BuildStandardStatusText(modeText)
         };
@@ -123,11 +141,11 @@ internal sealed class ThemeTransitionOrchestrator(
     public string BuildTodayScheduleText()
     {
         return !_configuration.IsConfigured || _todaySchedule is null
-            ? localization["status.waiting_coordinates"]
+            ? localization[WaitingCoordinatesKey]
             : _todaySchedule.DaylightCondition switch
             {
-                SolarDaylightCondition.PolarNight => localization["status.polar_night_window"],
-                SolarDaylightCondition.MidnightSun => localization["status.midnight_sun_window"],
+                SolarDaylightCondition.PolarNight => localization[PolarNightWindowKey],
+                SolarDaylightCondition.MidnightSun => localization[MidnightSunWindowKey],
                 SolarDaylightCondition.Standard => BuildStandardScheduleText(),
                 _ => BuildStandardScheduleText()
             };
@@ -229,7 +247,7 @@ internal sealed class ThemeTransitionOrchestrator(
 
         if (_todaySchedule is null)
         {
-            logPublisher.Write("Theme application skipped because no schedule is available.");
+            logPublisher.Write(MissingScheduleLogMessage);
             RaiseStateChanged();
             return;
         }
@@ -284,7 +302,11 @@ internal sealed class ThemeTransitionOrchestrator(
 
     private static TimeSpan ResolveCheckInterval(int checkIntervalSeconds)
     {
-        return TimeSpan.FromSeconds(Math.Clamp(checkIntervalSeconds, 10, 300));
+        return TimeSpan.FromSeconds(
+            Math.Clamp(
+                checkIntervalSeconds,
+                MinimumCheckIntervalSeconds,
+                MaximumCheckIntervalSeconds));
     }
 
     private static ThemeMode ResolveMode(SolarSchedule schedule, DateTime now, AppConfig configuration)
@@ -309,19 +331,19 @@ internal sealed class ThemeTransitionOrchestrator(
         return _todaySchedule is { SunriseLocal: DateTime sunrise }
             && ResolveEffectiveSunsetLocal(_todaySchedule, _configuration) is DateTime sunset
             ? localization.Format(
-                "status.schedule_tooltip",
+                ScheduleTooltipKey,
                 modeText,
-                sunrise.ToString("HH:mm"),
-                sunset.ToString("HH:mm"))
-            : localization.Format("status.schedule_unavailable_tooltip", modeText);
+                sunrise.ToString(TimeDisplayFormat),
+                sunset.ToString(TimeDisplayFormat))
+            : localization.Format(ScheduleUnavailableTooltipKey, modeText);
     }
 
     private string BuildStandardScheduleText()
     {
         return _todaySchedule is { SunriseLocal: DateTime sunrise }
             && ResolveEffectiveSunsetLocal(_todaySchedule, _configuration) is DateTime sunset
-            ? localization.Format("status.schedule_window", sunrise.ToString("HH:mm"), sunset.ToString("HH:mm"))
-            : localization["status.schedule_unavailable_window"];
+            ? localization.Format(ScheduleWindowKey, sunrise.ToString(TimeDisplayFormat), sunset.ToString(TimeDisplayFormat))
+            : localization[ScheduleUnavailableWindowKey];
     }
 
     private static DateTime? ResolveEffectiveSunsetLocal(SolarSchedule schedule, AppConfig configuration)
@@ -329,7 +351,7 @@ internal sealed class ThemeTransitionOrchestrator(
         return schedule.SunsetLocal is not DateTime sunset
             ? null
             : configuration.AddExtraMinuteAtSunset
-            ? sunset.AddMinutes(1)
+            ? sunset.AddMinutes(ExtraSunsetMinuteCount)
             : sunset;
     }
 }

@@ -6,6 +6,8 @@ namespace SolarEngine.Infrastructure.Security;
 internal static partial class WindowsDataProtection
 {
     private const int CryptProtectUiForbidden = 0x1;
+    private const int EmptyBufferLength = 0;
+    private const int BufferStartIndex = 0;
 
     public static byte[] Protect(byte[] plainBytes)
     {
@@ -63,13 +65,13 @@ internal static partial class WindowsDataProtection
 
         public static DataBlob FromBytes(byte[] bytes)
         {
-            if (bytes.Length == 0)
+            if (bytes.Length == EmptyBufferLength)
             {
                 return default;
             }
 
             nint buffer = Marshal.AllocHGlobal(bytes.Length);
-            Marshal.Copy(bytes, startIndex: 0, buffer, bytes.Length);
+            Marshal.Copy(bytes, startIndex: BufferStartIndex, buffer, bytes.Length);
 
             return new DataBlob
             {
@@ -80,13 +82,13 @@ internal static partial class WindowsDataProtection
 
         public readonly byte[] ToBytes()
         {
-            if (cbData <= 0 || pbData == nint.Zero)
+            if (cbData <= EmptyBufferLength || pbData == nint.Zero)
             {
                 return [];
             }
 
             byte[] bytes = new byte[cbData];
-            Marshal.Copy(pbData, bytes, startIndex: 0, length: cbData);
+            Marshal.Copy(pbData, bytes, startIndex: BufferStartIndex, length: cbData);
             return bytes;
         }
 
@@ -96,7 +98,7 @@ internal static partial class WindowsDataProtection
             {
                 _ = LocalFree(pbData);
                 pbData = nint.Zero;
-                cbData = 0;
+                cbData = EmptyBufferLength;
             }
         }
     }

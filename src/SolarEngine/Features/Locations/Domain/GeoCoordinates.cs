@@ -4,6 +4,15 @@ namespace SolarEngine.Features.Locations.Domain;
 
 internal sealed record GeoCoordinates
 {
+    private const string LatitudeRangeCode = "locations.coordinates.latitude_range";
+    private const string LatitudeRangeDescription = "Constrain latitude to the valid geospatial domain.";
+    private const double LatitudeRangeLimit = 90d;
+    private const string LongitudeRangeCode = "locations.coordinates.longitude_range";
+    private const string LongitudeRangeDescription = "Constrain longitude to the valid geospatial domain.";
+    private const double LongitudeRangeLimit = 180d;
+    private const string NonFiniteCode = "locations.coordinates.nonfinite";
+    private const string NonFiniteDescription = "Reject non-finite coordinates before persisting domain state.";
+
     public required double Latitude { get; init; }
 
     public required double Longitude { get; init; }
@@ -13,18 +22,18 @@ internal sealed record GeoCoordinates
         return !double.IsFinite(latitude) || !double.IsFinite(longitude)
             ? Result<GeoCoordinates>.Failure(
                 new Error(
-                    "locations.coordinates.nonfinite",
-                    "Reject non-finite coordinates before persisting domain state."))
-            : latitude is < -90d or > 90d
+                    NonFiniteCode,
+                    NonFiniteDescription))
+            : latitude is < -LatitudeRangeLimit or > LatitudeRangeLimit
             ? Result<GeoCoordinates>.Failure(
                 new Error(
-                    "locations.coordinates.latitude_range",
-                    "Constrain latitude to the valid geospatial domain."))
-            : longitude is < -180d or > 180d
+                    LatitudeRangeCode,
+                    LatitudeRangeDescription))
+            : longitude is < -LongitudeRangeLimit or > LongitudeRangeLimit
             ? Result<GeoCoordinates>.Failure(
                 new Error(
-                    "locations.coordinates.longitude_range",
-                    "Constrain longitude to the valid geospatial domain."))
+                    LongitudeRangeCode,
+                    LongitudeRangeDescription))
             : Result<GeoCoordinates>.Success(new GeoCoordinates
             {
                 Latitude = latitude,

@@ -5,12 +5,18 @@ namespace SolarEngine.Features.SystemHost.Domain;
 
 internal sealed record AppConfig
 {
+    private const int DefaultCheckIntervalSeconds = 30;
+    private const int MaximumCheckIntervalSeconds = 300;
+    private const int MinimumCheckIntervalSeconds = 10;
+    private const string NonFiniteLatitudeDescription = "Use a finite latitude value to preserve deterministic solar calculations.";
+    private const string NonFiniteLongitudeDescription = "Use a finite longitude value to preserve deterministic solar calculations.";
+
     public double Latitude
     {
         get;
         init => field = double.IsFinite(value)
             ? value
-            : throw new ArgumentOutOfRangeException(nameof(value), "Use a finite latitude value to preserve deterministic solar calculations.");
+            : throw new ArgumentOutOfRangeException(nameof(value), NonFiniteLatitudeDescription);
     }
 
     public double Longitude
@@ -18,7 +24,7 @@ internal sealed record AppConfig
         get;
         init => field = double.IsFinite(value)
             ? value
-            : throw new ArgumentOutOfRangeException(nameof(value), "Use a finite longitude value to preserve deterministic solar calculations.");
+            : throw new ArgumentOutOfRangeException(nameof(value), NonFiniteLongitudeDescription);
     }
 
     public bool UseWindowsLocation { get; init; } = true;
@@ -50,11 +56,11 @@ internal sealed record AppConfig
         get;
         init => field = value switch
         {
-            < 10 => 10,
-            > 300 => 300,
+            < MinimumCheckIntervalSeconds => MinimumCheckIntervalSeconds,
+            > MaximumCheckIntervalSeconds => MaximumCheckIntervalSeconds,
             _ => value
         };
-    } = 30;
+    } = DefaultCheckIntervalSeconds;
 
     public bool IsConfigured { get; init; }
 }

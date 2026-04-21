@@ -4,6 +4,7 @@ namespace SolarEngine.UI;
 
 internal static class WindowsThemePreferenceReader
 {
+    private const int DisabledThemeValue = 0;
     private const string PersonalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string AppsUseLightThemeValueName = "AppsUseLightTheme";
 
@@ -14,8 +15,8 @@ internal static class WindowsThemePreferenceReader
 
         return appsValue switch
         {
-            int value => value == 0,
-            byte value => value == 0,
+            int value => value == DisabledThemeValue,
+            byte value => value == DisabledThemeValue,
             _ => false
         };
     }
