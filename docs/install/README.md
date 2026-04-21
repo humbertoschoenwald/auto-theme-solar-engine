@@ -22,16 +22,6 @@ Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.
 Start-Process ".\AutoThemeSolarEngine.exe"
 ```
 
-Framework-dependent:
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe"
-Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
-Start-Process ".\AutoThemeSolarEngine.exe"
-```
-
 ## Notes
 
 - The install directory is `%LocalAppData%\AutoThemeSolarEngine`.

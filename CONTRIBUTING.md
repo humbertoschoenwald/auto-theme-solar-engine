@@ -26,3 +26,9 @@ dotnet test .\tests\SolarEngine.Tests\SolarEngine.Tests.csproj --configuration R
 ```
 
 For commit policy, versioning, release behavior, platform constraints, and contributor language rules, use ADR as the source of truth.
+
+Current coding posture:
+
+- `src/**/*.cs` must not introduce magic strings or magic numbers outside the
+  documented solar-calculation exception.
+- `tests/**/*.cs` prefer DAMP over DRY. Keep test stories explicit.

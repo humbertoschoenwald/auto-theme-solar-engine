@@ -16,4 +16,5 @@ alwaysApply: false
 - RULE: Treat this repository as a Windows x64 notification-area application, not a cross-platform app framework.
 - RULE: Keep core behavior offline. Do not introduce cloud APIs or remote services for theme scheduling.
 - RULE: Preserve Windows 10+ desktop assumptions unless a new ADR expands platform scope.
+- RULE: Release one Windows x64 self-contained executable rather than parallel runtime flavors.
 - RULE: Keep `README.md` lightweight and user-facing. Do not turn it into doctrine.

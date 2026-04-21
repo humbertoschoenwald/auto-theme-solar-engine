@@ -11,8 +11,7 @@ A lightweight Windows system tray app that automatically switches your PC theme 
 
 - **No Cloud Required:** Solar calculations run entirely on your device.
 - **Privacy First:** Uses Windows location locally or manual coordinates. No external APIs.
-- **Standalone Option:** Use the self-contained executable when you do not want to install .NET.
-- **Lean Option:** Use the framework-dependent executable when the .NET Desktop Runtime or SDK is already installed.
+- **Standalone Option:** Use the self-contained executable with no separate .NET install.
 - **Smart Scheduling:** Correctly handles polar nights and the midnight sun.
 - **Low Resource Usage:** Designed to stay in the system tray while using minimal RAM.
 
@@ -42,16 +41,6 @@ New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngin
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe"
 Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
-Start-Process ".\AutoThemeSolarEngine.exe"
-```
-
-Framework-dependent:
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe"
-Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
 Start-Process ".\AutoThemeSolarEngine.exe"
 ```
 

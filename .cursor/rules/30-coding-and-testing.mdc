@@ -35,6 +35,9 @@ alwaysApply: false
   field naming (`_`, `s_`, `t_`) in authored C#.
 - RULE: Prefer `readonly`, language keywords, `nameof(...)`, PascalCase method
   names, and at most one blank line in a row.
+- RULE: Do not leave magic strings or magic numbers in authored product code
+  under `src/`. Name behavioral literals first. The standing exception is for
+  solar-calculation coefficients and bounds already justified by ADR-0003.
 - RULE: Repository C# style is a strict superset. Existing stricter rules still
   win where a broader guideline would allow omitted braces, `var`, or
   target-typed `new()`.
@@ -43,4 +46,6 @@ alwaysApply: false
 - RULE: Tests must be deterministic, granular, and include regressions for bug fixes.
 - RULE: Do not add tautological tests or cardboard stubs. Tests must exercise
   observable behavior with meaningful collaborators.
+- RULE: Prefer DAMP tests over DRY tests when those goals conflict. Keep test
+  scenarios explicit instead of hiding them behind clever helper layers.
 - RULE: Use `TimeProvider` when time affects behavior.

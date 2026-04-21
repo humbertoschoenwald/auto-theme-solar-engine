@@ -52,4 +52,5 @@ The repository already enforces commit quality, spelling, formatting, build heal
   stricter, and remote CI remains the lighter online confirmation lane.
 - Updater regressions that depend on file replacement, shell launch, or other
   OS-managed behavior now have a defined local rehearsal lane instead of
-  relying on release-day manual testing.
+  relying on release-day manual testing for the single self-contained release
+  lane.

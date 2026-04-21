@@ -39,6 +39,15 @@ The current codebase shows a consistent implementation style: small feature-orie
     the contract,
   - keep at most one blank line in a row and avoid spurious whitespace,
   - encode non-ASCII source literals with `\uXXXX` escapes.
+- Authored runtime code under `src/` must not rely on opaque string or numeric
+  literals. If a literal affects behavior, protocol, layout, persistence,
+  interop, logging, or validation, give it a descriptive name first.
+- The only standing numeric-literal exception in product code is for the
+  solar-calculation coefficients and bounds already justified by
+  `ADR-0003`.
+- Tests optimize for DAMP (Descriptive And Meaningful Phrases) over DRY.
+  Repetition in tests is acceptable when it keeps scenarios, fixtures, and
+  assertions explicit.
 - The repository adopts the Roslyn style baseline as a strict superset. When an
   upstream guideline would permit omitted braces, `var`, target-typed `new()`,
   or other shorthand, the stricter repository rule still wins unless doctrine
@@ -78,6 +87,9 @@ The current codebase shows a consistent implementation style: small feature-orie
   contract.
 - Do not use cardboard stubs or do-nothing doubles for repository code when a
   small behaviorally meaningful fake or a real collaborator is feasible.
+- Do not contort tests into helper-heavy DRY abstractions that hide the story
+  of the behavior under test. Prefer direct setup and descriptive literals in
+  test bodies.
 - Favor real collaborators, precise fakes, and contract-level assertions over
   branch-chasing or value-mirroring tests that only inflate coverage numbers.
 - Behavior changes should land with regression tests first when the failure mode is already understood, or in the same edit when the native/runtime surface makes strict red-green sequencing impractical.

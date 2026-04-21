@@ -41,9 +41,8 @@ alwaysApply: false
 - RULE: Release automation belongs to successful pushes to `main` and must remain derived from commit history.
 - RULE: `CHANGELOG.md` must keep an `Unreleased` section between release tags, and release notes must derive from the tagged changelog section.
 - RULE: Non-deliverable pushes may skip release publication only through the explicit `[skip release]` marker.
-- RULE: Release assets and update logic must preserve self-contained versus framework-dependent delivery.
-- RULE: The self-contained Windows release lane publishes Native AOT, while the
-  framework-dependent lane remains CoreCLR.
+- RULE: Release assets and update logic must target one self-contained delivery.
+- RULE: The Windows release lane publishes one self-contained Native AOT executable.
 - RULE: The local heavy lane must include a Native AOT self-contained publish
   smoke plus an updater rehearsal for legacy-layout migration and automatic
   relaunch.

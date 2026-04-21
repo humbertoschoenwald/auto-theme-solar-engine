@@ -7,9 +7,9 @@
 
 The product now needs silent in-place updates from GitHub Releases while the app
 is already running. Windows cannot overwrite an executable that is still in use.
-The release pipeline already emits versioned self-contained and
-framework-dependent executables, and the runtime must never switch a user to the
-wrong delivery flavor by accident.
+The release pipeline now emits one versioned self-contained executable, and the
+runtime still needs a deterministic update model that can migrate legacy
+installation metadata without breaking silent replacement.
 
 ## Decision
 
@@ -31,12 +31,10 @@ wrong delivery flavor by accident.
   LocalAppData model normalizes the installed executable target to
   `AutoThemeSolarEngine.exe` in the install directory instead of preserving the
   downloaded versioned asset name as the long-term executable path.
-- The updater must match the installed delivery flavor:
-  - self-contained installs update only from self-contained assets,
-  - framework-dependent installs update only from framework-dependent assets.
-- The self-contained release lane publishes a Native AOT executable. The
-  framework-dependent lane remains a normal CoreCLR executable so machines with
-  an existing desktop runtime still have a lighter download option.
+- The release lane publishes one self-contained Native AOT executable.
+- Installation metadata should normalize to the self-contained delivery flavor,
+  including legacy manifests that still mention a removed framework-dependent
+  flavor.
 - The authoritative install target is the path the user chose. The updater must
   keep replacing the executable recorded by the current install metadata and may
   not silently migrate the app to a different directory.
@@ -75,6 +73,9 @@ wrong delivery flavor by accident.
 - Existing LocalAppData installs that still point at versioned executable names
   are migrated automatically during installation metadata normalization and the
   next silent-update apply cycle.
+- Legacy manifests that still declare a framework-dependent release flavor are
+  normalized to self-contained so the updater can continue to find supported
+  release assets.
 - The updater must write its deferred update request before it launches any
   watcher or helper process so relaunch and replacement observe a complete
   request file.
@@ -110,7 +111,8 @@ wrong delivery flavor by accident.
 
 - **Positive:** The updater can move between release versions without violating
   Windows executable locking rules.
-- **Positive:** Users stay on the same runtime flavor they originally installed.
+- **Positive:** The release and update model is simpler because the repository
+  now ships one supported runtime flavor.
 - **Positive:** The documented LocalAppData install path converges on a stable
   executable target that is easier to relaunch and migrate.
 - **Positive:** The updater has a documented fallback when the preferred staging

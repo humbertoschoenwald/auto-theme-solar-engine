@@ -11,8 +11,7 @@ Una aplicación ligera para la bandeja del sistema de Windows que cambia automá
 
 - **Sin necesidad de nube:** Los cálculos solares se ejecutan completamente en tu dispositivo.
 - **La privacidad es primero:** Utiliza la ubicación de Windows de forma local o coordenadas manuales. Sin APIs externas.
-- **Opción independiente:** Usa el ejecutable self-contained si no quieres instalar .NET.
-- **Opción ligera:** Usa el ejecutable framework-dependent si ya tienes el runtime de escritorio de .NET o el SDK instalado.
+- **Opción independiente:** Usa el ejecutable self-contained sin instalar .NET aparte.
 - **Programación inteligente:** Maneja correctamente las noches polares y el sol de medianoche.
 - **Bajo consumo de recursos:** Diseñado para permanecer en la bandeja del sistema usando muy poca memoria RAM.
 
@@ -42,16 +41,6 @@ New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngin
 Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
 Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe"
 Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
-Start-Process ".\AutoThemeSolarEngine.exe"
-```
-
-Framework-dependent:
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Set-Location "$env:LOCALAPPDATA\AutoThemeSolarEngine"
-Invoke-WebRequest -Uri "https://github.com/humbertoschoenwald/auto-theme-solar-engine/releases/download/v26.04.05/auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -OutFile ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe"
-Move-Item -LiteralPath ".\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.05.exe" -Destination ".\AutoThemeSolarEngine.exe" -Force
 Start-Process ".\AutoThemeSolarEngine.exe"
 ```
 
