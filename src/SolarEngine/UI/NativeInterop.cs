@@ -68,6 +68,8 @@ internal static partial class NativeInterop
     internal const int BST_CHECKED = 1;
     internal const int BN_CLICKED = 0;
     internal const int CBN_SELCHANGE = 1;
+    internal const int EN_SETFOCUS = 0x0100;
+    internal const int EN_KILLFOCUS = 0x0200;
     internal const int CB_ERR = -1;
 
     internal const int ICON_SMALL = 0;
@@ -265,6 +267,9 @@ internal static partial class NativeInterop
 
     [LibraryImport("user32.dll", EntryPoint = "SetFocus")]
     internal static partial nint SetFocus(nint hWnd);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetFocus")]
+    internal static partial nint GetFocus();
 
     [LibraryImport("user32.dll", EntryPoint = "LoadIconW", SetLastError = true)]
     internal static partial nint LoadIcon(nint hInstance, nint iconName);

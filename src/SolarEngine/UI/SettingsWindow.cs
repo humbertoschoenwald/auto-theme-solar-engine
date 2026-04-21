@@ -61,12 +61,14 @@ internal sealed class SettingsWindow(
     private readonly ApplicationLifecycleOrchestrator _applicationLifecycleOrchestrator = applicationLifecycleOrchestrator;
     private readonly AppLocalization _localization = localization;
     private readonly UpdateCoordinator _updateCoordinator = updateCoordinator;
+    private readonly CoordinateInputState _coordinateInputState = new();
     private readonly ConcurrentQueue<Action> _pendingUiActions = [];
     private readonly List<nint> _homeControls = [];
     private readonly List<nint> _configurationControls = [];
     private readonly List<nint> _updatesControls = [];
     private readonly List<nint> _allControls = [];
     private bool _disposed;
+    private bool _coordinateInputsVisible;
     private int _operationInProgress;
     private SettingsTab _activeTab = SettingsTab.Home;
     private string _selectedLanguageCode = AppLanguageCodes.Default;
@@ -660,6 +662,26 @@ internal sealed class SettingsWindow(
             return;
         }
 
+        if ((controlId == LatitudeEditId || controlId == LongitudeEditId)
+            && notificationCode == NativeInterop.EN_SETFOCUS)
+        {
+            SetCoordinateInputsVisible(areVisible: true);
+            return;
+        }
+
+        if ((controlId == LatitudeEditId || controlId == LongitudeEditId)
+            && notificationCode == NativeInterop.EN_KILLFOCUS)
+        {
+            RememberVisibleCoordinates();
+
+            if (!CoordinateInputsHaveFocus())
+            {
+                SetCoordinateInputsVisible(areVisible: false);
+            }
+
+            return;
+        }
+
         if (notificationCode != NativeInterop.BN_CLICKED)
         {
             return;
@@ -829,6 +851,7 @@ internal sealed class SettingsWindow(
                 GeoCoordinates coordinates = CoordinatePrecisionPolicy.Reduce(
                     coordinatesResult.Value,
                     locationPrecisionDecimals);
+                _coordinateInputState.Remember(coordinates);
                 _ = NativeInterop.SetWindowText(
                     _latitudeEditHandle,
                     CoordinatePrecisionPolicy.Format(
@@ -840,6 +863,7 @@ internal sealed class SettingsWindow(
                         coordinates.Longitude,
                         locationPrecisionDecimals));
                 NativeInterop.SetChecked(_useWindowsLocationHandle, true);
+                SetCoordinateInputsVisible(areVisible: false);
                 RefreshStatus();
             });
         }
@@ -933,6 +957,7 @@ internal sealed class SettingsWindow(
     {
         AppConfig configuration = _applicationLifecycleOrchestrator.Config;
         bool hasStoredCoordinates = configuration.IsConfigured;
+        _coordinateInputState.Load(configuration);
 
         _ = NativeInterop.SetWindowText(
             _latitudeEditHandle,
@@ -970,6 +995,7 @@ internal sealed class SettingsWindow(
         NativeInterop.SetChecked(_automaticUpdatesHandle, configuration.AutomaticUpdatesEnabled);
         _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, isWindowsLocationAvailable);
         _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, isWindowsLocationAvailable);
+        SetCoordinateInputsVisible(areVisible: false);
     }
 
     private Result<AppConfig> ReadConfigurationFromForm()
@@ -997,7 +1023,7 @@ internal sealed class SettingsWindow(
                 locationPrecisionDecimals);
         }
 
-        Result<GeoCoordinates> manualCoordinatesResult = ParseCoordinatesFromText();
+        Result<GeoCoordinates> manualCoordinatesResult = ResolveManualCoordinates();
         return manualCoordinatesResult.IsFailure
             ? Result<AppConfig>.Failure(manualCoordinatesResult.Error)
             : (Result<AppConfig>)BuildConfiguration(
@@ -1008,49 +1034,19 @@ internal sealed class SettingsWindow(
 
     private Result<GeoCoordinates> ResolveCoordinatesForWindowsLocation(AppConfig currentConfiguration)
     {
-        string latitudeText = NativeInterop.GetWindowString(_latitudeEditHandle);
-        string longitudeText = NativeInterop.GetWindowString(_longitudeEditHandle);
-
-        return !string.IsNullOrWhiteSpace(latitudeText) || !string.IsNullOrWhiteSpace(longitudeText)
-            ? ParseCoordinates(latitudeText, longitudeText)
-            : currentConfiguration.IsConfigured
-            ? GeoCoordinates.Create(currentConfiguration.Latitude, currentConfiguration.Longitude)
-            : Result<GeoCoordinates>.Failure(
-            Error.Validation(
-                "MissingLocationSeed",
-                "Detect coordinates or enter manual coordinates before enabling Windows location."));
-    }
-
-    private Result<GeoCoordinates> ParseCoordinatesFromText()
-    {
-        return ParseCoordinates(
+        return _coordinateInputState.ResolveWindowsLocationCoordinates(
             NativeInterop.GetWindowString(_latitudeEditHandle),
-            NativeInterop.GetWindowString(_longitudeEditHandle));
+            NativeInterop.GetWindowString(_longitudeEditHandle),
+            _coordinateInputsVisible,
+            currentConfiguration);
     }
 
-    private static Result<GeoCoordinates> ParseCoordinates(string latitudeText, string longitudeText)
+    private Result<GeoCoordinates> ResolveManualCoordinates()
     {
-        if (!double.TryParse(
-                latitudeText,
-                NumberStyles.Float | NumberStyles.AllowLeadingSign,
-                CultureInfo.InvariantCulture,
-                out double latitude))
-        {
-            return Result<GeoCoordinates>.Failure(
-                Error.Validation("InvalidLatitude", "Provide a valid decimal latitude."));
-        }
-
-        if (!double.TryParse(
-                longitudeText,
-                NumberStyles.Float | NumberStyles.AllowLeadingSign,
-                CultureInfo.InvariantCulture,
-                out double longitude))
-        {
-            return Result<GeoCoordinates>.Failure(
-                Error.Validation("InvalidLongitude", "Provide a valid decimal longitude."));
-        }
-
-        return GeoCoordinates.Create(latitude, longitude);
+        return _coordinateInputState.ResolveManualCoordinates(
+            NativeInterop.GetWindowString(_latitudeEditHandle),
+            NativeInterop.GetWindowString(_longitudeEditHandle),
+            _coordinateInputsVisible);
     }
 
     private Result<int> ParseLocationPrecisionFromForm()
@@ -1182,6 +1178,38 @@ internal sealed class SettingsWindow(
     {
         ShowMessage(error.Description, NativeInterop.MB_ICONWARNING);
         FocusInvalidInput(error);
+    }
+
+    private bool CoordinateInputsHaveFocus()
+    {
+        nint focusedHandle = NativeInterop.GetFocus();
+        return focusedHandle == _latitudeEditHandle || focusedHandle == _longitudeEditHandle;
+    }
+
+    private void RememberVisibleCoordinates()
+    {
+        if (!_coordinateInputsVisible)
+        {
+            return;
+        }
+
+        _coordinateInputState.RememberIfValid(
+            NativeInterop.GetWindowString(_latitudeEditHandle),
+            NativeInterop.GetWindowString(_longitudeEditHandle));
+    }
+
+    private void SetCoordinateInputsVisible(bool areVisible)
+    {
+        _coordinateInputsVisible = areVisible;
+
+        if (_latitudeEditHandle == nint.Zero || _longitudeEditHandle == nint.Zero)
+        {
+            return;
+        }
+
+        char passwordCharacter = areVisible ? '\0' : '*';
+        NativeInterop.SetPasswordCharacter(_latitudeEditHandle, passwordCharacter);
+        NativeInterop.SetPasswordCharacter(_longitudeEditHandle, passwordCharacter);
     }
 
     private void FocusInvalidInput(Error error)

@@ -11,7 +11,7 @@
   "settings.latitude": "Latitud",
   "settings.longitude": "Longitud",
   "settings.precision": "Precisión",
-  "settings.privacy_hint": "Valores ocultos en pantalla | 2-5 decimales | menos = más privacidad",
+  "settings.privacy_hint": "Valores ocultos hasta editar | 2-5 decimales | menos = más privacidad",
   "settings.use_windows_location": "Usar ubicación de Windows",
   "settings.detect_from_windows": "Detectar desde Windows",
   "settings.language": "Idioma",
