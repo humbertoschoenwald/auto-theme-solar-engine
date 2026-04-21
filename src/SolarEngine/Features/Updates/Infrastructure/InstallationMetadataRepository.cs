@@ -29,38 +29,47 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
         string installDirectory = Path.GetDirectoryName(processPath)
             ?? throw new UnexpectedStateException("Resolve the current executable directory before registering installation metadata.");
         string manifestPath = Path.Combine(installDirectory, ManifestFileName);
-
-        if (File.Exists(manifestPath))
-        {
-            return;
-        }
-
         ReleaseFlavor releaseFlavor = InferReleaseFlavor(processPath);
         InstallationMode installationMode = InferInstallationMode(installDirectory);
-        string? elevatedTaskName = null;
 
         EnsureHelperScript();
 
-        if (installationMode == InstallationMode.ProgramFiles)
+        PersistedInstallationMetadata metadata = File.Exists(manifestPath)
+            ? LoadPersistedInstallationMetadata(manifestPath)
+                ?? BuildPersistedInstallationMetadata(
+                    processPath,
+                    releaseFlavor,
+                    installationMode,
+                    elevatedTaskName: null)
+            : BuildPersistedInstallationMetadata(
+                processPath,
+                releaseFlavor,
+                installationMode,
+                elevatedTaskName: null);
+        string? elevatedTaskName = metadata.ElevatedTaskName;
+
+        if (installationMode == InstallationMode.ProgramFiles
+            && string.IsNullOrWhiteSpace(elevatedTaskName))
         {
             if (!IsCurrentProcessElevated())
             {
-                return;
+                elevatedTaskName = null;
             }
-
-            RegisterElevatedUpdateTask(ElevatedUpdateTaskName, HelperScriptPath);
-            elevatedTaskName = ElevatedUpdateTaskName;
+            else
+            {
+                RegisterElevatedUpdateTask(ElevatedUpdateTaskName, HelperScriptPath);
+                elevatedTaskName = ElevatedUpdateTaskName;
+            }
         }
 
-        PersistedInstallationMetadata metadata = BuildPersistedInstallationMetadata(
+        PersistedInstallationMetadata normalizedMetadata = NormalizePersistedInstallationMetadata(
             processPath,
+            metadata,
             releaseFlavor,
             installationMode,
             elevatedTaskName);
 
-        using FileStream stream = new(manifestPath, FileMode.Create, FileAccess.Write, FileShare.None);
-        JsonSerializer.Serialize(stream, metadata, UpdateJsonContext.Default.PersistedInstallationMetadata);
-        stream.Flush(flushToDisk: true);
+        WritePersistedInstallationMetadata(manifestPath, normalizedMetadata);
     }
 
     public InstallationMetadata Load()
@@ -71,30 +80,30 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
             ?? throw new UnexpectedStateException("Resolve the current executable directory before loading installation metadata.");
         string manifestPath = Path.Combine(installDirectory, ManifestFileName);
 
-        if (!File.Exists(manifestPath))
+        PersistedInstallationMetadata? persistedMetadata = File.Exists(manifestPath)
+            ? LoadPersistedInstallationMetadata(manifestPath)
+            : null;
+
+        if (persistedMetadata is null)
         {
             return InferFromProcess(processPath, installDirectory);
         }
 
-        using FileStream stream = new(manifestPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        PersistedInstallationMetadata? persistedMetadata = JsonSerializer.Deserialize(
-            stream,
-            UpdateJsonContext.Default.PersistedInstallationMetadata);
+        InstallationMode installationMode = ParseInstallationMode(persistedMetadata.InstallationMode, installDirectory);
+        string installedExecutableName = ResolveInstalledExecutableName(
+            string.IsNullOrWhiteSpace(persistedMetadata.InstalledExecutableName)
+                ? Path.GetFileName(processPath)
+                : persistedMetadata.InstalledExecutableName,
+            installationMode);
 
-        return persistedMetadata is null
-            ? InferFromProcess(processPath, installDirectory)
-            : new InstallationMetadata
-            {
-                InstallDirectory = installDirectory,
-                InstalledExecutablePath = Path.Combine(
-                    installDirectory,
-                    string.IsNullOrWhiteSpace(persistedMetadata.InstalledExecutableName)
-                        ? Path.GetFileName(processPath)
-                        : persistedMetadata.InstalledExecutableName),
-                ReleaseFlavor = ParseReleaseFlavor(persistedMetadata.ReleaseFlavor, processPath),
-                InstallationMode = ParseInstallationMode(persistedMetadata.InstallationMode, installDirectory),
-                ElevatedTaskName = persistedMetadata.ElevatedTaskName
-            };
+        return new InstallationMetadata
+        {
+            InstallDirectory = installDirectory,
+            InstalledExecutablePath = Path.Combine(installDirectory, installedExecutableName),
+            ReleaseFlavor = ParseReleaseFlavor(persistedMetadata.ReleaseFlavor, processPath),
+            InstallationMode = installationMode,
+            ElevatedTaskName = persistedMetadata.ElevatedTaskName
+        };
     }
 
     public void SaveUpdateRequest(PersistedUpdateRequest request)
@@ -108,7 +117,7 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
     public void EnsureHelperScript()
     {
         _ = Directory.CreateDirectory(appPaths.DirectoryPath);
-        File.WriteAllText(HelperScriptPath, BuildHelperScript(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        File.WriteAllText(HelperScriptPath, BuildHelperScript(UpdateRequestPath), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         File.WriteAllText(LauncherScriptPath, BuildLauncherScript(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
@@ -120,7 +129,29 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
     {
         return new PersistedInstallationMetadata
         {
-            InstalledExecutableName = Path.GetFileName(processPath),
+            InstalledExecutableName = ResolveInstalledExecutableName(
+                Path.GetFileName(processPath),
+                installationMode),
+            ReleaseFlavor = SerializeReleaseFlavor(releaseFlavor),
+            InstallationMode = SerializeInstallationMode(installationMode),
+            ElevatedTaskName = elevatedTaskName
+        };
+    }
+
+    internal static PersistedInstallationMetadata NormalizePersistedInstallationMetadata(
+        string processPath,
+        PersistedInstallationMetadata persistedMetadata,
+        ReleaseFlavor releaseFlavor,
+        InstallationMode installationMode,
+        string? elevatedTaskName)
+    {
+        string currentExecutableName = string.IsNullOrWhiteSpace(persistedMetadata.InstalledExecutableName)
+            ? Path.GetFileName(processPath)
+            : persistedMetadata.InstalledExecutableName;
+
+        return persistedMetadata with
+        {
+            InstalledExecutableName = ResolveInstalledExecutableName(currentExecutableName, installationMode),
             ReleaseFlavor = SerializeReleaseFlavor(releaseFlavor),
             InstallationMode = SerializeInstallationMode(installationMode),
             ElevatedTaskName = elevatedTaskName
@@ -158,12 +189,16 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
 
     private static InstallationMetadata InferFromProcess(string processPath, string installDirectory)
     {
+        InstallationMode installationMode = InferInstallationMode(installDirectory);
+
         return new InstallationMetadata
         {
             InstallDirectory = installDirectory,
-            InstalledExecutablePath = processPath,
+            InstalledExecutablePath = Path.Combine(
+                installDirectory,
+                ResolveInstalledExecutableName(Path.GetFileName(processPath), installationMode)),
             ReleaseFlavor = InferReleaseFlavor(processPath),
-            InstallationMode = InferInstallationMode(installDirectory),
+            InstallationMode = installationMode,
             ElevatedTaskName = null
         };
     }
@@ -248,7 +283,7 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
         return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
 
-    private static string ResolveShellExecutablePath()
+    internal static string ResolveShellExecutablePath()
     {
         string powerShellSevenPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
@@ -300,12 +335,36 @@ Register-ScheduledTask -TaskName {{ToPowerShellLiteral(taskName)}} -InputObject 
         return $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";
     }
 
-    private static string BuildHelperScript()
+    private static PersistedInstallationMetadata? LoadPersistedInstallationMetadata(string manifestPath)
+    {
+        using FileStream stream = new(manifestPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return JsonSerializer.Deserialize(
+            stream,
+            UpdateJsonContext.Default.PersistedInstallationMetadata);
+    }
+
+    private static string ResolveInstalledExecutableName(string currentExecutableName, InstallationMode installationMode)
+    {
+        return installationMode == InstallationMode.LocalAppData
+            ? AppIdentity.ExecutableFileName
+            : currentExecutableName;
+    }
+
+    private static void WritePersistedInstallationMetadata(
+        string manifestPath,
+        PersistedInstallationMetadata metadata)
+    {
+        using FileStream stream = new(manifestPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        JsonSerializer.Serialize(stream, metadata, UpdateJsonContext.Default.PersistedInstallationMetadata);
+        stream.Flush(flushToDisk: true);
+    }
+
+    private static string BuildHelperScript(string requestPath)
     {
         return $$"""
 $ErrorActionPreference = "Stop"
 
-$requestPath = Join-Path $env:LOCALAPPDATA "AutoThemeSolarEngine\update-request.json"
+$requestPath = {{ToPowerShellLiteral(requestPath)}}
 if (-not (Test-Path -LiteralPath $requestPath)) {
   exit 0
 }
@@ -331,7 +390,7 @@ if (-not (Test-Path -LiteralPath $downloadedPath)) {
   exit 1
 }
 
-$installedDirectory = Split-Path -LiteralPath $installedPath -Parent
+$installedDirectory = Split-Path -Path $installedPath -Parent
 New-Item -ItemType Directory -Path $installedDirectory -Force | Out-Null
 
 if (Test-Path -LiteralPath $installedPath) {
@@ -367,8 +426,6 @@ if ($request.LaunchAfterApply) {
     private static string BuildLauncherScript()
     {
         return """
-$ErrorActionPreference = "Stop"
-
 param(
   [Parameter(Mandatory = $true)]
   [string]$RequestPath,
@@ -376,6 +433,8 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$InstalledPath
 )
+
+$ErrorActionPreference = "Stop"
 
 $deadline = (Get-Date).AddMinutes(2)
 

@@ -4,7 +4,7 @@ namespace SolarEngine.Features.Updates.Infrastructure;
 
 internal sealed record PersistedInstallationMetadata
 {
-    public string InstalledExecutableName { get; init; } = $"{AppIdentity.LegacyFileStem}.exe";
+    public string InstalledExecutableName { get; init; } = AppIdentity.ExecutableFileName;
 
     public string ReleaseFlavor { get; init; } = "self-contained";
 

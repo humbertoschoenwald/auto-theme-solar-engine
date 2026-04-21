@@ -38,6 +38,11 @@ internal sealed class GitHubReleaseFeedClient
                 continue;
             }
 
+            if (IsYankedRelease(releaseElement))
+            {
+                continue;
+            }
+
             if (!releaseElement.TryGetProperty("tag_name", out JsonElement tagElement))
             {
                 continue;
@@ -84,6 +89,47 @@ internal sealed class GitHubReleaseFeedClient
         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("AutoThemeSolarEngine", "1.0"));
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         return client;
+    }
+
+    private static bool ContainsWholeWordYanked(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        ReadOnlySpan<char> span = value.AsSpan();
+        const string Marker = "YANKED";
+        int index = 0;
+
+        while ((index = value.IndexOf(Marker, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            int previousIndex = index - 1;
+            int nextIndex = index + Marker.Length;
+            bool startBoundary = previousIndex < 0 || !char.IsLetterOrDigit(span[previousIndex]);
+            bool endBoundary = nextIndex >= span.Length || !char.IsLetterOrDigit(span[nextIndex]);
+
+            if (startBoundary && endBoundary)
+            {
+                return true;
+            }
+
+            index += Marker.Length;
+        }
+
+        return false;
+    }
+
+    private static bool IsYankedRelease(JsonElement releaseElement)
+    {
+        string? releaseName = releaseElement.TryGetProperty("name", out JsonElement nameElement)
+            ? nameElement.GetString()
+            : null;
+        string? releaseBody = releaseElement.TryGetProperty("body", out JsonElement bodyElement)
+            ? bodyElement.GetString()
+            : null;
+
+        return ContainsWholeWordYanked(releaseName) || ContainsWholeWordYanked(releaseBody);
     }
 
     private static bool MatchesFlavor(string assetName, ReleaseFlavor releaseFlavor)

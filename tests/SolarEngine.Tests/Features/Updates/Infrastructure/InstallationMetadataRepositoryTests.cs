@@ -38,6 +38,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
 
         Assert.Contains("Wait-Process -Id $request.ProcessId -Timeout 15", helperScript, StringComparison.Ordinal);
         Assert.Contains("Start-Sleep -Seconds 2", helperScript, StringComparison.Ordinal);
+        Assert.Contains(repository.UpdateRequestPath, helperScript, StringComparison.Ordinal);
         Assert.Contains("$downloadedPath = [string]$request.DownloadedExecutablePath", helperScript, StringComparison.Ordinal);
         Assert.Contains("$installedPath = [string]$request.InstalledExecutablePath", helperScript, StringComparison.Ordinal);
         Assert.Contains("Move-Item -LiteralPath $downloadedPath -Destination $installedPath -Force", helperScript, StringComparison.Ordinal);
@@ -66,10 +67,10 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     }
 
     /// <summary>
-    /// Verifies direct installs preserve the current release asset filename in installation metadata.
+    /// Verifies compatibility installs outside the LocalAppData model preserve the current executable name.
     /// </summary>
     [Fact]
-    public void BuildPersistedInstallationMetadata_PreservesCurrentExecutableName()
+    public void BuildPersistedInstallationMetadata_PreservesProgramFilesExecutableName()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.BuildPersistedInstallationMetadata(
             @"C:\Program Files\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
@@ -83,6 +84,47 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
         Assert.Equal("self-contained", metadata.ReleaseFlavor);
         Assert.Equal("program-files", metadata.InstallationMode);
         Assert.Equal("AutoThemeSolarEngine Silent Update", metadata.ElevatedTaskName);
+    }
+
+    /// <summary>
+    /// Verifies documented LocalAppData installs normalize to the stable executable target.
+    /// </summary>
+    [Fact]
+    public void BuildPersistedInstallationMetadata_UsesStableExecutableNameForLocalAppData()
+    {
+        PersistedInstallationMetadata metadata = InstallationMetadataRepository.BuildPersistedInstallationMetadata(
+            @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe",
+            ReleaseFlavor.SelfContained,
+            InstallationMode.LocalAppData,
+            elevatedTaskName: null);
+
+        Assert.Equal("AutoThemeSolarEngine.exe", metadata.InstalledExecutableName);
+        Assert.Equal("self-contained", metadata.ReleaseFlavor);
+        Assert.Equal("local-app-data", metadata.InstallationMode);
+        Assert.Null(metadata.ElevatedTaskName);
+    }
+
+    /// <summary>
+    /// Verifies legacy LocalAppData metadata migrates to the stable executable target.
+    /// </summary>
+    [Fact]
+    public void NormalizePersistedInstallationMetadata_MigratesLegacyLocalAppDataExecutableName()
+    {
+        PersistedInstallationMetadata metadata = InstallationMetadataRepository.NormalizePersistedInstallationMetadata(
+            @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
+            new PersistedInstallationMetadata
+            {
+                InstalledExecutableName = "auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
+                ReleaseFlavor = "self-contained",
+                InstallationMode = "local-app-data"
+            },
+            ReleaseFlavor.SelfContained,
+            InstallationMode.LocalAppData,
+            elevatedTaskName: null);
+
+        Assert.Equal("AutoThemeSolarEngine.exe", metadata.InstalledExecutableName);
+        Assert.Equal("self-contained", metadata.ReleaseFlavor);
+        Assert.Equal("local-app-data", metadata.InstallationMode);
     }
 
     /// <summary>

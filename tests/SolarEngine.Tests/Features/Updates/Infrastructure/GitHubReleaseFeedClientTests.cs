@@ -146,4 +146,81 @@ public sealed class GitHubReleaseFeedClientTests
 
         Assert.Null(match);
     }
+
+    /// <summary>
+    /// Verifies releases marked as YANKED in the GitHub release name are excluded.
+    /// </summary>
+    [Fact]
+    public void SelectLatestMatchingRelease_IgnoresYankedReleaseNames()
+    {
+        using JsonDocument document = JsonDocument.Parse(
+            """
+            [
+              {
+                "draft": false,
+                "name": "v26.04.04 [YANKED]",
+                "tag_name": "v26.04.04",
+                "assets": [
+                  {
+                    "name": "auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
+                    "browser_download_url": "https://example.invalid/self-260404.exe"
+                  }
+                ]
+              },
+              {
+                "draft": false,
+                "name": "v26.04.05",
+                "tag_name": "v26.04.05",
+                "assets": [
+                  {
+                    "name": "auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe",
+                    "browser_download_url": "https://example.invalid/self-260405.exe"
+                  }
+                ]
+              }
+            ]
+            """);
+
+        (CalVersion Version, string Tag, string AssetName, string AssetUrl)? match =
+            GitHubReleaseFeedClient.SelectLatestMatchingRelease(
+                document.RootElement,
+                ReleaseFlavor.SelfContained,
+                new CalVersion(26, 4, 3));
+
+        _ = Assert.NotNull(match);
+        Assert.Equal("v26.04.05", match.Value.Tag);
+        Assert.Equal("auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe", match.Value.AssetName);
+    }
+
+    /// <summary>
+    /// Verifies releases marked as YANKED in the GitHub release body are excluded.
+    /// </summary>
+    [Fact]
+    public void SelectLatestMatchingRelease_IgnoresYankedReleaseBodies()
+    {
+        using JsonDocument document = JsonDocument.Parse(
+            """
+            [
+              {
+                "draft": false,
+                "tag_name": "v26.04.04",
+                "body": "YANKED: updater relaunch is broken.",
+                "assets": [
+                  {
+                    "name": "auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe",
+                    "browser_download_url": "https://example.invalid/fd-260404.exe"
+                  }
+                ]
+              }
+            ]
+            """);
+
+        (CalVersion Version, string Tag, string AssetName, string AssetUrl)? match =
+            GitHubReleaseFeedClient.SelectLatestMatchingRelease(
+                document.RootElement,
+                ReleaseFlavor.FrameworkDependent,
+                new CalVersion(26, 4, 3));
+
+        Assert.Null(match);
+    }
 }
