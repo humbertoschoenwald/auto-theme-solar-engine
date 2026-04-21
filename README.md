@@ -51,6 +51,7 @@ access.
 
 - Your location data never leaves your computer.
 - Coordinates are encrypted using Windows Data Protection (DPAPI).
+- Saved protected coordinates are hidden again after `Save and apply`.
 - No telemetry, no tracking, and no internet connection required for core functionality.
 
 ## Highlights in this repository

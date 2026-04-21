@@ -51,6 +51,7 @@ acceso a la ubicación de Windows.
 
 - Tus datos de ubicación nunca salen de tu computadora.
 - Las coordenadas están cifradas mediante Windows Data Protection (DPAPI).
+- Las coordenadas protegidas vuelven a ocultarse después de `Guardar y aplicar`.
 - Sin telemetría, sin rastreo y sin necesidad de conexión a internet para las funciones principales.
 
 ## Cambios del repositorio
