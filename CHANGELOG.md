@@ -13,6 +13,8 @@
 - **docs:** codify the v26.04.05 recovery plan (c6e22db)
 - **changelog:** clarify yank reason for v26.04.00 (6c02fad)
 - **doctrine:** codify self-contained source policy (904ef71)
+- **docs:** clarify protected coordinate visibility (0f4dc06)
+- **docs:** extend spanish spellcheck coverage (e4e3bb9)
 
 ### Tests
 
