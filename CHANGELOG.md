@@ -2,7 +2,23 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Fixes
+
+- **app:** persist detected location coordinates (12c1865)
+- **app:** stabilize silent updater flow (821fa90)
+
+### Documentation
+
+- **docs:** codify the v26.04.05 recovery plan (c6e22db)
+
+### Tests
+
+- **tests:** add heavy updater rehearsal (b757cb8)
+
+### Build
+
+- **app:** enable native aot self-contained publish (af6803f)
+- **scripts:** preserve yanked changelog sections (d3b7cb8)
 
 ## v26.04.04 - 2026-04-20 [YANKED]
 
