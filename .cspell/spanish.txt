@@ -246,3 +246,6 @@ presiona
 correrlo
 editar
 aparte
+ocultarse
+protegidas
+vuelven
