@@ -18,15 +18,11 @@ function Resolve-ReleaseFlavor {
         [string]$FileName
     )
 
-    if ($FileName.Contains("framework-dependent", [System.StringComparison]::OrdinalIgnoreCase)) {
-        return "framework-dependent"
-    }
-
     if ($FileName.Contains("self-contained", [System.StringComparison]::OrdinalIgnoreCase)) {
         return "self-contained"
     }
 
-    throw "The executable name must include either 'self-contained' or 'framework-dependent'."
+    throw "The executable name must include 'self-contained'."
 }
 
 function Write-InstallationManifest {

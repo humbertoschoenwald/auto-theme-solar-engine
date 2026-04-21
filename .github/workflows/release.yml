@@ -129,35 +129,18 @@ jobs:
           /p:SelfContained=true
           /p:UseNativeAot=true
 
-      - name: Publish framework-dependent Windows executable
-        if: steps.version.outputs.skip != 'true'
-        shell: pwsh
-        run: >
-          dotnet publish ./src/SolarEngine/SolarEngine.csproj
-          --configuration Release
-          --runtime win-x64
-          --self-contained false
-          --output ./artifacts/release/framework-dependent
-          /p:Version=${{ steps.version.outputs.semver }}
-          /p:SelfContained=false
-          /p:EnableCompressionInSingleFile=false
-
       - name: Name release assets
         if: steps.version.outputs.skip != 'true'
         id: release_asset
         shell: pwsh
         run: |
           $selfContainedAssetName = "auto-theme-solar-engine-win-x64-self-contained-${{ steps.version.outputs.tag }}.exe"
-          $frameworkDependentAssetName = "auto-theme-solar-engine-win-x64-framework-dependent-${{ steps.version.outputs.tag }}.exe"
           $selfContainedAssetPath = "artifacts/release/$selfContainedAssetName"
-          $frameworkDependentAssetPath = "artifacts/release/$frameworkDependentAssetName"
 
           Move-Item -LiteralPath "artifacts/release/self-contained/AutoThemeSolarEngine.exe" -Destination $selfContainedAssetPath -Force
-          Move-Item -LiteralPath "artifacts/release/framework-dependent/AutoThemeSolarEngine.exe" -Destination $frameworkDependentAssetPath -Force
 
           "asset_paths<<EOF" >> $env:GITHUB_OUTPUT
           $selfContainedAssetPath >> $env:GITHUB_OUTPUT
-          $frameworkDependentAssetPath >> $env:GITHUB_OUTPUT
           "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub release

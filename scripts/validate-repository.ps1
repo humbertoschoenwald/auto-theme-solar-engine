@@ -125,16 +125,4 @@ if (-not $SkipPublishSmoke) {
             --disable-build-servers `
             /p:UseNativeAot=true
     } "Self-contained Native AOT publish smoke failed."
-
-    Invoke-Checked {
-        dotnet publish $AppProject `
-            --configuration Release `
-            --runtime win-x64 `
-            --self-contained false `
-            --output artifacts/publish-smoke/framework-dependent `
-            --no-restore `
-            -m:1 `
-            --disable-build-servers `
-            /p:EnableCompressionInSingleFile=false
-    } "Framework-dependent publish smoke failed."
 }

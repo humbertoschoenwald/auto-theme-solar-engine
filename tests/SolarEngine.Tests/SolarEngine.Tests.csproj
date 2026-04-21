@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <ProjectReference Include="..\..\src\SolarEngine\SolarEngine.csproj" />
     <ProjectReference Include="..\SolarEngine.UpdateProbe\SolarEngine.UpdateProbe.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
