@@ -4,6 +4,7 @@
   </Folder>
 
   <Folder Name="/tests/">
+    <Project Path="tests/SolarEngine.UpdateProbe/SolarEngine.UpdateProbe.csproj" />
     <Project Path="tests/SolarEngine.Tests/SolarEngine.Tests.csproj" />
   </Folder>
 

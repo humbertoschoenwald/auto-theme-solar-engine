@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SolarEngine\SolarEngine.csproj" />
+    <ProjectReference Include="..\SolarEngine.UpdateProbe\SolarEngine.UpdateProbe.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>
