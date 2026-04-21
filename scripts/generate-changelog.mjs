@@ -71,6 +71,16 @@ function removeSection(body, headingTitle) {
   return trimmedBody.replace(pattern, '').replace(/^\s+/, '');
 }
 
+function getSection(body, headingTitle) {
+  const trimmedBody = body.trimStart();
+  const pattern = new RegExp(
+    `^##\\s+${escapeRegex(headingTitle)}\\b[\\s\\S]*?(?=^##\\s+|\\Z)`,
+    'm'
+  );
+  const match = trimmedBody.match(pattern);
+  return match ? match[0].trimEnd() : '';
+}
+
 function buildLogEntries(rangeSpec) {
   const hasHead = tryRunGit(['rev-parse', '--verify', 'HEAD']) !== '';
   if (!hasHead) {
@@ -208,7 +218,10 @@ if (mode === 'unreleased') {
   const previousTag = tagListDescending.find((value) => value !== currentTag) ?? '';
   const releaseRange = previousTag ? `${previousTag}..HEAD` : 'HEAD';
   const unreleasedRange = `${currentTag}..HEAD`;
-  releaseSection = buildSection(`${currentTag} - ${today}`, buildLogEntries(releaseRange));
+  const existingReleaseSection = getSection(bodyWithoutUnreleased, currentTag);
+  releaseSection = /\bYANKED\b/i.test(existingReleaseSection)
+    ? existingReleaseSection
+    : buildSection(`${currentTag} - ${today}`, buildLogEntries(releaseRange));
   const unreleasedSection = buildSection('Unreleased', buildLogEntries(unreleasedRange));
   const bodyWithoutCurrentRelease = removeSection(bodyWithoutUnreleased, currentTag).trim();
 
