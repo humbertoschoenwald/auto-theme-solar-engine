@@ -136,8 +136,10 @@
 
 ## 26.04.00 - 2026-04-13 [YANKED]
 
-> YANKED: Superseded by v26.04.01 because the initial release can crash
-> while rendering Standard daylight schedule status.
+> YANKED: Superseded by v26.04.01 because this release crashes
+> on standard daylight schedules by leaving the UI path on a
+> NotImplementedException placeholder instead of rendering the
+> schedule text.
 
 ### Features
 
