@@ -57,4 +57,27 @@ public sealed class CoordinateInputStateTests
         Assert.Equal(19.5d, result.Value.Latitude);
         Assert.Equal(-99.1d, result.Value.Longitude);
     }
+
+    /// <summary>
+    /// Verifies hidden coordinate inputs can be repopulated from the remembered seed without exposing raw stored values.
+    /// </summary>
+    [Fact]
+    public void TryFormatSeed_ReturnsFormattedCoordinatesFromRememberedSeed()
+    {
+        CoordinateInputState state = new();
+        state.Remember(new GeoCoordinates
+        {
+            Latitude = 19.4326d,
+            Longitude = -99.1332d
+        });
+
+        bool hasSeed = state.TryFormatSeed(
+            3,
+            out string latitudeText,
+            out string longitudeText);
+
+        Assert.True(hasSeed);
+        Assert.Equal("19.433", latitudeText);
+        Assert.Equal("-99.133", longitudeText);
+    }
 }

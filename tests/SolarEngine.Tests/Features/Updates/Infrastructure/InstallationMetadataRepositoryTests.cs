@@ -128,6 +128,29 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     }
 
     /// <summary>
+    /// Verifies legacy manifests that still declare the removed framework-dependent flavor normalize to self-contained.
+    /// </summary>
+    [Fact]
+    public void NormalizePersistedInstallationMetadata_NormalizesLegacyFrameworkDependentFlavor()
+    {
+        PersistedInstallationMetadata metadata = InstallationMetadataRepository.NormalizePersistedInstallationMetadata(
+            @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe",
+            new PersistedInstallationMetadata
+            {
+                InstalledExecutableName = "auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe",
+                ReleaseFlavor = "framework-dependent",
+                InstallationMode = "local-app-data"
+            },
+            ReleaseFlavor.FrameworkDependent,
+            InstallationMode.LocalAppData,
+            elevatedTaskName: null);
+
+        Assert.Equal("AutoThemeSolarEngine.exe", metadata.InstalledExecutableName);
+        Assert.Equal("self-contained", metadata.ReleaseFlavor);
+        Assert.Equal("local-app-data", metadata.InstallationMode);
+    }
+
+    /// <summary>
     /// Verifies the generated Program Files bootstrap registers an elevated task for the current user.
     /// </summary>
     [Fact]

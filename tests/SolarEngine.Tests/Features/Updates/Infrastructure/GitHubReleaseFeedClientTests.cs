@@ -6,7 +6,7 @@ using Xunit;
 namespace SolarEngine.Tests.Features.Updates.Infrastructure;
 
 /// <summary>
-/// Verifies GitHub release parsing keeps update delivery pinned to the matching asset flavor.
+/// Verifies GitHub release parsing keeps update delivery pinned to the supported self-contained asset.
 /// </summary>
 [Trait("TestLane", "Light")]
 public sealed class GitHubReleaseFeedClientTests
@@ -60,10 +60,10 @@ public sealed class GitHubReleaseFeedClientTests
     }
 
     /// <summary>
-    /// Verifies draft releases, older tags, and wrong-flavor assets are excluded.
+    /// Verifies legacy framework-dependent metadata still resolves the newest supported self-contained asset.
     /// </summary>
     [Fact]
-    public void SelectLatestMatchingRelease_IgnoresDraftsOlderTagsAndWrongFlavor()
+    public void SelectLatestMatchingRelease_TreatsLegacyFrameworkDependentFlavorAsSelfContained()
     {
         using JsonDocument document = JsonDocument.Parse(
             """
@@ -95,10 +95,6 @@ public sealed class GitHubReleaseFeedClientTests
                   {
                     "name": "auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
                     "browser_download_url": "https://example.invalid/self-260404.exe"
-                  },
-                  {
-                    "name": "auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe",
-                    "browser_download_url": "https://example.invalid/fd-260404.exe"
                   }
                 ]
               }
@@ -113,14 +109,14 @@ public sealed class GitHubReleaseFeedClientTests
 
         _ = Assert.NotNull(match);
         Assert.Equal("v26.04.04", match.Value.Tag);
-        Assert.Equal("auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe", match.Value.AssetName);
+        Assert.Equal("auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe", match.Value.AssetName);
     }
 
     /// <summary>
-    /// Verifies the selector reports no candidate when the requested release flavor is absent.
+    /// Verifies the selector reports no candidate when a release exposes no supported self-contained asset.
     /// </summary>
     [Fact]
-    public void SelectLatestMatchingRelease_ReturnsNullWhenNoMatchingAssetExists()
+    public void SelectLatestMatchingRelease_ReturnsNullWhenNoSupportedAssetExists()
     {
         using JsonDocument document = JsonDocument.Parse(
             """
@@ -130,8 +126,8 @@ public sealed class GitHubReleaseFeedClientTests
                 "tag_name": "v26.04.04",
                 "assets": [
                   {
-                    "name": "auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
-                    "browser_download_url": "https://example.invalid/self-260404.exe"
+                    "name": "auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe",
+                    "browser_download_url": "https://example.invalid/fd-260404.exe"
                   }
                 ]
               }
@@ -207,8 +203,8 @@ public sealed class GitHubReleaseFeedClientTests
                 "body": "YANKED: updater relaunch is broken.",
                 "assets": [
                   {
-                    "name": "auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe",
-                    "browser_download_url": "https://example.invalid/fd-260404.exe"
+                    "name": "auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
+                    "browser_download_url": "https://example.invalid/self-260404.exe"
                   }
                 ]
               }

@@ -14,7 +14,7 @@ namespace SolarEngine.Tests.Infrastructure.Interop;
 public sealed class NativeInteropPolicyTests
 {
     private static readonly string s_repositoryRoot = Path.GetFullPath(
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 
     /// <summary>
     /// Lists repository interop types that declare authored native entry points.
