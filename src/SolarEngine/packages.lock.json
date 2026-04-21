@@ -2,6 +2,12 @@
   "version": 2,
   "dependencies": {
     "net11.0-windows10.0.19041": {
+      "Microsoft.DotNet.ILCompiler": {
+        "type": "Direct",
+        "requested": "[11.0.0-preview.3.26207.106, )",
+        "resolved": "11.0.0-preview.3.26207.106",
+        "contentHash": "Q8XaSRoupfQEOotwNKeKH0XsmLPXBhoSrLMALUehCtK1Cy3H634+xqeQcGZWiZCwPOAEIoV0GgYV4Yv1ggbDbw=="
+      },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "Direct",
         "requested": "[11.0.0-preview.3.26207.106, )",
@@ -17,12 +23,33 @@
         "resolved": "11.0.0-preview.3.26207.106",
         "contentHash": "vdJhK7HD+oc5gAbwIJ5ut0P0h0QVkh+4fOwOKsE4yDcuc+bv42MGj5kHid23aZgipqCAYXXgLD0yncNoTWdy6Q=="
       },
+      "Microsoft.Windows.CsWinRT": {
+        "type": "Direct",
+        "requested": "[2.2.0, )",
+        "resolved": "2.2.0",
+        "contentHash": "R8MDVawukHrKgYCFgYaoLfbAna/FrImEFRxDK9k8ITbrXv3KLE5uN6tRqrNV83H4MFdqJ/uiA/hg1cSsXkl0vw=="
+      },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
         "type": "Transitive",
         "resolved": "11.0.0-preview.3.26207.106",
         "contentHash": "+gJnv1/kfXLXPv21R3iluhKqfXdf2zPWUaHBiSvlJurThv2D5HRUfU5z5SpmBII4I0JSpuprX9DlHrKz/1wCXA=="
       }
     },
-    "net11.0-windows10.0.19041/win-x64": {}
+    "net11.0-windows10.0.19041/win-x64": {
+      "Microsoft.DotNet.ILCompiler": {
+        "type": "Direct",
+        "requested": "[11.0.0-preview.3.26207.106, )",
+        "resolved": "11.0.0-preview.3.26207.106",
+        "contentHash": "Q8XaSRoupfQEOotwNKeKH0XsmLPXBhoSrLMALUehCtK1Cy3H634+xqeQcGZWiZCwPOAEIoV0GgYV4Yv1ggbDbw==",
+        "dependencies": {
+          "runtime.win-x64.Microsoft.DotNet.ILCompiler": "11.0.0-preview.3.26207.106"
+        }
+      },
+      "runtime.win-x64.Microsoft.DotNet.ILCompiler": {
+        "type": "Transitive",
+        "resolved": "11.0.0-preview.3.26207.106",
+        "contentHash": "NwlzWAcqX+XVpoiDqJ+rCe0PyH2TUld6FamWfxBRhTfAeo19cypJwHcM7SPZp/OuT5PFEQ6dAvbZSB1wUB9TSA=="
+      }
+    }
   }
 }

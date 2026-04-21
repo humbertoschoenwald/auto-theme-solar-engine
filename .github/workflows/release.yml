@@ -116,7 +116,7 @@ jobs:
           git tag -a "${{ steps.version.outputs.tag }}" -m "release: ${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
-      - name: Publish self-contained Windows executable
+      - name: Publish self-contained Windows executable (Native AOT)
         if: steps.version.outputs.skip != 'true'
         shell: pwsh
         run: >
@@ -127,6 +127,7 @@ jobs:
           --output ./artifacts/release/self-contained
           /p:Version=${{ steps.version.outputs.semver }}
           /p:SelfContained=true
+          /p:UseNativeAot=true
 
       - name: Publish framework-dependent Windows executable
         if: steps.version.outputs.skip != 'true'

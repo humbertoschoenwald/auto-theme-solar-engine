@@ -107,7 +107,8 @@
       "AutoThemeSolarEngine": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection": "[11.0.0-preview.3.26207.106, )"
+          "Microsoft.Extensions.DependencyInjection": "[11.0.0-preview.3.26207.106, )",
+          "Microsoft.Windows.CsWinRT": "[2.2.0, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection": {
@@ -118,6 +119,12 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "11.0.0-preview.3.26207.106"
         }
+      },
+      "Microsoft.Windows.CsWinRT": {
+        "type": "CentralTransitive",
+        "requested": "[2.2.0, )",
+        "resolved": "2.2.0",
+        "contentHash": "R8MDVawukHrKgYCFgYaoLfbAna/FrImEFRxDK9k8ITbrXv3KLE5uN6tRqrNV83H4MFdqJ/uiA/hg1cSsXkl0vw=="
       }
     }
   }

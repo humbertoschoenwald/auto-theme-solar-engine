@@ -17,9 +17,9 @@
     <PackageProjectUrl>https://github.com/humbertoschoenwald/auto-theme-solar-engine</PackageProjectUrl>
     <ApplicationIcon>Assets\SolarEngine.ico</ApplicationIcon>
 
-    <Version>26.04.04</Version>
-    <AssemblyVersion>26.04.04</AssemblyVersion>
-    <FileVersion>26.04.04</FileVersion>
+    <Version>26.04.05</Version>
+    <AssemblyVersion>26.04.05</AssemblyVersion>
+    <FileVersion>26.04.05</FileVersion>
 
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
@@ -27,14 +27,19 @@
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
 
+    <UseNativeAot Condition="'$(UseNativeAot)' == ''">false</UseNativeAot>
     <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
+    <PublishSingleFile Condition="'$(UseNativeAot)' != 'true'">true</PublishSingleFile>
+    <PublishAot Condition="'$(UseNativeAot)' == 'true' and '$(SelfContained)' == 'true'">true</PublishAot>
+    <PublishTrimmed Condition="'$(UseNativeAot)' == 'true' and '$(SelfContained)' == 'true'">true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(UseNativeAot)' != 'true'">false</PublishTrimmed>
+    <CsWinRTAotOptimizerEnabled Condition="'$(UseNativeAot)' == 'true'">true</CsWinRTAotOptimizerEnabled>
+    <CsWinRTWindowsMetadata>10.0.26100.0</CsWinRTWindowsMetadata>
 
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(UseNativeAot)' != 'true'">true</IncludeNativeLibrariesForSelfExtract>
 
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <EnableCompressionInSingleFile Condition="'$(UseNativeAot)' != 'true'">true</EnableCompressionInSingleFile>
 
-    <PublishTrimmed>false</PublishTrimmed>
     <IsTrimmable>false</IsTrimmable>
 
     <ServerGarbageCollection>false</ServerGarbageCollection>
@@ -45,6 +50,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Windows.CsWinRT" />
   </ItemGroup>
 
   <ItemGroup>

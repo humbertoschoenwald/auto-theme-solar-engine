@@ -120,11 +120,11 @@ if (-not $SkipPublishSmoke) {
             --configuration Release `
             --runtime win-x64 `
             --self-contained true `
-            --output artifacts/publish-smoke/self-contained `
-            --no-restore `
+            --output artifacts/publish-smoke/self-contained-aot `
             -m:1 `
-            --disable-build-servers
-    } "Self-contained publish smoke failed."
+            --disable-build-servers `
+            /p:UseNativeAot=true
+    } "Self-contained Native AOT publish smoke failed."
 
     Invoke-Checked {
         dotnet publish $AppProject `
