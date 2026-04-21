@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## v26.04.05 - 2026-04-21
+
 ### Fixes
 
 - **app:** persist detected location coordinates (12c1865)

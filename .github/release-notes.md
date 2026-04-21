@@ -1,25 +1,26 @@
-## v26.04.04 - 2026-04-20 [YANKED]
+## v26.04.05 - 2026-04-21
 
-> YANKED: Superseded by v26.04.05 because this release can reject a
-> Windows-detected location during `Save and apply` and can leave silent
-> updates staged without relaunching the new executable automatically.
+### Fixes
 
-### Refactoring
-
-- **ui:** modernize native interop ownership (4ea8b34)
-- **app:** rename branding and local install path (5b3cd46)
-- **app:** normalize runtime naming boundaries (4883adf)
+- **app:** persist detected location coordinates (12c1865)
+- **app:** stabilize silent updater flow (821fa90)
+- **app:** harden native runtime flow (e1a14e5)
 
 ### Documentation
 
-- **doctrine:** codify native interop policy (06b53c6)
-- **doctrine:** codify install and coverage guidance (e240fdc)
+- **docs:** codify the v26.04.05 recovery plan (c6e22db)
+- **changelog:** clarify yank reason for v26.04.00 (6c02fad)
+- **doctrine:** codify self-contained source policy (904ef71)
+- **docs:** clarify protected coordinate visibility (0f4dc06)
+- **docs:** extend spanish spellcheck coverage (e4e3bb9)
 
 ### Tests
 
-- **tests:** add light validation lane and coverage run (3bbfe09)
+- **tests:** add heavy updater rehearsal (b757cb8)
+- **tests:** enforce source literal policy (545a6da)
 
 ### Build
 
-- **tooling:** enforce modern interop policy (35fff2b)
-- **app:** prepare v26.04.04 package (f7b6c78)
+- **app:** enable native aot self-contained publish (af6803f)
+- **scripts:** preserve yanked changelog sections (d3b7cb8)
+- **ci:** align self-contained validation lane (78cc9df)
