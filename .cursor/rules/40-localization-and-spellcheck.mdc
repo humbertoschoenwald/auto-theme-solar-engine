@@ -2,7 +2,6 @@
 description: Language, localization, and spell-check rules for repository content.
 globs:
   - "README.md"
-  - "LÉEME.md"
   - "src/SolarEngine/Resources/Localization/*.json"
   - ".cspell/**"
   - "cspell.jsonc"

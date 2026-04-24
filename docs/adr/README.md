@@ -80,7 +80,6 @@ Current high-impact derived files include:
 - `.github/workflows/ci.yml`
 - `.github/workflows/release.yml`
 - `.githooks/pre-push`
-- `CONTRIBUTING.md`
 
 ## Current ADR Set
 

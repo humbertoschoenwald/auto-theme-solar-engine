@@ -14,12 +14,6 @@
 
   "dictionaryDefinitions": [
     {
-      "name": "Spanish",
-      "path": "./.cspell/spanish.txt",
-      "addWords": true,
-      "noSuggest": true
-    },
-    {
       "name": "NamedEntities",
       "path": "./.cspell/named-entities.txt",
       "addWords": true,
@@ -33,11 +27,13 @@
     }
   ],
 
-  "dictionaries": ["Spanish", "NamedEntities", "Technical"],
+  "dictionaries": ["NamedEntities", "Technical"],
 
   "ignorePaths": [
     ".git/**",
     ".cspell/**",
+    "src/SolarEngine/Resources/Localization/*.json",
+    "tests/SolarEngine.Tests/Infrastructure/Localization/*.cs",
     "**/node_modules/**",
     "**/vendor/**",
     "**/dist/**",
