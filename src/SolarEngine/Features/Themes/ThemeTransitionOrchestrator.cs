@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System.Globalization;
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SolarCalculations;
 using SolarEngine.Features.SolarCalculations.Domain;
@@ -333,8 +337,8 @@ internal sealed class ThemeTransitionOrchestrator(
             ? localization.Format(
                 ScheduleTooltipKey,
                 modeText,
-                sunrise.ToString(TimeDisplayFormat),
-                sunset.ToString(TimeDisplayFormat))
+                sunrise.ToString(TimeDisplayFormat, CultureInfo.CurrentCulture),
+                sunset.ToString(TimeDisplayFormat, CultureInfo.CurrentCulture))
             : localization.Format(ScheduleUnavailableTooltipKey, modeText);
     }
 
@@ -342,7 +346,10 @@ internal sealed class ThemeTransitionOrchestrator(
     {
         return _todaySchedule is { SunriseLocal: DateTime sunrise }
             && ResolveEffectiveSunsetLocal(_todaySchedule, _configuration) is DateTime sunset
-            ? localization.Format(ScheduleWindowKey, sunrise.ToString(TimeDisplayFormat), sunset.ToString(TimeDisplayFormat))
+            ? localization.Format(
+                ScheduleWindowKey,
+                sunrise.ToString(TimeDisplayFormat, CultureInfo.CurrentCulture),
+                sunset.ToString(TimeDisplayFormat, CultureInfo.CurrentCulture))
             : localization[ScheduleUnavailableWindowKey];
     }
 

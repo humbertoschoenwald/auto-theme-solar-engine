@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.ComponentModel;
 using System.Globalization;
 using System.Text;
@@ -123,15 +126,15 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         PersistedAppConfig persistedConfiguration,
         out bool requiresRewrite)
     {
-        (double Latitude, double Longitude, bool HasCoordinates) =
+        (double latitude, double longitude, bool hasCoordinates) =
             ResolveStoredCoordinates(persistedConfiguration);
         int locationPrecisionDecimals = CoordinatePrecisionPolicy.NormalizeDecimals(
             persistedConfiguration.LocationPrecisionDecimals);
-        (double Latitude, double Longitude, bool HasCoordinates) reducedCoordinates =
-            HasCoordinates
+        (double latitude, double longitude, bool hasCoordinates) reducedCoordinates =
+            hasCoordinates
                 ? ReduceCoordinates(
-                    Latitude,
-                    Longitude,
+                    latitude,
+                    longitude,
                     locationPrecisionDecimals)
                 : default;
 
@@ -139,20 +142,20 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         requiresRewrite =
             hasLegacyPlaintextCoordinates
             || persistedConfiguration.LocationPrecisionDecimals != locationPrecisionDecimals
-            || (HasCoordinates
+            || (hasCoordinates
                 && (!CoordinatePrecisionPolicy.AreEquivalent(
-                        Latitude,
-                        reducedCoordinates.Latitude)
+                        latitude,
+                        reducedCoordinates.latitude)
                     || !CoordinatePrecisionPolicy.AreEquivalent(
-                        Longitude,
-                        reducedCoordinates.Longitude)));
+                        longitude,
+                        reducedCoordinates.longitude)));
 
-        bool isConfigured = persistedConfiguration.IsConfigured && reducedCoordinates.HasCoordinates;
+        bool isConfigured = persistedConfiguration.IsConfigured && reducedCoordinates.hasCoordinates;
 
         return new AppConfig
         {
-            Latitude = reducedCoordinates.Latitude,
-            Longitude = reducedCoordinates.Longitude,
+            Latitude = reducedCoordinates.latitude,
+            Longitude = reducedCoordinates.longitude,
             UseWindowsLocation = persistedConfiguration.UseWindowsLocation,
             LocationPrecisionDecimals = locationPrecisionDecimals,
             StartWithWindows = persistedConfiguration.StartWithWindows,
@@ -190,11 +193,11 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         }
     }
 
-    private PersistedAppConfig BuildPersistedConfiguration(AppConfig configuration)
+    private static PersistedAppConfig BuildPersistedConfiguration(AppConfig configuration)
     {
         int locationPrecisionDecimals = CoordinatePrecisionPolicy.NormalizeDecimals(
             configuration.LocationPrecisionDecimals);
-        (double Latitude, double Longitude, bool HasCoordinates) =
+        (double latitude, double longitude, bool hasCoordinates) =
             configuration.IsConfigured
                 ? ReduceCoordinates(
                     configuration.Latitude,
@@ -204,8 +207,8 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
 
         return new PersistedAppConfig
         {
-            ProtectedCoordinates = HasCoordinates
-                ? ProtectCoordinates(Latitude, Longitude)
+            ProtectedCoordinates = hasCoordinates
+                ? ProtectCoordinates(latitude, longitude)
                 : null,
             Latitude = null,
             Longitude = null,
@@ -222,7 +225,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         };
     }
 
-    private (double Latitude, double Longitude, bool HasCoordinates) ResolveStoredCoordinates(
+    private (double latitude, double longitude, bool hasCoordinates) ResolveStoredCoordinates(
         PersistedAppConfig persistedConfiguration)
     {
         if (!string.IsNullOrWhiteSpace(persistedConfiguration.ProtectedCoordinates))
@@ -273,7 +276,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         return Convert.ToBase64String(protectedBytes);
     }
 
-    private static (double Latitude, double Longitude, bool HasCoordinates) UnprotectCoordinates(string protectedCoordinates)
+    private static (double latitude, double longitude, bool hasCoordinates) UnprotectCoordinates(string protectedCoordinates)
     {
         byte[] protectedBytes = Convert.FromBase64String(protectedCoordinates);
         byte[] plainBytes = WindowsDataProtection.Unprotect(protectedBytes);
@@ -294,7 +297,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
         Result<GeoCoordinates> coordinates = GeoCoordinates.Create(latitude, longitude);
         return coordinates.IsFailure
             ? throw new FormatException(coordinates.Error.Description)
-            : ((double Latitude, double Longitude, bool HasCoordinates))(coordinates.Value.Latitude, coordinates.Value.Longitude, true);
+            : (coordinates.Value.Latitude, coordinates.Value.Longitude, true);
     }
 
     private static bool HasLegacyPlaintextCoordinates(PersistedAppConfig persistedConfiguration)
@@ -304,7 +307,7 @@ internal sealed class ConfigurationRepository(AppPaths appPaths, StructuredLogPu
             && persistedConfiguration.Longitude is not null;
     }
 
-    private static (double Latitude, double Longitude, bool HasCoordinates) ReduceCoordinates(
+    private static (double latitude, double longitude, bool hasCoordinates) ReduceCoordinates(
         double latitude,
         double longitude,
         int locationPrecisionDecimals)

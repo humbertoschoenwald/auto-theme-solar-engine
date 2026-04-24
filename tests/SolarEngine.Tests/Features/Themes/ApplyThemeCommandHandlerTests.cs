@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Themes;
 using SolarEngine.Features.Themes.Domain;
 using SolarEngine.Shared.Core;
@@ -15,7 +18,7 @@ public sealed class ApplyThemeCommandHandlerTests
     /// Verifies the handler forwards the requested theme mode to the mutator.
     /// </summary>
     [Fact]
-    public void Handle_DelegatesRequestedModeToThemeMutator()
+    public void HandleDelegatesRequestedModeToThemeMutator()
     {
         RecordingThemeMutator themeMutator = new();
         ApplyThemeCommandHandler handler = new(themeMutator);
@@ -30,9 +33,15 @@ public sealed class ApplyThemeCommandHandlerTests
 
     private sealed class RecordingThemeMutator : IThemeMutator
     {
-        public int ApplyCallCount { get; private set; }
+        public int ApplyCallCount
+        {
+            get; private set;
+        }
 
-        public ThemeMode? LastMode { get; private set; }
+        public ThemeMode? LastMode
+        {
+            get; private set;
+        }
 
         public Result<ThemeMode> Apply(ThemeMode mode)
         {

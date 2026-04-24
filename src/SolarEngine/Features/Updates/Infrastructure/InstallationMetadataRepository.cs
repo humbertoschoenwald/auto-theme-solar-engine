@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Diagnostics;
 using System.Security.Principal;
 using System.Text;
@@ -214,7 +217,7 @@ exit 1
         WritePersistedInstallationMetadata(manifestPath, normalizedMetadata);
     }
 
-    public InstallationMetadata Load()
+    public static InstallationMetadata Load()
     {
         string processPath = Environment.ProcessPath
             ?? throw new UnexpectedStateException(InstallationMetadataLoadPathDescription);
@@ -333,22 +336,22 @@ exit 1
     {
         _ = processPath;
 
-        return value?.Trim().ToLowerInvariant() switch
-        {
-            SelfContainedFlavorName => ReleaseFlavor.SelfContained,
-            FrameworkDependentFlavorName => ReleaseFlavor.SelfContained,
-            _ => ReleaseFlavor.SelfContained
-        };
+        string? normalizedValue = value?.Trim();
+        return string.Equals(normalizedValue, SelfContainedFlavorName, StringComparison.OrdinalIgnoreCase)
+            ? ReleaseFlavor.SelfContained
+            : string.Equals(normalizedValue, FrameworkDependentFlavorName, StringComparison.OrdinalIgnoreCase)
+            ? ReleaseFlavor.SelfContained
+            : ReleaseFlavor.SelfContained;
     }
 
     private static InstallationMode ParseInstallationMode(string? value, string installDirectory)
     {
-        return value?.Trim().ToLowerInvariant() switch
-        {
-            LocalAppDataInstallationModeName => InstallationMode.LocalAppData,
-            ProgramFilesInstallationModeName => InstallationMode.ProgramFiles,
-            _ => InferInstallationMode(installDirectory)
-        };
+        string? normalizedValue = value?.Trim();
+        return string.Equals(normalizedValue, LocalAppDataInstallationModeName, StringComparison.OrdinalIgnoreCase)
+            ? InstallationMode.LocalAppData
+            : string.Equals(normalizedValue, ProgramFilesInstallationModeName, StringComparison.OrdinalIgnoreCase)
+            ? InstallationMode.ProgramFiles
+            : InferInstallationMode(installDirectory);
     }
 
     private static ReleaseFlavor InferReleaseFlavor(string processPath)
@@ -366,12 +369,9 @@ exit 1
                 Environment.SpecialFolder.LocalApplicationData,
                 Environment.SpecialFolderOption.Create));
 
-        if (normalizedDirectory.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase))
-        {
-            return InstallationMode.ProgramFiles;
-        }
-
-        return normalizedDirectory.StartsWith(localAppData, StringComparison.OrdinalIgnoreCase)
+        return normalizedDirectory.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase)
+            ? InstallationMode.ProgramFiles
+            : normalizedDirectory.StartsWith(localAppData, StringComparison.OrdinalIgnoreCase)
             ? InstallationMode.LocalAppData
             : InstallationMode.Unknown;
     }
@@ -432,12 +432,7 @@ exit 1
             Environment.GetFolderPath(Environment.SpecialFolder.System),
             WindowsPowerShellRelativePath);
 
-        if (File.Exists(windowsPowerShellPath))
-        {
-            return windowsPowerShellPath;
-        }
-
-        throw new FileNotFoundException(PowerShellResolutionDescription);
+        return File.Exists(windowsPowerShellPath) ? windowsPowerShellPath : throw new FileNotFoundException(PowerShellResolutionDescription);
     }
 
     private static string SerializeReleaseFlavor(ReleaseFlavor releaseFlavor)

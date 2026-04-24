@@ -28,6 +28,14 @@ over-broad repository-wide diagnostic just to approximate the intent.
 
 ## Decision
 
+- Repository source is infrastructure-of-truth rather than prose optimized for
+  manual typing comfort:
+  - the primary author may be a deterministic generator, compiler, or AI agent,
+  - the human role is auditor, curator, and scoped-exception approver,
+  - explicitness is preferred over terseness when analyzers can enforce it,
+  - verbosity is a safety feature when it preserves type, control-flow,
+    ownership, nullability, and state intent at the declaration site,
+  - human typing effort is not a repository optimization target.
 - `.editorconfig` is the machine-grade projection for repository formatting,
   naming, and analyzer severity doctrine. It is a derived artifact, not an
   independent policy source.
@@ -37,14 +45,15 @@ over-broad repository-wide diagnostic just to approximate the intent.
   - final newline required,
   - trailing whitespace trimmed by default,
   - 100-character line target,
-  - hard tabs at width 8 as the general fallback for file types that do not
-    carry a language-specific override.
+  - spaces as the repository default with width 2 so visual structure never
+    depends on editor tab rendering.
 - Language and file-type overrides are path-scoped:
   - Python uses four spaces.
   - Markdown uses two spaces, keeps trailing whitespace available for explicit
     hard line breaks, and does not carry a max-line rule.
-  - Shell, JavaScript module scripts, JSON-family files, YAML, TOML, XML, MSBuild
-    files, solution files, and repository rule files use two spaces.
+  - The Makefile file type remains tab-indented because tabs are semantic there.
+  - Shell, JavaScript module scripts, JSON-family files, YAML, TOML, XML,
+    MSBuild files, solution files, and repository rule files use two spaces.
   - PowerShell uses four spaces.
   - Authored C# uses four spaces, forbids tabs for indentation, requires the
     repository file header, and keeps the 100-character line target.
@@ -71,15 +80,22 @@ over-broad repository-wide diagnostic just to approximate the intent.
   such as `net11.0-windows10.0.19041.0`. The common build projection must not
   erase those OS-specific product requirements just to restate the shared
   `.NET 11` baseline.
-- Closed state, result, and message alternatives must remain explicit and
-  exhaustively handled. While the pinned toolchain still does not provide a
-  repository-ready end-to-end path for authored C# `union` declarations, the
-  repository keeps modeling those alternatives with explicit records, enums,
-  and exhaustive switch handling as required by `ADR-0015`.
+- Closed state, result, message, command, event, failure, and transition
+  alternatives are architectural unions:
+  - exhaustive switch diagnostics are enforced today,
+  - stock `.editorconfig` still cannot prove every closed alternative is
+    modeled as a union,
+  - while the pinned toolchain still lacks a repository-ready end-to-end path
+    for authored C# `union` declarations, the repository keeps those
+    alternatives explicit through records, enums, exhaustive switches, and
+    nullability contracts as required by `ADR-0015`.
 - Diagnostic ID `ASE0001` is reserved for a future repository analyzer that
   will enforce approved union declarations once the pinned SDK and runtime make
   that path repository-ready. The repository must not claim that this rule is
   active before the analyzer exists.
+- `.editorconfig` may duplicate equivalent option spellings when SDK-version
+  differences would otherwise weaken a deterministic rule. This currently
+  applies to the static-local-function preference key.
 - Semantic naming rules that stock `.editorconfig` cannot scope precisely, such
   as "only handler types must end with `Handler`", must not be projected as
   over-broad all-class rules. Those rules stay doctrinal until a repository
@@ -87,10 +103,10 @@ over-broad repository-wide diagnostic just to approximate the intent.
 
 ## Alternatives Considered
 
-| Option | Pros | Cons |
-| ------ | ---- | ---- |
-| Keep the old `.editorconfig` and leave TODO comments in place | Minimal immediate churn | Doctrine stays split and TODOs remain policy-shaped gaps |
-| Project every requested rule literally even when stock `.editorconfig` cannot scope it safely | Matches the request text verbatim | Creates false positives and unstable builds |
+| Option                                                                                                                | Pros                                          | Cons                                                            |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------- |
+| Keep the old `.editorconfig` and leave TODO comments in place                                                         | Minimal immediate churn                       | Doctrine stays split and TODOs remain policy-shaped gaps        |
+| Project every requested rule literally even when stock `.editorconfig` cannot scope it safely                         | Matches the request text verbatim             | Creates false positives and unstable builds                     |
 | Record the stronger projection doctrine in ADR, reserve future analyzer IDs, and project only enforceable rules today | ADR-first, reviewable, and mechanically sound | Requires both doctrine and config edits before the code cleanup |
 
 ## Consequences

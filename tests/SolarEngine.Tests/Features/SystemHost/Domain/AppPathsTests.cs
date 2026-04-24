@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.SystemHost.Domain;
 using Xunit;
 
@@ -13,7 +16,7 @@ public sealed class AppPathsTests
     /// Verifies the explicit constructor normalizes the directory and derived files.
     /// </summary>
     [Fact]
-    public void Constructor_NormalizesDirectoryAndDerivedFilePaths()
+    public void ConstructorNormalizesDirectoryAndDerivedFilePaths()
     {
         string root = Path.Combine(Path.GetTempPath(), "SolarEngine.Tests", Path.GetRandomFileName());
         string nestedPath = Path.Combine(root, ".", "config", "..", "runtime");
@@ -28,7 +31,7 @@ public sealed class AppPathsTests
     /// Verifies the default constructor targets the documented LocalAppData directory.
     /// </summary>
     [Fact]
-    public void Constructor_UsesLocalAppDataConvention_WhenNoDirectoryIsSupplied()
+    public void ConstructorUsesLocalAppDataConventionWhenNoDirectoryIsSupplied()
     {
         AppPaths appPaths = new();
 
@@ -47,7 +50,7 @@ public sealed class AppPathsTests
     /// Verifies blank paths are rejected before runtime files are derived.
     /// </summary>
     [Fact]
-    public void Constructor_RejectsBlankDirectoryPath()
+    public void ConstructorRejectsBlankDirectoryPath()
     {
         ArgumentException exception = Assert.Throws<ArgumentException>(() => new AppPaths(" "));
 

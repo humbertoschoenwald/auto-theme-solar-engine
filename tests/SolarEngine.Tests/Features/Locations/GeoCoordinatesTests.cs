@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Shared.Core;
 using Xunit;
@@ -22,13 +25,11 @@ public sealed class GeoCoordinatesTests
     [InlineData(-90.0001d, 0d)]
     [InlineData(0d, 180.0001d)]
     [InlineData(0d, -180.0001d)]
-    public void Create_ReturnsFailure_ForInvalidAndOutOfBoundsCoordinates(double latitude, double longitude)
+    public void CreateReturnsFailureForInvalidAndOutOfBoundsCoordinates(double latitude, double longitude)
     {
         Result<GeoCoordinates> result = GeoCoordinates.Create(latitude, longitude);
 
         Assert.True(result.IsFailure);
-
-        Assert.NotNull(result.Error);
         Assert.NotEqual(string.Empty, result.Error.Code);
     }
 
@@ -36,7 +37,7 @@ public sealed class GeoCoordinatesTests
     /// Verifies valid geographic coordinates produce an immutable value object.
     /// </summary>
     [Fact]
-    public void Create_ReturnsSuccess_ForValidCoordinates()
+    public void CreateReturnsSuccessForValidCoordinates()
     {
         Result<GeoCoordinates> result = GeoCoordinates.Create(19.4326d, -99.1332d);
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Locations.Domain;
 using Xunit;
 
@@ -18,7 +21,7 @@ public sealed class CoordinatePrecisionPolicyTests
     [InlineData(1, CoordinatePrecisionPolicy.MinStoredDecimals)]
     [InlineData(3, 3)]
     [InlineData(9, CoordinatePrecisionPolicy.MaxStoredDecimals)]
-    public void NormalizeDecimals_ClampsIntoAllowedRange(int input, int expected)
+    public void NormalizeDecimalsClampsIntoAllowedRange(int input, int expected)
     {
         int result = CoordinatePrecisionPolicy.NormalizeDecimals(input);
 
@@ -29,7 +32,7 @@ public sealed class CoordinatePrecisionPolicyTests
     /// Verifies coordinate persistence rounds both axes with the configured precision.
     /// </summary>
     [Fact]
-    public void Reduce_RoundsCoordinatesToConfiguredPrecision()
+    public void ReduceRoundsCoordinatesToConfiguredPrecision()
     {
         GeoCoordinates coordinates = new()
         {

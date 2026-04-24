@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Globalization;
 using SolarEngine.Infrastructure.Localization;
 using Xunit;
@@ -14,7 +17,7 @@ public sealed class JsonLocalizationCatalogTests
     /// Verifies Spanish UI culture selects Spanish resource text.
     /// </summary>
     [Fact]
-    public void Indexer_ReturnsSpanishText_WhenCurrentUiCultureIsSpanish()
+    public void IndexerReturnsSpanishTextWhenCurrentUiCultureIsSpanish()
     {
         CultureInfo originalCulture = CultureInfo.CurrentUICulture;
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("es-MX");
@@ -38,7 +41,7 @@ public sealed class JsonLocalizationCatalogTests
     /// Verifies unsupported UI cultures fall back to English resource text.
     /// </summary>
     [Fact]
-    public void Indexer_FallsBackToEnglish_WhenCurrentUiCultureIsUnsupported()
+    public void IndexerFallsBackToEnglishWhenCurrentUiCultureIsUnsupported()
     {
         CultureInfo originalCulture = CultureInfo.CurrentUICulture;
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr-FR");

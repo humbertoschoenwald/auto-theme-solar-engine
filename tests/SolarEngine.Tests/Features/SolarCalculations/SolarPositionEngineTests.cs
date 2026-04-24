@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SolarCalculations.Domain;
 using SolarEngine.Shared.Core;
@@ -17,7 +20,7 @@ public sealed class SolarPositionEngineTests
     /// Verifies standard daylight calculations produce sunrise before sunset near UTC.
     /// </summary>
     [Fact]
-    public void Calculate_ProducesSunriseBeforeSunset_ForNearUtcCoordinates()
+    public void CalculateProducesSunriseBeforeSunsetForNearUtcCoordinates()
     {
         Result<GeoCoordinates> coordinatesResult = GeoCoordinates.Create(51.5074d, -0.1278d);
         Assert.True(coordinatesResult.IsSuccess);
@@ -54,7 +57,7 @@ public sealed class SolarPositionEngineTests
     [InlineData(0d, double.NaN)]
     [InlineData(double.PositiveInfinity, 0d)]
     [InlineData(0d, double.NegativeInfinity)]
-    public void Calculate_RejectsInvalidAndNonFiniteCoordinates(double latitude, double longitude)
+    public void CalculateRejectsInvalidAndNonFiniteCoordinates(double latitude, double longitude)
     {
         Result<GeoCoordinates> coordinatesResult = GeoCoordinates.Create(latitude, longitude);
         Assert.True(coordinatesResult.IsFailure);
@@ -64,7 +67,7 @@ public sealed class SolarPositionEngineTests
     /// Verifies winter polar coordinates report no sunrise event.
     /// </summary>
     [Fact]
-    public void Calculate_UsesPolarNightCondition_WhenSunNeverRises()
+    public void CalculateUsesPolarNightConditionWhenSunNeverRises()
     {
         DateOnly winterSolstice = new(2026, 12, 21);
 
@@ -87,7 +90,7 @@ public sealed class SolarPositionEngineTests
     /// Verifies summer polar coordinates report no sunset event.
     /// </summary>
     [Fact]
-    public void Calculate_UsesMidnightSunCondition_WhenSunNeverSets()
+    public void CalculateUsesMidnightSunConditionWhenSunNeverSets()
     {
         DateOnly summerSolstice = new(2026, 6, 21);
 
@@ -110,7 +113,7 @@ public sealed class SolarPositionEngineTests
     /// Verifies negative UTC offsets keep sunset on the requested local date.
     /// </summary>
     [Fact]
-    public void Calculate_KeepsSunsetOnRequestedLocalDate_ForNegativeUtcOffsets()
+    public void CalculateKeepsSunsetOnRequestedLocalDateForNegativeUtcOffsets()
     {
         DateOnly date = new(2026, 3, 31);
         TimeZoneInfo mexicoLikeTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central America Standard Time");
@@ -142,7 +145,7 @@ public sealed class SolarPositionEngineTests
     [Theory]
     [InlineData(2026, 3, 8)]
     [InlineData(2026, 11, 1)]
-    public void Calculate_KeepsSolarEventsOnRequestedLocalDate_AcrossDstTransitions(int year, int month, int day)
+    public void CalculateKeepsSolarEventsOnRequestedLocalDateAcrossDstTransitions(int year, int month, int day)
     {
         DateOnly date = new(year, month, day);
         TimeZoneInfo easternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");

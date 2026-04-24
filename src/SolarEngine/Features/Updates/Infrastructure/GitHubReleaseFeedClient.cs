@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Net.Http.Headers;
 using System.Text.Json;
 using SolarEngine.Features.Updates.Domain;
@@ -28,7 +31,7 @@ internal sealed class GitHubReleaseFeedClient
         new("https://api.github.com/repos/humbertoschoenwald/auto-theme-solar-engine/releases");
     private static readonly HttpClient s_client = CreateHttpClient();
 
-    public async ValueTask<(CalVersion Version, string Tag, string AssetName, string AssetUrl)?> FindLatestMatchingReleaseAsync(
+    public static async ValueTask<(CalVersion Version, string Tag, string AssetName, string AssetUrl)?> FindLatestMatchingReleaseAsync(
         ReleaseFlavor releaseFlavor,
         CalVersion currentVersion,
         CancellationToken cancellationToken = default)
@@ -37,8 +40,10 @@ internal sealed class GitHubReleaseFeedClient
         using HttpResponseMessage response = await s_client.SendAsync(request, cancellationToken).ConfigureAwait(false);
         _ = response.EnsureSuccessStatusCode();
 
-        await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+        using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using JsonDocument document = await JsonDocument.ParseAsync(
+            stream,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
 
         return SelectLatestMatchingRelease(document.RootElement, releaseFlavor, currentVersion);
     }

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 namespace SolarEngine.Shared.Core;
 
 internal readonly struct Result : IEquatable<Result>
@@ -16,7 +19,10 @@ internal readonly struct Result : IEquatable<Result>
         _error = error;
     }
 
-    public bool IsSuccess { get; }
+    public bool IsSuccess
+    {
+        get;
+    }
 
     public bool IsFailure => !IsSuccess;
 
@@ -108,7 +114,10 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
         IsSuccess = false;
     }
 
-    public bool IsSuccess { get; }
+    public bool IsSuccess
+    {
+        get;
+    }
 
     public bool IsFailure => !IsSuccess;
 

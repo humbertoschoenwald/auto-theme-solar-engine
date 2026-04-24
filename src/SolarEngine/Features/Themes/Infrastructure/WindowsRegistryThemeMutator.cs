@@ -1,5 +1,10 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Security;
 using Microsoft.Win32;
 using SolarEngine.Features.Themes.Domain;
 using SolarEngine.Infrastructure.Logging;
@@ -70,7 +75,13 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
             logPublisher.Write($"Theme mutation committed: {mode}.");
             return Result<ThemeMode>.Success(mode);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (
+            exception is IOException
+            or SecurityException
+            or UnauthorizedAccessException
+            or Win32Exception
+            or ExternalException
+            or UnexpectedStateException)
         {
             logPublisher.Write($"Theme mutation failed: {exception.Message}");
             return Result<ThemeMode>.Failure(new Error(RegistryFailureCode, RegistryFailureDescription));

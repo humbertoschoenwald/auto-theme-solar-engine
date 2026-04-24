@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 namespace SolarEngine.Infrastructure.Serialization;
 
 internal sealed record PersistedAppConfig
@@ -6,11 +9,20 @@ internal sealed record PersistedAppConfig
     private const string DefaultLanguageCode = "en";
     private const int DefaultCheckIntervalSeconds = 30;
 
-    public string? ProtectedCoordinates { get; init; }
+    public string? ProtectedCoordinates
+    {
+        get; init;
+    }
 
-    public double? Latitude { get; init; }
+    public double? Latitude
+    {
+        get; init;
+    }
 
-    public double? Longitude { get; init; }
+    public double? Longitude
+    {
+        get; init;
+    }
 
     public bool UseWindowsLocation { get; init; } = true;
 
@@ -30,5 +42,8 @@ internal sealed record PersistedAppConfig
 
     public int CheckIntervalSeconds { get; init; } = DefaultCheckIntervalSeconds;
 
-    public bool IsConfigured { get; init; }
+    public bool IsConfigured
+    {
+        get; init;
+    }
 }

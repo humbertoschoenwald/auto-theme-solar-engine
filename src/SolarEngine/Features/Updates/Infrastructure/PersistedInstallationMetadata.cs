@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Shared;
 
 namespace SolarEngine.Features.Updates.Infrastructure;
@@ -13,5 +16,8 @@ internal sealed record PersistedInstallationMetadata
 
     public string InstallationMode { get; init; } = DefaultInstallationMode;
 
-    public string? ElevatedTaskName { get; init; }
+    public string? ElevatedTaskName
+    {
+        get; init;
+    }
 }

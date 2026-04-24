@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Locations;
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Shared.Core;
@@ -15,7 +18,7 @@ public sealed class GetSystemLocationQueryHandlerTests
     /// Verifies the handler returns the provider result without rewriting it.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_ReturnsProviderCoordinates()
+    public async Task HandleAsyncReturnsProviderCoordinates()
     {
         FakeSystemLocationProvider provider = new(
             SystemLocationAccessState.Allowed,
@@ -37,7 +40,7 @@ public sealed class GetSystemLocationQueryHandlerTests
     /// Verifies cancellation flows into the provider instead of being swallowed.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_PropagatesCancellationToken()
+    public async Task HandleAsyncPropagatesCancellationToken()
     {
         FakeSystemLocationProvider provider = new(
             SystemLocationAccessState.Allowed,
@@ -54,7 +57,10 @@ public sealed class GetSystemLocationQueryHandlerTests
         SystemLocationAccessState accessState,
         Result<GeoCoordinates> locationResult) : ISystemLocationProvider
     {
-        public CancellationToken LastLocationCancellationToken { get; private set; }
+        public CancellationToken LastLocationCancellationToken
+        {
+            get; private set;
+        }
 
         public ValueTask<SystemLocationAccessState> GetAccessStateAsync(CancellationToken cancellationToken = default)
         {

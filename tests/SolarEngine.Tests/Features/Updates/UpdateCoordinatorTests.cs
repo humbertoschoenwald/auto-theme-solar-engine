@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Diagnostics;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.Updates;
@@ -31,7 +34,7 @@ public sealed class UpdateCoordinatorTests : IDisposable
     /// Verifies the update request exists before the launcher and helper processes are started.
     /// </summary>
     [Fact]
-    public async Task PrepareAndLaunchUpdateAsync_WritesRequestBeforeLaunchingProcesses()
+    public async Task PrepareAndLaunchUpdateAsyncWritesRequestBeforeLaunchingProcesses()
     {
         AppPaths appPaths = new(_directoryPath);
         InstallationMetadataRepository repository = new(appPaths);

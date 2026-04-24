@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Diagnostics;
 using SolarEngine.Features.Locations;
 using SolarEngine.Features.Locations.Domain;
@@ -56,12 +59,19 @@ internal sealed class ApplicationLifecycleOrchestrator(
         ArgumentNullException.ThrowIfNull(configuration);
         cancellationToken.ThrowIfCancellationRequested();
 
-        Config = SanitizeConfiguration(configuration with { IsConfigured = true });
+        Config = SanitizeConfiguration(configuration with
+        {
+            IsConfigured = true
+        });
         await RefreshWindowsLocationAccessStateAsync(cancellationToken).ConfigureAwait(false);
         if (Config.UseWindowsLocation && WindowsLocationAccessState != SystemLocationAccessState.Allowed)
         {
-            Config = Config with { UseWindowsLocation = false };
+            Config = Config with
+            {
+                UseWindowsLocation = false
+            };
         }
+
         PersistConfigurationState();
 
         if (Config.UseWindowsLocation)
@@ -245,7 +255,10 @@ internal sealed class ApplicationLifecycleOrchestrator(
             return;
         }
 
-        Config = Config with { UseWindowsLocation = false };
+        Config = Config with
+        {
+            UseWindowsLocation = false
+        };
         PersistConfigurationState();
         await RefreshScheduleAsync(cancellationToken).ConfigureAwait(false);
         logPublisher.Write(WindowsLocationDisabledLogMessage);

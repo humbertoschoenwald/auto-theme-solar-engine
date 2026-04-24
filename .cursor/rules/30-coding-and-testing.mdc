@@ -46,8 +46,12 @@ alwaysApply: false
   is required, and keep primary constructor parameters parameter-shaped.
 - RULE: `.editorconfig` is the machine-grade projection of repository
   formatting, naming, and analyzer severity doctrine.
-- RULE: Global indentation defaults may use tabs where the file type allows
-  them, but authored C# must remain four-space and space-indented only.
+- RULE: Repository code optimizes for machine-auditable explicitness rather
+  than human typing brevity. Do not reintroduce shorthand that hides local type
+  or control-flow intent.
+- RULE: Global indentation defaults use two-space indentation unless the file
+  type has a narrower documented exception. Authored C# must remain four-space
+  and space-indented only.
 - RULE: Enabled analyzer diagnostics fail as errors by default. Use `none` only
   for explicit path-scoped exceptions with local justification.
 - RULE: Do not encode repository policy with `warning`, `suggestion`, `silent`,

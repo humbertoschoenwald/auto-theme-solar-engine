@@ -3,8 +3,8 @@
   // This file is an operational projection of repository doctrine, not an independent policy source.
 
   "editor.detectIndentation": false,
-  "editor.insertSpaces": false,
-  "editor.tabSize": 8,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 2,
   "editor.formatOnSave": true,
   "editor.renderWhitespace": "all",
 
@@ -73,6 +73,10 @@
   "[shellscript]": {
     "editor.tabSize": 2,
     "editor.insertSpaces": true
+  },
+  "[makefile]": {
+    "editor.tabSize": 8,
+    "editor.insertSpaces": false
   },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",

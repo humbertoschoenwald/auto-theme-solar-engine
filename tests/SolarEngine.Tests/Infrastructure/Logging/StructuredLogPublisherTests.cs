@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Text;
 using SolarEngine.Infrastructure.Logging;
 using Xunit;
@@ -14,7 +17,7 @@ public sealed class StructuredLogPublisherTests
     /// Verifies oversized logs retain recent entries and discard older content.
     /// </summary>
     [Fact]
-    public void Write_TrimsTheLogToTheConfiguredMaximumSize()
+    public void WriteTrimsTheLogToTheConfiguredMaximumSize()
     {
         string directoryPath = Path.Combine(
             Path.GetTempPath(),

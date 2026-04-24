@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Shared.Core;
 
@@ -186,35 +189,23 @@ internal static class SolarPositionEngine
 
     private static Error ValidateCoordinates(GeoCoordinates coordinates)
     {
-        if (!double.IsFinite(coordinates.Latitude))
-        {
-            return new Error(
+        return !double.IsFinite(coordinates.Latitude)
+            ? new Error(
                 LatitudeNonFiniteCode,
-                LatitudeNonFiniteDescription);
-        }
-
-        if (!double.IsFinite(coordinates.Longitude))
-        {
-            return new Error(
+                LatitudeNonFiniteDescription)
+            : !double.IsFinite(coordinates.Longitude)
+            ? new Error(
                 LongitudeNonFiniteCode,
-                LongitudeNonFiniteDescription);
-        }
-
-        if (coordinates.Latitude is < -90d or > 90d)
-        {
-            return new Error(
+                LongitudeNonFiniteDescription)
+            : coordinates.Latitude is < -90d or > 90d
+            ? new Error(
                 LatitudeOutOfRangeCode,
-                LatitudeOutOfRangeDescription);
-        }
-
-        if (coordinates.Longitude is < -180d or > 180d)
-        {
-            return new Error(
+                LatitudeOutOfRangeDescription)
+            : coordinates.Longitude is < -180d or > 180d
+            ? new Error(
                 LongitudeOutOfRangeCode,
-                LongitudeOutOfRangeDescription);
-        }
-
-        return Error.None;
+                LongitudeOutOfRangeDescription)
+            : Error.None;
     }
 
     private static SolarDaylightCondition ResolveDaylightCondition(

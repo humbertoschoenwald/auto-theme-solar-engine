@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System.Globalization;
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SolarCalculations.Domain;
 using SolarEngine.Features.SystemHost.Domain;
@@ -27,7 +31,7 @@ public sealed class ThemeTransitionOrchestratorTests
     /// Verifies standard daylight days render the schedule instead of throwing.
     /// </summary>
     [Fact]
-    public async Task BuildTodayScheduleText_ReturnsStandardSchedule_WhenDaylightConditionIsStandard()
+    public async Task BuildTodayScheduleTextReturnsStandardScheduleWhenDaylightConditionIsStandard()
     {
         using TestContext context = new();
         using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator();
@@ -49,7 +53,7 @@ public sealed class ThemeTransitionOrchestratorTests
     /// Verifies the optional sunset offset changes the exposed schedule text.
     /// </summary>
     [Fact]
-    public async Task BuildTodayScheduleText_UsesAdjustedSunset_WhenExtraMinuteAtSunsetIsEnabled()
+    public async Task BuildTodayScheduleTextUsesAdjustedSunsetWhenExtraMinuteAtSunsetIsEnabled()
     {
         using TestContext context = new();
         SolarSchedule baseSchedule = CreateStandardDaySchedule();
@@ -61,14 +65,17 @@ public sealed class ThemeTransitionOrchestratorTests
         string scheduleText = orchestrator.BuildTodayScheduleText();
 
         _ = Assert.NotNull(baseSchedule.SunsetLocal);
-        Assert.Contains(baseSchedule.SunsetLocal.Value.AddMinutes(1).ToString("HH:mm"), scheduleText, StringComparison.Ordinal);
+        Assert.Contains(
+            baseSchedule.SunsetLocal.Value.AddMinutes(1).ToString("HH:mm", CultureInfo.InvariantCulture),
+            scheduleText,
+            StringComparison.Ordinal);
     }
 
     /// <summary>
     /// Verifies standard daylight days can apply a theme without falling into placeholder code.
     /// </summary>
     [Fact]
-    public async Task ApplyCurrentThemeAsync_AppliesTheme_WhenDaylightConditionIsStandard()
+    public async Task ApplyCurrentThemeAsyncAppliesThemeWhenDaylightConditionIsStandard()
     {
         using TestContext context = new();
         using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator();
@@ -84,7 +91,7 @@ public sealed class ThemeTransitionOrchestratorTests
     /// Verifies the sunset offset keeps light mode active during the extra minute.
     /// </summary>
     [Fact]
-    public async Task ApplyCurrentThemeAsync_KeepsLightModeDuringConfiguredSunsetOffset()
+    public async Task ApplyCurrentThemeAsyncKeepsLightModeDuringConfiguredSunsetOffset()
     {
         SolarSchedule baseSchedule = CreateStandardDaySchedule();
         _ = Assert.NotNull(baseSchedule.SunsetLocal);
@@ -104,7 +111,7 @@ public sealed class ThemeTransitionOrchestratorTests
     /// Verifies disabling the sunset offset restores the raw astronomical cutoff.
     /// </summary>
     [Fact]
-    public async Task ApplyCurrentThemeAsync_UsesRawSunset_WhenExtraMinuteAtSunsetIsDisabled()
+    public async Task ApplyCurrentThemeAsyncUsesRawSunsetWhenExtraMinuteAtSunsetIsDisabled()
     {
         SolarSchedule baseSchedule = CreateStandardDaySchedule();
         _ = Assert.NotNull(baseSchedule.SunsetLocal);
@@ -113,7 +120,10 @@ public sealed class ThemeTransitionOrchestratorTests
         using TestContext context = new();
         using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator(momentAfterRawSunset);
 
-        AppConfig configuration = CreateStandardDayConfiguration() with { AddExtraMinuteAtSunset = false };
+        AppConfig configuration = CreateStandardDayConfiguration() with
+        {
+            AddExtraMinuteAtSunset = false
+        };
         orchestrator.UpdateConfiguration(configuration);
         await orchestrator.RefreshAsync();
         await orchestrator.ApplyCurrentThemeAsync();

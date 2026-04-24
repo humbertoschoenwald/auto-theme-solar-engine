@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Shared.Core;
@@ -16,7 +19,7 @@ public sealed class CoordinateInputStateTests
     /// Verifies a Windows-detected seed survives masked coordinate text during save.
     /// </summary>
     [Fact]
-    public void ResolveWindowsLocationCoordinates_UsesDetectedSeedWhenInputsAreHidden()
+    public void ResolveWindowsLocationCoordinatesUsesDetectedSeedWhenInputsAreHidden()
     {
         CoordinateInputState state = new();
         GeoCoordinates detectedCoordinates = new()
@@ -42,7 +45,7 @@ public sealed class CoordinateInputStateTests
     /// Verifies visible manual edits update the remembered seed once they parse successfully.
     /// </summary>
     [Fact]
-    public void RememberIfValid_UpdatesSeedFromVisibleManualCoordinates()
+    public void RememberIfValidUpdatesSeedFromVisibleManualCoordinates()
     {
         CoordinateInputState state = new();
 
@@ -62,7 +65,7 @@ public sealed class CoordinateInputStateTests
     /// Verifies hidden coordinate inputs can be repopulated from the remembered seed without exposing raw stored values.
     /// </summary>
     [Fact]
-    public void TryFormatSeed_ReturnsFormattedCoordinatesFromRememberedSeed()
+    public void TryFormatSeedReturnsFormattedCoordinatesFromRememberedSeed()
     {
         CoordinateInputState state = new();
         state.Remember(new GeoCoordinates

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
+using System.Globalization;
 using SolarEngine.Shared.Core;
 using Xunit;
 
@@ -13,7 +17,7 @@ public sealed class ResultTests
     /// Verifies success results expose values and no error payload.
     /// </summary>
     [Fact]
-    public void SuccessResult_ExposesValueAndNoError()
+    public void SuccessResultExposesValueAndNoError()
     {
         Result<int> result = Result<int>.Success(42);
 
@@ -27,7 +31,7 @@ public sealed class ResultTests
     /// Verifies failure results block value access and preserve the failure payload.
     /// </summary>
     [Fact]
-    public void FailureResult_ThrowsOnValueAccess()
+    public void FailureResultThrowsOnValueAccess()
     {
         Error error = Error.Validation("config.invalid", "Configuration was rejected.");
         Result<int> result = Result<int>.Failure(error);
@@ -41,7 +45,7 @@ public sealed class ResultTests
     /// Verifies non-generic results reject impossible success and failure state combinations.
     /// </summary>
     [Fact]
-    public void Failure_RejectsErrorNone()
+    public void FailureRejectsErrorNone()
     {
         ArgumentException exception = Assert.Throws<ArgumentException>(() => Result<int>.Failure(Error.None));
 
@@ -52,7 +56,7 @@ public sealed class ResultTests
     /// Verifies non-generic result factories and operators preserve equality semantics.
     /// </summary>
     [Fact]
-    public void NonGenericResult_FactoriesAndOperatorsPreserveContracts()
+    public void NonGenericResultFactoriesAndOperatorsPreserveContracts()
     {
         Error error = Error.Conflict("theme.conflict", "Theme application conflicted with another state.");
         Result success = Result.Success();
@@ -75,7 +79,7 @@ public sealed class ResultTests
     /// Verifies non-generic failures reject the sentinel no-error value.
     /// </summary>
     [Fact]
-    public void NonGenericResult_RejectsErrorNone()
+    public void NonGenericResultRejectsErrorNone()
     {
         ArgumentException exception = Assert.Throws<ArgumentException>(() => Result.Failure(Error.None));
 
@@ -86,7 +90,7 @@ public sealed class ResultTests
     /// Verifies generic factories, conversions, and equality keep success and failure states stable.
     /// </summary>
     [Fact]
-    public void GenericResult_FactoriesAndConversionsPreserveState()
+    public void GenericResultFactoriesAndConversionsPreserveState()
     {
         Error error = Error.NotFound("schedule.missing", "No schedule was available.");
         Result<int> fromValue = Result<int>.FromValue(9);
@@ -109,7 +113,7 @@ public sealed class ResultTests
     /// Verifies Match dispatches to the branch implied by the result state.
     /// </summary>
     [Fact]
-    public void Match_InvokesTheCorrectBranch()
+    public void MatchInvokesTheCorrectBranch()
     {
         Error error = Error.NotFound("locations.missing", "Coordinates are missing.");
         Result<int> failure = Result<int>.Failure(error);
@@ -130,19 +134,21 @@ public sealed class ResultTests
     /// Verifies Match rejects null delegates instead of silently choosing a branch.
     /// </summary>
     [Fact]
-    public void Match_RejectsNullDelegates()
+    public void MatchRejectsNullDelegates()
     {
         Result<int> result = Result<int>.Success(1);
 
-        _ = Assert.Throws<ArgumentNullException>(() => result.Match<string>(null!, static error => error.Code));
-        _ = Assert.Throws<ArgumentNullException>(() => result.Match(static value => value.ToString(), null!));
+        _ = Assert.Throws<ArgumentNullException>(() => result.Match(null!, static error => error.Code));
+        _ = Assert.Throws<ArgumentNullException>(() => result.Match(
+            static value => value.ToString(CultureInfo.InvariantCulture),
+            null!));
     }
 
     /// <summary>
     /// Verifies error values trim their inputs and render empty for Error.None.
     /// </summary>
     [Fact]
-    public void Error_TrimsFieldsAndFormatsExpectedText()
+    public void ErrorTrimsFieldsAndFormatsExpectedText()
     {
         Error error = new(" config.invalid ", " Configuration was rejected. ");
 
@@ -157,7 +163,7 @@ public sealed class ResultTests
     /// Verifies named error factories preserve the same trimmed payload contract.
     /// </summary>
     [Fact]
-    public void ErrorFactories_PreserveTrimmedPayloads()
+    public void ErrorFactoriesPreserveTrimmedPayloads()
     {
         Error validation = Error.Validation(" validation ", " Validation error. ");
         Error failure = Error.Failure(" failure ", " Failure error. ");
@@ -177,7 +183,7 @@ public sealed class ResultTests
     /// Verifies the repository exception keeps both message and inner exception.
     /// </summary>
     [Fact]
-    public void UnexpectedStateException_PreservesMessageAndInnerException()
+    public void UnexpectedStateExceptionPreservesMessageAndInnerException()
     {
         ArgumentException innerException = new("Inner.");
         UnexpectedStateException exception = new("Outer.", innerException);

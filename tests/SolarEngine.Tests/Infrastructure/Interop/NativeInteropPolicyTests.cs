@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Reflection;
 using System.Runtime.InteropServices;
 using SolarEngine.Features.Themes.Infrastructure;
@@ -30,7 +33,7 @@ public sealed class NativeInteropPolicyTests
     /// Verifies authored source files do not reintroduce DllImport declarations.
     /// </summary>
     [Fact]
-    public void AuthoredSource_DoesNotUseDllImport()
+    public void AuthoredSourceDoesNotUseDllImport()
     {
         string[] matches =
         [
@@ -49,7 +52,7 @@ public sealed class NativeInteropPolicyTests
     /// </summary>
     [Theory]
     [MemberData(nameof(PInvokeTypes))]
-    public void PInvokeTypes_UseLibraryImport(Type interopType)
+    public void PInvokeTypesUseLibraryImport(Type interopType)
     {
         ArgumentNullException.ThrowIfNull(interopType);
 
@@ -69,7 +72,7 @@ public sealed class NativeInteropPolicyTests
     /// Verifies ownership-bearing UI resources stay wrapped in SafeHandle types.
     /// </summary>
     [Fact]
-    public void OwnedUiResources_UseSafeHandleFields()
+    public void OwnedUiResourcesUseSafeHandleFields()
     {
         AssertSafeHandleField<SettingsWindow>("_fontHandle");
         AssertSafeHandleField<SettingsWindow>("_windowIconHandle");
@@ -103,12 +106,9 @@ public sealed class NativeInteropPolicyTests
     private static IEnumerable<string> EnumerateSourceFilesUnder(string relativeRoot)
     {
         string absoluteRoot = Path.Combine(s_repositoryRoot, relativeRoot);
-        if (!Directory.Exists(absoluteRoot))
-        {
-            return [];
-        }
-
-        return Directory.EnumerateFiles(absoluteRoot, "*.cs", SearchOption.AllDirectories)
+        return !Directory.Exists(absoluteRoot)
+            ? []
+            : Directory.EnumerateFiles(absoluteRoot, "*.cs", SearchOption.AllDirectories)
             .Where(static filePath =>
                 !filePath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
                 && !filePath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal));

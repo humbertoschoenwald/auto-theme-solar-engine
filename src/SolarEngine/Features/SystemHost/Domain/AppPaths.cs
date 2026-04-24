@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Shared;
 
 namespace SolarEngine.Features.SystemHost.Domain;
@@ -24,11 +27,20 @@ internal sealed class AppPaths
         LogPath = Path.Combine(DirectoryPath, AppIdentity.LogFileName);
     }
 
-    public string DirectoryPath { get; }
+    public string DirectoryPath
+    {
+        get;
+    }
 
-    public string ConfigPath { get; }
+    public string ConfigPath
+    {
+        get;
+    }
 
-    public string LogPath { get; }
+    public string LogPath
+    {
+        get;
+    }
 
     private static string ResolveBaseDirectory()
     {

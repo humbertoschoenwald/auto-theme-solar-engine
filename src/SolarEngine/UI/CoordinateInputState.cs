@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Globalization;
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SystemHost.Domain;
@@ -131,26 +134,20 @@ internal sealed class CoordinateInputState
 
     internal static Result<GeoCoordinates> ParseCoordinates(string latitudeText, string longitudeText)
     {
-        if (!double.TryParse(
+        return !double.TryParse(
                 latitudeText,
                 NumberStyles.Float | NumberStyles.AllowLeadingSign,
                 CultureInfo.InvariantCulture,
-                out double latitude))
-        {
-            return Result<GeoCoordinates>.Failure(
-                Error.Validation(InvalidLatitudeCode, InvalidLatitudeDescription));
-        }
-
-        if (!double.TryParse(
+                out double latitude)
+            ? Result<GeoCoordinates>.Failure(
+                Error.Validation(InvalidLatitudeCode, InvalidLatitudeDescription))
+            : !double.TryParse(
                 longitudeText,
                 NumberStyles.Float | NumberStyles.AllowLeadingSign,
                 CultureInfo.InvariantCulture,
-                out double longitude))
-        {
-            return Result<GeoCoordinates>.Failure(
-                Error.Validation(InvalidLongitudeCode, InvalidLongitudeDescription));
-        }
-
-        return GeoCoordinates.Create(latitude, longitude);
+                out double longitude)
+            ? Result<GeoCoordinates>.Failure(
+                Error.Validation(InvalidLongitudeCode, InvalidLongitudeDescription))
+            : GeoCoordinates.Create(latitude, longitude);
     }
 }

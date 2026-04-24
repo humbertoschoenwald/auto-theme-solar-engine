@@ -1,10 +1,13 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using Microsoft.Win32.SafeHandles;
 
 namespace SolarEngine.UI;
 
 internal sealed class SafeGdiObjectHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
-    private SafeGdiObjectHandle()
+    public SafeGdiObjectHandle()
         : base(ownsHandle: true)
     {
     }
@@ -24,7 +27,7 @@ internal sealed class SafeGdiObjectHandle : SafeHandleZeroOrMinusOneIsInvalid
 
 internal sealed class SafeIconHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
-    private SafeIconHandle()
+    public SafeIconHandle()
         : base(ownsHandle: true)
     {
     }
@@ -44,7 +47,7 @@ internal sealed class SafeIconHandle : SafeHandleZeroOrMinusOneIsInvalid
 
 internal sealed class SafeMenuHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
-    private SafeMenuHandle()
+    public SafeMenuHandle()
         : base(ownsHandle: true)
     {
     }

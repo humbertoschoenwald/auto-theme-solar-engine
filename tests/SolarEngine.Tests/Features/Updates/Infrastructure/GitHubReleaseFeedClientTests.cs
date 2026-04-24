@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Text.Json;
 using SolarEngine.Features.Updates.Domain;
 using SolarEngine.Features.Updates.Infrastructure;
@@ -15,7 +18,7 @@ public sealed class GitHubReleaseFeedClientTests
     /// Verifies the selector prefers the newest self-contained asset above the current version.
     /// </summary>
     [Fact]
-    public void SelectLatestMatchingRelease_PicksNewestSelfContainedAssetAboveCurrentVersion()
+    public void SelectLatestMatchingReleasePicksNewestSelfContainedAssetAboveCurrentVersion()
     {
         using JsonDocument document = JsonDocument.Parse(
             """
@@ -63,7 +66,7 @@ public sealed class GitHubReleaseFeedClientTests
     /// Verifies legacy framework-dependent metadata still resolves the newest supported self-contained asset.
     /// </summary>
     [Fact]
-    public void SelectLatestMatchingRelease_TreatsLegacyFrameworkDependentFlavorAsSelfContained()
+    public void SelectLatestMatchingReleaseTreatsLegacyFrameworkDependentFlavorAsSelfContained()
     {
         using JsonDocument document = JsonDocument.Parse(
             """
@@ -116,7 +119,7 @@ public sealed class GitHubReleaseFeedClientTests
     /// Verifies the selector reports no candidate when a release exposes no supported self-contained asset.
     /// </summary>
     [Fact]
-    public void SelectLatestMatchingRelease_ReturnsNullWhenNoSupportedAssetExists()
+    public void SelectLatestMatchingReleaseReturnsNullWhenNoSupportedAssetExists()
     {
         using JsonDocument document = JsonDocument.Parse(
             """
@@ -147,7 +150,7 @@ public sealed class GitHubReleaseFeedClientTests
     /// Verifies releases marked as YANKED in the GitHub release name are excluded.
     /// </summary>
     [Fact]
-    public void SelectLatestMatchingRelease_IgnoresYankedReleaseNames()
+    public void SelectLatestMatchingReleaseIgnoresYankedReleaseNames()
     {
         using JsonDocument document = JsonDocument.Parse(
             """
@@ -192,7 +195,7 @@ public sealed class GitHubReleaseFeedClientTests
     /// Verifies releases marked as YANKED in the GitHub release body are excluded.
     /// </summary>
     [Fact]
-    public void SelectLatestMatchingRelease_IgnoresYankedReleaseBodies()
+    public void SelectLatestMatchingReleaseIgnoresYankedReleaseBodies()
     {
         using JsonDocument document = JsonDocument.Parse(
             """

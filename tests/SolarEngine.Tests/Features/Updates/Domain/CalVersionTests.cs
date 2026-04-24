@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Updates.Domain;
 using Xunit;
 
@@ -13,7 +16,7 @@ public sealed class CalVersionTests
     /// Verifies prefixed tags parse into structured version parts.
     /// </summary>
     [Fact]
-    public void TryParse_ParsesTaggedCalVer()
+    public void TryParseParsesTaggedCalVer()
     {
         bool wasParsed = CalVersion.TryParse(" v26.04.04 ", out CalVersion version);
 
@@ -31,7 +34,7 @@ public sealed class CalVersionTests
     [InlineData("26.04")]
     [InlineData("v26.04.x")]
     [InlineData("release-26.04.04")]
-    public void TryParse_ReturnsFalse_ForMalformedValues(string value)
+    public void TryParseReturnsFalseForMalformedValues(string value)
     {
         bool wasParsed = CalVersion.TryParse(value, out CalVersion version);
 
@@ -43,7 +46,7 @@ public sealed class CalVersionTests
     /// Verifies release ordering compares year, month, and patch in sequence.
     /// </summary>
     [Fact]
-    public void CompareTo_OrdersByYearThenMonthThenPatch()
+    public void CompareToOrdersByYearThenMonthThenPatch()
     {
         CalVersion older = new(26, 4, 3);
         CalVersion newer = new(26, 4, 4);
@@ -57,7 +60,7 @@ public sealed class CalVersionTests
     /// Verifies string formatting keeps the repository tag shape stable.
     /// </summary>
     [Fact]
-    public void Formatting_UsesRepositoryCalVerShape()
+    public void FormattingUsesRepositoryCalVerShape()
     {
         CalVersion version = new(26, 4, 4);
 

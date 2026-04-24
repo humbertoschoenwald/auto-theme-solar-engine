@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Diagnostics;
 using Microsoft.Win32;
 using SolarEngine.Features.SystemHost.Domain;
@@ -35,7 +38,7 @@ public sealed class UpdateScriptIntegrationTests : IDisposable
     /// Verifies the helper migrates a legacy LocalAppData layout to the stable executable and relaunches it.
     /// </summary>
     [Fact]
-    public async Task HelperScript_MigratesLegacyLayoutAndRelaunchesStableExecutable()
+    public async Task HelperScriptMigratesLegacyLayoutAndRelaunchesStableExecutable()
     {
         AppPaths appPaths = new(Path.Combine(_directoryPath, "app-data"));
         InstallationMetadataRepository repository = new(appPaths);
@@ -99,7 +102,7 @@ public sealed class UpdateScriptIntegrationTests : IDisposable
     /// Verifies the relaunch watcher waits for the request to disappear before starting the updated executable.
     /// </summary>
     [Fact]
-    public async Task LauncherScript_WaitsForRequestRemovalBeforeLaunchingStableExecutable()
+    public async Task LauncherScriptWaitsForRequestRemovalBeforeLaunchingStableExecutable()
     {
         AppPaths appPaths = new(Path.Combine(_directoryPath, "app-data"));
         InstallationMetadataRepository repository = new(appPaths);
@@ -226,12 +229,9 @@ public sealed class UpdateScriptIntegrationTests : IDisposable
             "net11.0-windows10.0.19041.0",
             "SolarEngine.UpdateProbe.exe");
 
-        if (File.Exists(executablePath))
-        {
-            return executablePath;
-        }
-
-        throw new FileNotFoundException("Build the update probe executable before running updater integration tests.", executablePath);
+        return File.Exists(executablePath)
+            ? executablePath
+            : throw new FileNotFoundException("Build the update probe executable before running updater integration tests.", executablePath);
     }
 
     private static async Task<ScriptRunResult> RunScriptAsync(string scriptPath, string markerPath)

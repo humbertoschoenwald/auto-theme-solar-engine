@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.Locations.Domain;
 using SolarEngine.Features.SolarCalculations;
 using SolarEngine.Features.SolarCalculations.Domain;
@@ -22,7 +25,7 @@ public sealed class GetSolarScheduleQueryHandlerTests
     /// Verifies valid coordinates produce a standard schedule through the application boundary.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_ReturnsCalculatedSchedule()
+    public async Task HandleAsyncReturnsCalculatedSchedule()
     {
         Result<GeoCoordinates> coordinatesResult = GeoCoordinates.Create(19.4326d, -99.1332d);
         Assert.True(coordinatesResult.IsSuccess);
@@ -43,7 +46,7 @@ public sealed class GetSolarScheduleQueryHandlerTests
     /// Verifies cancellation is honored before any calculation work begins.
     /// </summary>
     [Fact]
-    public async Task HandleAsync_ThrowsWhenCancellationWasAlreadyRequested()
+    public async Task HandleAsyncThrowsWhenCancellationWasAlreadyRequested()
     {
         Result<GeoCoordinates> coordinatesResult = GeoCoordinates.Create(19.4326d, -99.1332d);
         Assert.True(coordinatesResult.IsSuccess);

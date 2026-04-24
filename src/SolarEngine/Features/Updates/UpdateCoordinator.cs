@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -31,13 +34,12 @@ internal sealed class UpdateCoordinator : IDisposable
         AppPaths appPaths,
         StructuredLogPublisher logPublisher,
         InstallationMetadataRepository installationMetadataRepository,
-        GitHubReleaseFeedClient gitHubReleaseFeedClient,
         TimeProvider timeProvider)
     {
         _appPaths = appPaths;
         _logPublisher = logPublisher;
         _installationMetadataRepository = installationMetadataRepository;
-        _findLatestMatchingReleaseAsync = gitHubReleaseFeedClient.FindLatestMatchingReleaseAsync;
+        _findLatestMatchingReleaseAsync = GitHubReleaseFeedClient.FindLatestMatchingReleaseAsync;
         _downloadReleaseAssetAsync = DownloadReleaseAssetAsync;
         _processStarter = Process.Start;
         _timeProvider = timeProvider;
@@ -91,7 +93,7 @@ internal sealed class UpdateCoordinator : IDisposable
         await _operationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            InstallationMetadata installationMetadata = _installationMetadataRepository.Load();
+            InstallationMetadata installationMetadata = InstallationMetadataRepository.Load();
             CalVersion currentVersion = ResolveCurrentVersion();
             (CalVersion Version, string Tag, string AssetName, string AssetUrl)? latestRelease =
                 await _findLatestMatchingReleaseAsync(
@@ -126,7 +128,7 @@ internal sealed class UpdateCoordinator : IDisposable
         await _operationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            InstallationMetadata installationMetadata = _installationMetadataRepository.Load();
+            InstallationMetadata installationMetadata = InstallationMetadataRepository.Load();
             CalVersion currentVersion = ResolveCurrentVersion();
             (CalVersion Version, string Tag, string AssetName, string AssetUrl)? latestRelease =
                 await _findLatestMatchingReleaseAsync(
@@ -170,7 +172,10 @@ internal sealed class UpdateCoordinator : IDisposable
 
             if (launchAfterApply)
             {
-                updateRequest = updateRequest with { LaunchAfterApply = true };
+                updateRequest = updateRequest with
+                {
+                    LaunchAfterApply = true
+                };
                 _installationMetadataRepository.SaveUpdateRequest(updateRequest);
             }
 
@@ -197,7 +202,7 @@ internal sealed class UpdateCoordinator : IDisposable
 
     public void RecordCheckFailure(string errorMessage)
     {
-        InstallationMetadata installationMetadata = _installationMetadataRepository.Load();
+        InstallationMetadata installationMetadata = InstallationMetadataRepository.Load();
         CalVersion currentVersion = ResolveCurrentVersion();
         UpdateStatusSnapshot currentSnapshot = GetSnapshot();
 
@@ -281,16 +286,17 @@ internal sealed class UpdateCoordinator : IDisposable
         string destinationPath,
         CancellationToken cancellationToken)
     {
+        Uri assetUri = new(assetUrl, UriKind.Absolute);
         using HttpClient client = new();
-        await using Stream downloadStream = await client.GetStreamAsync(assetUrl, cancellationToken).ConfigureAwait(false);
-        await using FileStream fileStream = new(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
+        using Stream downloadStream = await client.GetStreamAsync(assetUri, cancellationToken).ConfigureAwait(false);
+        using FileStream fileStream = new(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
         await downloadStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
         await fileStream.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private UpdateStatusSnapshot BuildEmptySnapshot()
+    private static UpdateStatusSnapshot BuildEmptySnapshot()
     {
-        InstallationMetadata installationMetadata = _installationMetadataRepository.Load();
+        InstallationMetadata installationMetadata = InstallationMetadataRepository.Load();
         return new UpdateStatusSnapshot
         {
             CurrentVersion = ResolveCurrentVersion(),

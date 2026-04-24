@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.SystemHost.Infrastructure;
 using SolarEngine.Infrastructure.Logging;
@@ -15,7 +18,7 @@ public sealed class ConfigurationRepositoryTests
     /// Verifies saved coordinates are protected and reduced to configured precision.
     /// </summary>
     [Fact]
-    public void Save_StoresAndLoadsReducedPrecisionCoordinates()
+    public void SaveStoresAndLoadsReducedPrecisionCoordinates()
     {
         string directoryPath = CreateTemporaryDirectory();
 
@@ -58,7 +61,7 @@ public sealed class ConfigurationRepositoryTests
     /// Verifies legacy plaintext coordinate files migrate to protected storage.
     /// </summary>
     [Fact]
-    public void Load_RewritesLegacyPlaintextCoordinatesIntoProtectedReducedPrecisionStorage()
+    public void LoadRewritesLegacyPlaintextCoordinatesIntoProtectedReducedPrecisionStorage()
     {
         string directoryPath = CreateTemporaryDirectory();
 

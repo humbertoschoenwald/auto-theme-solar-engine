@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Globalization;
@@ -1168,36 +1171,30 @@ internal sealed class SettingsWindow(
 
     private static Result<int> ParseLocationPrecision(string locationPrecisionText)
     {
-        if (!int.TryParse(
+        return !int.TryParse(
                 locationPrecisionText,
                 NumberStyles.Integer,
                 CultureInfo.InvariantCulture,
-                out int locationPrecisionDecimals))
-        {
-            return Result<int>.Failure(
+                out int locationPrecisionDecimals)
+            ? Result<int>.Failure(
                 Error.Validation(
                     InvalidLocationPrecisionCode,
                     string.Format(
                         CultureInfo.InvariantCulture,
                         s_invalidLocationPrecisionCompositeFormat,
                         CoordinatePrecisionPolicy.MinStoredDecimals,
-                        CoordinatePrecisionPolicy.MaxStoredDecimals)));
-        }
-
-        if (locationPrecisionDecimals is < CoordinatePrecisionPolicy.MinStoredDecimals
-            or > CoordinatePrecisionPolicy.MaxStoredDecimals)
-        {
-            return Result<int>.Failure(
+                        CoordinatePrecisionPolicy.MaxStoredDecimals)))
+            : locationPrecisionDecimals is < CoordinatePrecisionPolicy.MinStoredDecimals
+            or > CoordinatePrecisionPolicy.MaxStoredDecimals
+            ? Result<int>.Failure(
                 Error.Validation(
                     InvalidLocationPrecisionCode,
                     string.Format(
                         CultureInfo.InvariantCulture,
                         s_invalidLocationPrecisionCompositeFormat,
                         CoordinatePrecisionPolicy.MinStoredDecimals,
-                        CoordinatePrecisionPolicy.MaxStoredDecimals)));
-        }
-
-        return Result<int>.Success(locationPrecisionDecimals);
+                        CoordinatePrecisionPolicy.MaxStoredDecimals)))
+            : Result<int>.Success(locationPrecisionDecimals);
     }
 
     private AppConfig BuildConfiguration(
@@ -1266,17 +1263,11 @@ internal sealed class SettingsWindow(
 
     private string GetUpdateStatusText(UpdateStatusSnapshot updateSnapshot)
     {
-        if (!string.IsNullOrWhiteSpace(updateSnapshot.LastCheckErrorMessage))
-        {
-            return _localization[SettingsUpdateCheckFailedKey];
-        }
-
-        if (updateSnapshot.LastCheckedAtUtc is null)
-        {
-            return _localization[SettingsUpdateIdleKey];
-        }
-
-        return updateSnapshot.IsUpdateAvailable
+        return !string.IsNullOrWhiteSpace(updateSnapshot.LastCheckErrorMessage)
+            ? _localization[SettingsUpdateCheckFailedKey]
+            : updateSnapshot.LastCheckedAtUtc is null
+            ? _localization[SettingsUpdateIdleKey]
+            : updateSnapshot.IsUpdateAvailable
             ? _localization[SettingsUpdateAvailableKey]
             : _localization[SettingsUpdateUpToDateKey];
     }

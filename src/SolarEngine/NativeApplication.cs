@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using SolarEngine.Features.Locations;
@@ -27,7 +30,7 @@ internal sealed class NativeApplication : IDisposable
     private const int StartupFailureExitCode = -1;
     private const int BusyRefreshState = 1;
     private const int IdleRefreshState = 0;
-    private static readonly string s_alreadyRunningFallbackMessage = $"{AppIdentity.RuntimeName} is already running in the notification area.";
+    private const string AlreadyRunningFallbackMessage = $"{AppIdentity.RuntimeName} is already running in the notification area.";
     private static readonly TimeSpan s_automaticUpdateCheckInterval = TimeSpan.FromHours(4);
 
     private bool _disposed;
@@ -60,7 +63,7 @@ internal sealed class NativeApplication : IDisposable
             {
                 ShowMessage(
                     _localization?[AlreadyRunningLocalizationKey]
-                    ?? s_alreadyRunningFallbackMessage,
+                    ?? AlreadyRunningFallbackMessage,
                     NativeInterop.MB_ICONINFORMATION);
 
                 return SuccessExitCode;

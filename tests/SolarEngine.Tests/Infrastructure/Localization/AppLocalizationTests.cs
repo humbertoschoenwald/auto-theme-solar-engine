@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Infrastructure.Localization;
 using Xunit;
 
@@ -13,7 +16,7 @@ public sealed class AppLocalizationTests
     /// Verifies switching to Spanish changes the exposed UI strings.
     /// </summary>
     [Fact]
-    public void UpdateLanguage_SwitchesCatalogToSpanish()
+    public void UpdateLanguageSwitchesCatalogToSpanish()
     {
         AppLocalization localization = new();
 
@@ -27,7 +30,7 @@ public sealed class AppLocalizationTests
     /// Verifies unsupported language codes fall back to English.
     /// </summary>
     [Fact]
-    public void UpdateLanguage_FallsBackToEnglishForUnsupportedCodes()
+    public void UpdateLanguageFallsBackToEnglishForUnsupportedCodes()
     {
         AppLocalization localization = new();
         localization.UpdateLanguage(AppLanguageCodes.Spanish);
@@ -42,7 +45,7 @@ public sealed class AppLocalizationTests
     /// Verifies formatted strings flow through the active catalog.
     /// </summary>
     [Fact]
-    public void Format_UsesActiveLanguageTemplate()
+    public void FormatUsesActiveLanguageTemplate()
     {
         AppLocalization localization = new();
         localization.UpdateLanguage(AppLanguageCodes.Spanish);

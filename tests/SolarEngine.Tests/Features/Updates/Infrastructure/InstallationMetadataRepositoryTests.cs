@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Humberto Schoenwald.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using SolarEngine.Features.SystemHost.Domain;
 using SolarEngine.Features.Updates.Domain;
 using SolarEngine.Features.Updates.Infrastructure;
@@ -28,7 +31,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     /// Verifies the helper script performs a silent swap using the recorded install path.
     /// </summary>
     [Fact]
-    public void EnsureHelperScript_WritesSilentReplacementWorkflow()
+    public void EnsureHelperScriptWritesSilentReplacementWorkflow()
     {
         InstallationMetadataRepository repository = new(new AppPaths(_directoryPath));
 
@@ -53,7 +56,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     /// Verifies the launcher script waits for the helper to finish before relaunching.
     /// </summary>
     [Fact]
-    public void EnsureHelperScript_WritesLauncherScriptThatRelaunchesAfterApply()
+    public void EnsureHelperScriptWritesLauncherScriptThatRelaunchesAfterApply()
     {
         InstallationMetadataRepository repository = new(new AppPaths(_directoryPath));
 
@@ -70,7 +73,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     /// Verifies compatibility installs outside the LocalAppData model preserve the current executable name.
     /// </summary>
     [Fact]
-    public void BuildPersistedInstallationMetadata_PreservesProgramFilesExecutableName()
+    public void BuildPersistedInstallationMetadataPreservesProgramFilesExecutableName()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.BuildPersistedInstallationMetadata(
             @"C:\Program Files\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
@@ -90,7 +93,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     /// Verifies documented LocalAppData installs normalize to the stable executable target.
     /// </summary>
     [Fact]
-    public void BuildPersistedInstallationMetadata_UsesStableExecutableNameForLocalAppData()
+    public void BuildPersistedInstallationMetadataUsesStableExecutableNameForLocalAppData()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.BuildPersistedInstallationMetadata(
             @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.05.exe",
@@ -108,7 +111,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     /// Verifies legacy LocalAppData metadata migrates to the stable executable target.
     /// </summary>
     [Fact]
-    public void NormalizePersistedInstallationMetadata_MigratesLegacyLocalAppDataExecutableName()
+    public void NormalizePersistedInstallationMetadataMigratesLegacyLocalAppDataExecutableName()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.NormalizePersistedInstallationMetadata(
             @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
@@ -131,7 +134,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     /// Verifies legacy manifests that still declare the removed framework-dependent flavor normalize to self-contained.
     /// </summary>
     [Fact]
-    public void NormalizePersistedInstallationMetadata_NormalizesLegacyFrameworkDependentFlavor()
+    public void NormalizePersistedInstallationMetadataNormalizesLegacyFrameworkDependentFlavor()
     {
         PersistedInstallationMetadata metadata = InstallationMetadataRepository.NormalizePersistedInstallationMetadata(
             @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-framework-dependent-v26.04.04.exe",
@@ -154,7 +157,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     /// Verifies the generated Program Files bootstrap registers an elevated task for the current user.
     /// </summary>
     [Fact]
-    public void BuildElevatedTaskRegistrationScript_UsesCurrentHelperAndInteractivePrincipal()
+    public void BuildElevatedTaskRegistrationScriptUsesCurrentHelperAndInteractivePrincipal()
     {
         string script = InstallationMetadataRepository.BuildElevatedTaskRegistrationScript(
             "AutoThemeSolarEngine Silent Update",
