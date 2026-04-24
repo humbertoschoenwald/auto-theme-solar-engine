@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Fixes
+
+- **app:** use visible update helper (a8b1b85)
+
+### Documentation
+
+- **docs:** trim public repo content (ecd8ae5)
 
 ## v26.04.06 - 2026-04-24
 
