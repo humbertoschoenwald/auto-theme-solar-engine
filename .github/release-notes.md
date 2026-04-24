@@ -1,10 +1,9 @@
-## v26.04.07 - 2026-04-24
+## v26.04.08 - 2026-04-24
 
 ### Fixes
 
-- **app:** use visible update helper (a8b1b85)
+- **app:** bind assembly metadata to release version (3e2b51d)
 
 ### Documentation
 
-- **docs:** trim public repo content (ecd8ae5)
-- **docs:** point install command to v26.04.07 (229ef8b)
+- **docs:** yank v26.04.07 and point install docs to v26.04.08 (ee06c89)
