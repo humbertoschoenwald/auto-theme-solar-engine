@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Fixes
+
+- **app:** bind assembly metadata to release version (3e2b51d)
+
+### Documentation
+
+- **docs:** yank v26.04.07 and point install docs to v26.04.08 (ee06c89)
 
 ## v26.04.07 - 2026-04-24 [YANKED]
 
