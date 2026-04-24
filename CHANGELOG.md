@@ -4,7 +4,11 @@
 
 - No unreleased changes.
 
-## v26.04.07 - 2026-04-24
+## v26.04.07 - 2026-04-24 [YANKED]
+
+> YANKED: Superseded by v26.04.08 because the published executable kept
+> internal version metadata at 26.04.05, which let the updater detect
+> v26.04.07 as newer after relaunch and loop the automatic apply flow.
 
 ### Fixes
 
