@@ -12,7 +12,7 @@ using Xunit;
 namespace SolarEngine.Tests.Features.Updates;
 
 /// <summary>
-/// Verifies deferred update orchestration writes a complete request before launching helper processes.
+/// Verifies deferred update orchestration writes a complete request before launching the visible helper process.
 /// </summary>
 [Trait("TestLane", "Light")]
 public sealed class UpdateCoordinatorTests : IDisposable
@@ -31,10 +31,10 @@ public sealed class UpdateCoordinatorTests : IDisposable
     }
 
     /// <summary>
-    /// Verifies the update request exists before the launcher and helper processes are started.
+    /// Verifies the update request exists before the visible helper process is started.
     /// </summary>
     [Fact]
-    public async Task PrepareAndLaunchUpdateAsyncWritesRequestBeforeLaunchingProcesses()
+    public async Task PrepareAndLaunchUpdateAsyncWritesRequestBeforeLaunchingHelperProcess()
     {
         AppPaths appPaths = new(_directoryPath);
         InstallationMetadataRepository repository = new(appPaths);
@@ -85,12 +85,27 @@ public sealed class UpdateCoordinatorTests : IDisposable
         string shellPath = InstallationMetadataRepository.ResolveShellExecutablePath();
 
         Assert.True(prepared);
-        Assert.Equal(2, startInfos.Count);
+        _ = Assert.Single(startInfos);
         Assert.All(requestExistsChecks, Assert.True);
         Assert.All(startInfos, startInfo => Assert.Equal(shellPath, startInfo.FileName));
-        Assert.Contains(repository.LauncherScriptPath, startInfos[0].Arguments, StringComparison.Ordinal);
-        Assert.Contains(repository.HelperScriptPath, startInfos[1].Arguments, StringComparison.Ordinal);
-        Assert.Contains("\"LaunchAfterApply\": true", requestJson, StringComparison.Ordinal);
+        Assert.Contains(repository.HelperScriptPath, startInfos[0].Arguments, StringComparison.Ordinal);
+        Assert.DoesNotContain("LaunchAfterApply", requestJson, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Verifies helper startup uses a visible PowerShell window.
+    /// </summary>
+    [Fact]
+    public void BuildHelperProcessStartInfoUsesVisibleWindow()
+    {
+        ProcessStartInfo startInfo = UpdateCoordinator.BuildHelperProcessStartInfo(
+            @"C:\Program Files\PowerShell\7\pwsh.exe",
+            @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\Apply-SolarEngine-Update.ps1");
+
+        Assert.DoesNotContain("-WindowStyle Hidden", startInfo.Arguments, StringComparison.Ordinal);
+        Assert.False(startInfo.CreateNoWindow);
+        Assert.False(startInfo.UseShellExecute);
+        Assert.Equal(ProcessWindowStyle.Normal, startInfo.WindowStyle);
     }
 
     /// <summary>

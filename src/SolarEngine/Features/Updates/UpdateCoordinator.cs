@@ -163,22 +163,10 @@ internal sealed class UpdateCoordinator : IDisposable
                 ProcessId = Environment.ProcessId,
                 DownloadedExecutablePath = stagedExecutablePath,
                 InstalledExecutablePath = installationMetadata.InstalledExecutablePath,
-                StartWithWindows = configuration.StartWithWindows,
-                LaunchAfterApply = false
+                StartWithWindows = configuration.StartWithWindows
             };
 
             _installationMetadataRepository.SaveUpdateRequest(updateRequest);
-            bool launchAfterApply = !TryLaunchRestartLauncher(installationMetadata.InstalledExecutablePath);
-
-            if (launchAfterApply)
-            {
-                updateRequest = updateRequest with
-                {
-                    LaunchAfterApply = true
-                };
-                _installationMetadataRepository.SaveUpdateRequest(updateRequest);
-            }
-
             LaunchHelper(installationMetadata);
             _logPublisher.Write($"Update prepared for {latestRelease.Value.Tag} using asset {latestRelease.Value.AssetName}.");
 
@@ -228,27 +216,10 @@ internal sealed class UpdateCoordinator : IDisposable
         return new ProcessStartInfo
         {
             FileName = shellPath,
-            Arguments = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{helperScriptPath}\"",
-            CreateNoWindow = true,
+            Arguments = $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{helperScriptPath}\"",
+            CreateNoWindow = false,
             UseShellExecute = false,
-            WindowStyle = ProcessWindowStyle.Hidden
-        };
-    }
-
-    internal static ProcessStartInfo BuildLauncherProcessStartInfo(
-        string shellPath,
-        string launcherScriptPath,
-        string requestPath,
-        string installedExecutablePath)
-    {
-        return new ProcessStartInfo
-        {
-            FileName = shellPath,
-            Arguments =
-                $"-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{launcherScriptPath}\" -RequestPath \"{requestPath}\" -InstalledPath \"{installedExecutablePath}\"",
-            CreateNoWindow = true,
-            UseShellExecute = false,
-            WindowStyle = ProcessWindowStyle.Hidden
+            WindowStyle = ProcessWindowStyle.Normal
         };
     }
 
@@ -359,27 +330,5 @@ internal sealed class UpdateCoordinator : IDisposable
     {
         Version? version = Assembly.GetExecutingAssembly().GetName().Version;
         return version is null ? s_unknownVersion : new CalVersion(version.Major, version.Minor, version.Build);
-    }
-
-    private bool TryLaunchRestartLauncher(string installedExecutablePath)
-    {
-        try
-        {
-            ProcessStartInfo startInfo = BuildLauncherProcessStartInfo(
-                InstallationMetadataRepository.ResolveShellExecutablePath(),
-                _installationMetadataRepository.LauncherScriptPath,
-                _installationMetadataRepository.UpdateRequestPath,
-                installedExecutablePath);
-            Process? launcherProcess = _processStarter(startInfo);
-
-            return launcherProcess is not null;
-        }
-        catch (Exception exception) when (
-            exception is Win32Exception
-            or FileNotFoundException)
-        {
-            _logPublisher.Write($"Restart launcher could not be started and helper relaunch will be used instead: {exception.Message}");
-            return false;
-        }
     }
 }

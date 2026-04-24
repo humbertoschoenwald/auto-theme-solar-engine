@@ -7,8 +7,8 @@
 
     <AssemblyName>AutoThemeSolarEngine</AssemblyName>
     <RootNamespace>SolarEngine</RootNamespace>
-    <AssemblyTitle>AutoThemeSolarEngine</AssemblyTitle>
-    <Product>AutoThemeSolarEngine</Product>
+    <AssemblyTitle>Auto Theme Solar Engine</AssemblyTitle>
+    <Product>Auto Theme Solar Engine</Product>
     <Company>Humberto Schoenwald</Company>
     <Authors>Humberto Schoenwald</Authors>
     <Description>Switch the Windows light and dark theme automatically using local sunrise and

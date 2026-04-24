@@ -18,6 +18,4 @@ internal sealed record PersistedUpdateRequest
     {
         get; init;
     }
-
-    public bool LaunchAfterApply { get; init; } = true;
 }

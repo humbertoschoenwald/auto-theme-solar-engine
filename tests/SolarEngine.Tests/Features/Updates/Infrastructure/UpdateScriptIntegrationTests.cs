@@ -11,7 +11,7 @@ using Xunit;
 namespace SolarEngine.Tests.Features.Updates.Infrastructure;
 
 /// <summary>
-/// Verifies the generated updater scripts rehearse legacy migration and relaunch behavior end to end.
+/// Verifies the generated updater script rehearses legacy migration and relaunch behavior end to end.
 /// </summary>
 [Collection("UpdaterScripts")]
 [Trait("TestLane", "Heavy")]
@@ -66,8 +66,7 @@ public sealed class UpdateScriptIntegrationTests : IDisposable
             ProcessId = 0,
             DownloadedExecutablePath = downloadedPath,
             InstalledExecutablePath = stableInstalledPath,
-            StartWithWindows = true,
-            LaunchAfterApply = true
+            StartWithWindows = true
         });
 
         RegistryValueSnapshot startupSnapshot = CaptureRunValue(StartupValueName);
@@ -96,44 +95,6 @@ public sealed class UpdateScriptIntegrationTests : IDisposable
             RestoreRunValue(StartupValueName, startupSnapshot);
             RestoreRunValue(LegacyStartupValueName, legacySnapshot);
         }
-    }
-
-    /// <summary>
-    /// Verifies the relaunch watcher waits for the request to disappear before starting the updated executable.
-    /// </summary>
-    [Fact]
-    public async Task LauncherScriptWaitsForRequestRemovalBeforeLaunchingStableExecutable()
-    {
-        AppPaths appPaths = new(Path.Combine(_directoryPath, "app-data"));
-        InstallationMetadataRepository repository = new(appPaths);
-        string installDirectory = Path.Combine(_directoryPath, "install");
-        string installedPath = Path.Combine(installDirectory, "AutoThemeSolarEngine.exe");
-        string markerPath = Path.Combine(_directoryPath, "launcher-launch.txt");
-
-        repository.EnsureHelperScript();
-        _ = Directory.CreateDirectory(installDirectory);
-        CopyProbeExecutable(installedPath);
-        File.WriteAllText(repository.UpdateRequestPath, "{}");
-
-        ProcessStartInfo startInfo = UpdateCoordinator.BuildLauncherProcessStartInfo(
-            InstallationMetadataRepository.ResolveShellExecutablePath(),
-            repository.LauncherScriptPath,
-            repository.UpdateRequestPath,
-            installedPath);
-        ApplyRepositoryDotNetEnvironment(startInfo);
-        startInfo.Environment["SOLAR_ENGINE_UPDATE_PROBE_MARKER_PATH"] = markerPath;
-
-        using Process launcherProcess = Process.Start(startInfo)
-            ?? throw new Xunit.Sdk.XunitException("Start the launcher script before asserting relaunch behavior.");
-
-        await Task.Delay(TimeSpan.FromSeconds(1));
-        Assert.False(File.Exists(markerPath));
-
-        File.Delete(repository.UpdateRequestPath);
-        await launcherProcess.WaitForExitAsync();
-
-        Assert.Equal(0, launcherProcess.ExitCode);
-        await WaitForFileAsync(markerPath);
     }
 
     /// <summary>

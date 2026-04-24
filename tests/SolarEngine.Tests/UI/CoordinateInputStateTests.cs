@@ -76,11 +76,36 @@ public sealed class CoordinateInputStateTests
 
         bool hasSeed = state.TryFormatSeed(
             3,
+            inputsVisible: true,
             out string latitudeText,
             out string longitudeText);
 
         Assert.True(hasSeed);
         Assert.Equal("19.433", latitudeText);
         Assert.Equal("-99.133", longitudeText);
+    }
+
+    /// <summary>
+    /// Verifies hidden inputs stay blank even when saved coordinates exist.
+    /// </summary>
+    [Fact]
+    public void TryFormatSeedReturnsBlankTextWhenInputsAreHidden()
+    {
+        CoordinateInputState state = new();
+        state.Remember(new GeoCoordinates
+        {
+            Latitude = 19.4326d,
+            Longitude = -99.1332d
+        });
+
+        bool hasSeed = state.TryFormatSeed(
+            3,
+            inputsVisible: false,
+            out string latitudeText,
+            out string longitudeText);
+
+        Assert.False(hasSeed);
+        Assert.Equal(string.Empty, latitudeText);
+        Assert.Equal(string.Empty, longitudeText);
     }
 }

@@ -5,11 +5,16 @@
 
 ## Context
 
-The product now needs silent in-place updates from GitHub Releases while the app
-is already running. Windows cannot overwrite an executable that is still in use.
-The release pipeline now emits one versioned self-contained executable, and the
-runtime still needs a deterministic update model that can migrate legacy
-installation metadata without breaking silent replacement.
+The product now needs automatic in-place updates from GitHub Releases while the
+app is already running. Windows cannot overwrite an executable that is still in
+use. The release pipeline now emits one versioned self-contained executable,
+and the runtime still needs a deterministic update model that can migrate
+legacy installation metadata without breaking automatic replacement.
+
+Recent product feedback also makes the apply step intentionally visible. The
+actual executable swap should still happen automatically, but the user should
+see the PowerShell helper window that waits for the old process to close,
+replaces the installed executable, launches the updated build, and then exits.
 
 ## Decision
 
@@ -26,7 +31,7 @@ installation metadata without breaking silent replacement.
   the latest known matching version and current status instead of remaining in
   a perpetual `not checked yet` state.
 - The preferred install mode is a per-user `LocalAppData` install because it
-  allows silent updates without elevation.
+  allows automatic updates without elevation.
 - Direct download-and-run installs are supported, but the documented
   LocalAppData model normalizes the installed executable target to
   `AutoThemeSolarEngine.exe` in the install directory instead of preserving the
@@ -46,9 +51,8 @@ installation metadata without breaking silent replacement.
 - For the documented install flow, the chosen directory is
   `%LocalAppData%\AutoThemeSolarEngine`.
 - The documented install directory keeps `AutoThemeSolarEngine.exe`,
-  `config.json`, `installation.json`, `AutoThemeSolarEngine.log`,
-  `Apply-SolarEngine-Update.ps1`, and `Launch-SolarEngine-After-Update.ps1`
-  together.
+  `config.json`, `installation.json`, `AutoThemeSolarEngine.log`, and
+  `Apply-SolarEngine-Update.ps1` together.
 - Versioned release asset names remain intact on GitHub Releases. The updater
   downloads the newer executable by its release asset name, stages it beside the
   install, and then replaces the stable installed executable target after the
@@ -57,8 +61,9 @@ installation metadata without breaking silent replacement.
   executable lands beside the currently installed one. If that location is not
   writable, the updater may stage under the app-owned LocalAppData update area
   and let the helper perform the final move.
-- Applying an update uses a deferred helper step after the current process
-  exits. The helper is responsible for:
+- Applying an update uses one deferred PowerShell helper step after the current
+  process exits. The helper window stays visible while it is running and is
+  responsible for:
   - stopping the running app if needed,
   - waiting briefly after process termination so Windows fully releases the file
     lock before replacement,
@@ -69,25 +74,25 @@ installation metadata without breaking silent replacement.
   - migrating legacy versioned LocalAppData installs to
     `AutoThemeSolarEngine.exe`,
   - cleaning up stale superseded executables left in the install directory,
-  - launching the new executable.
+  - launching the new executable,
+  - exiting after the relaunch attempt completes.
 - Existing LocalAppData installs that still point at versioned executable names
   are migrated automatically during installation metadata normalization and the
-  next silent-update apply cycle.
+  next automatic apply cycle.
 - Legacy manifests that still declare a framework-dependent release flavor are
   normalized to self-contained so the updater can continue to find supported
   release assets.
-- The updater must write its deferred update request before it launches any
-  watcher or helper process so relaunch and replacement observe a complete
-  request file.
-- Helper and relaunch processes must resolve PowerShell through an absolute
-  executable path rather than assuming `pwsh` is available on the user PATH.
+- The updater must write its deferred update request before it launches the
+  helper process so replacement and relaunch observe a complete request file.
+- The helper process must resolve PowerShell through an absolute executable
+  path rather than assuming `pwsh` is available on the user PATH.
 - GitHub Releases may be marked as `YANKED` for defective published versions.
   YANKED releases remain visible and downloadable, but the updater must not
   select them as valid automatic-update candidates.
-- The silent update flow should preserve the effective privilege boundary of the
-  currently running app when it relaunches. When a protected install location
-  requires elevation for file replacement, the design must separate the
-  privileged swap step from the normal-user relaunch step.
+- The visible helper update flow should preserve the effective privilege
+  boundary of the currently running app when it relaunches. When a protected
+  install location requires elevation for file replacement, the design must
+  separate the privileged swap step from the normal-user relaunch step.
 - The install directory must contain enough metadata for the updater to resolve
   the current install flavor and executable target deterministically.
 - The repository ships PowerShell-based install entrypoints only for the
@@ -95,9 +100,9 @@ installation metadata without breaking silent replacement.
 - Existing installs outside the documented LocalAppData path remain a
   compatibility concern for update matching, but repository install guidance no
   longer advertises a separate machine-oriented entrypoint.
-- Silent updates are a first-class requirement. If an install location requires
-  extra privileges, that requirement must be handled by the install model rather
-  than surfaced as ad hoc runtime prompts.
+- Automatic updates are a first-class requirement. If an install location
+  requires extra privileges, that requirement must be handled by the install
+  model rather than surfaced as ad hoc runtime prompts.
 
 ## Alternatives Considered
 
@@ -115,12 +120,16 @@ installation metadata without breaking silent replacement.
   now ships one supported runtime flavor.
 - **Positive:** The documented LocalAppData install path converges on a stable
   executable target that is easier to relaunch and migrate.
+- **Positive:** The apply step is observable because the user sees the visible
+  PowerShell helper while replacement is in progress.
 - **Positive:** The updater has a documented fallback when the preferred staging
   directory is not writable.
 - **Positive:** Update status stays informative even when automatic install is
   disabled.
 - **Negative:** Update orchestration now spans runtime code, install scripts,
   release assets, and startup registration.
+- **Negative:** Automatic apply now briefly opens a PowerShell window during the
+  replacement step.
 - **Risks:** Compatibility for pre-existing installs outside the documented
   LocalAppData path still depends on the updater preserving the recorded
   executable target.

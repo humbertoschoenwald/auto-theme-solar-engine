@@ -15,7 +15,7 @@ namespace SolarEngine.Features.Updates.Infrastructure;
 internal sealed class InstallationMetadataRepository(AppPaths appPaths)
 {
     private const string ManifestFileName = "installation.json";
-    private const string ElevatedUpdateTaskName = "AutoThemeSolarEngine Silent Update";
+    private const string ElevatedUpdateTaskName = "AutoThemeSolarEngine Update";
     private const string UpdateRequestFileName = "update-request.json";
     private const string SelfContainedFlavorName = "self-contained";
     private const string FrameworkDependentFlavorName = "framework-dependent";
@@ -47,8 +47,8 @@ internal sealed class InstallationMetadataRepository(AppPaths appPaths)
     private const string ElevatedTaskRegistrationUserIdToken = "__USER_ID__";
     private const string ElevatedTaskRegistrationTaskNameToken = "__TASK_NAME__";
     private const string HelperScriptRequestPathToken = "__REQUEST_PATH__";
-    private const string LauncherScriptStartupValueNameToken = "__STARTUP_VALUE_NAME__";
-    private const string LauncherScriptLegacyStartupValueNameToken = "__LEGACY_STARTUP_VALUE_NAME__";
+    private const string StartupValueNameToken = "__STARTUP_VALUE_NAME__";
+    private const string LegacyStartupValueNameToken = "__LEGACY_STARTUP_VALUE_NAME__";
     private const string SingleQuote = "'";
 
     private const string ElevatedTaskRegistrationScriptTemplate = """
@@ -62,7 +62,6 @@ $arguments = @(
   "-NoProfile",
   "-NonInteractive",
   "-ExecutionPolicy", "Bypass",
-  "-WindowStyle", "Hidden",
   "-File", ('"{0}"' -f $helperScriptPath)
 ) -join " "
 
@@ -83,6 +82,8 @@ if (-not (Test-Path -LiteralPath $requestPath)) {
 
 $request = Get-Content -LiteralPath $requestPath -Raw | ConvertFrom-Json
 
+Write-Host "Waiting for AutoThemeSolarEngine to close..."
+
 if ($request.ProcessId -gt 0) {
   try {
     Wait-Process -Id $request.ProcessId -Timeout 15 -ErrorAction Stop
@@ -98,9 +99,12 @@ $downloadedPath = [string]$request.DownloadedExecutablePath
 $installedPath = [string]$request.InstalledExecutablePath
 
 if (-not (Test-Path -LiteralPath $downloadedPath)) {
+  Write-Host "Downloaded executable was not found. Update aborted."
   Remove-Item -LiteralPath $requestPath -ErrorAction SilentlyContinue
   exit 1
 }
+
+Write-Host "Replacing AutoThemeSolarEngine.exe..."
 
 $installedDirectory = Split-Path -Path $installedPath -Parent
 New-Item -ItemType Directory -Path $installedDirectory -Force | Out-Null
@@ -129,41 +133,13 @@ else {
 
 Remove-Item -LiteralPath $requestPath -ErrorAction SilentlyContinue
 
-if ($request.LaunchAfterApply) {
-  Start-Process -FilePath $installedPath
-}
-""";
-
-    private const string LauncherScriptTemplate = """
-param(
-  [Parameter(Mandatory = $true)]
-  [string]$RequestPath,
-
-  [Parameter(Mandatory = $true)]
-  [string]$InstalledPath
-)
-
-$ErrorActionPreference = "Stop"
-
-$deadline = (Get-Date).AddMinutes(2)
-
-while ((Get-Date) -lt $deadline) {
-  if (-not (Test-Path -LiteralPath $RequestPath) -and (Test-Path -LiteralPath $InstalledPath)) {
-    Start-Process -FilePath $InstalledPath
-    exit 0
-  }
-
-  Start-Sleep -Milliseconds 500
-}
-
-exit 1
+Write-Host "Starting the updated executable..."
+Start-Process -FilePath $installedPath
+Write-Host "Update complete."
 """;
 
     public string HelperScriptPath =>
         Path.Combine(appPaths.DirectoryPath, $"Apply-{AppIdentity.RuntimeFileStem}-Update.ps1");
-
-    public string LauncherScriptPath =>
-        Path.Combine(appPaths.DirectoryPath, $"Launch-{AppIdentity.RuntimeFileStem}-After-Update.ps1");
 
     public string UpdateRequestPath => Path.Combine(appPaths.DirectoryPath, UpdateRequestFileName);
 
@@ -263,7 +239,6 @@ exit 1
     {
         _ = Directory.CreateDirectory(appPaths.DirectoryPath);
         File.WriteAllText(HelperScriptPath, BuildHelperScript(UpdateRequestPath), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        File.WriteAllText(LauncherScriptPath, BuildLauncherScript(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
     internal static PersistedInstallationMetadata BuildPersistedInstallationMetadata(
@@ -490,12 +465,7 @@ exit 1
     {
         return HelperScriptTemplate
             .Replace(HelperScriptRequestPathToken, ToPowerShellLiteral(requestPath), StringComparison.Ordinal)
-            .Replace(LauncherScriptStartupValueNameToken, AppIdentity.StartupValueName, StringComparison.Ordinal)
-            .Replace(LauncherScriptLegacyStartupValueNameToken, AppIdentity.LegacyStartupValueName, StringComparison.Ordinal);
-    }
-
-    private static string BuildLauncherScript()
-    {
-        return LauncherScriptTemplate;
+            .Replace(StartupValueNameToken, AppIdentity.StartupValueName, StringComparison.Ordinal)
+            .Replace(LegacyStartupValueNameToken, AppIdentity.LegacyStartupValueName, StringComparison.Ordinal);
     }
 }

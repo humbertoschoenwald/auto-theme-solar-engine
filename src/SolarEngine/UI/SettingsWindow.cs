@@ -1070,24 +1070,20 @@ internal sealed class SettingsWindow(
     private void LoadConfiguration()
     {
         AppConfig configuration = _applicationLifecycleOrchestrator.Config;
-        bool hasStoredCoordinates = configuration.IsConfigured;
         _coordinateInputState.Load(configuration);
 
+        _ = _coordinateInputState.TryFormatSeed(
+            configuration.LocationPrecisionDecimals,
+            _coordinateInputsVisible,
+            out string latitudeText,
+            out string longitudeText);
         _ = NativeInterop.SetWindowText(
             _latitudeEditHandle,
-            hasStoredCoordinates
-                ? CoordinatePrecisionPolicy.Format(
-                    configuration.Latitude,
-                    configuration.LocationPrecisionDecimals)
-                : string.Empty);
+            latitudeText);
 
         _ = NativeInterop.SetWindowText(
             _longitudeEditHandle,
-            hasStoredCoordinates
-                ? CoordinatePrecisionPolicy.Format(
-                    configuration.Longitude,
-                    configuration.LocationPrecisionDecimals)
-                : string.Empty);
+            longitudeText);
 
         _ = NativeInterop.SetWindowText(
             _precisionEditHandle,
@@ -1344,6 +1340,7 @@ internal sealed class SettingsWindow(
         int locationPrecisionDecimals = ResolveCoordinateDisplayPrecision();
         if (!_coordinateInputState.TryFormatSeed(
                 locationPrecisionDecimals,
+                inputsVisible: true,
                 out string latitudeText,
                 out string longitudeText))
         {

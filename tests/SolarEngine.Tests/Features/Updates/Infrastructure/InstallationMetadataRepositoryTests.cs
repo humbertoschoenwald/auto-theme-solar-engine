@@ -9,7 +9,7 @@ using Xunit;
 namespace SolarEngine.Tests.Features.Updates.Infrastructure;
 
 /// <summary>
-/// Verifies the generated updater scripts keep the update flow silent and deterministic.
+/// Verifies the generated updater scripts keep the update flow deterministic.
 /// </summary>
 [Trait("TestLane", "Light")]
 public sealed class InstallationMetadataRepositoryTests : IDisposable
@@ -28,10 +28,10 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     }
 
     /// <summary>
-    /// Verifies the helper script performs a silent swap using the recorded install path.
+    /// Verifies the helper script performs a visible swap using the recorded install path.
     /// </summary>
     [Fact]
-    public void EnsureHelperScriptWritesSilentReplacementWorkflow()
+    public void EnsureHelperScriptWritesVisibleReplacementWorkflow()
     {
         InstallationMetadataRepository repository = new(new AppPaths(_directoryPath));
 
@@ -39,6 +39,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
 
         string helperScript = File.ReadAllText(repository.HelperScriptPath);
 
+        Assert.Contains("Write-Host \"Waiting for AutoThemeSolarEngine to close...\"", helperScript, StringComparison.Ordinal);
         Assert.Contains("Wait-Process -Id $request.ProcessId -Timeout 15", helperScript, StringComparison.Ordinal);
         Assert.Contains("Start-Sleep -Seconds 2", helperScript, StringComparison.Ordinal);
         Assert.Contains(repository.UpdateRequestPath, helperScript, StringComparison.Ordinal);
@@ -50,23 +51,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
         Assert.Contains("$legacyRunValueName = \"S\"", helperScript, StringComparison.Ordinal);
         Assert.Contains("auto-theme-solar-engine-win-x64-*.exe", helperScript, StringComparison.Ordinal);
         Assert.Contains("Start-Process -FilePath $installedPath", helperScript, StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// Verifies the launcher script waits for the helper to finish before relaunching.
-    /// </summary>
-    [Fact]
-    public void EnsureHelperScriptWritesLauncherScriptThatRelaunchesAfterApply()
-    {
-        InstallationMetadataRepository repository = new(new AppPaths(_directoryPath));
-
-        repository.EnsureHelperScript();
-
-        string launcherScript = File.ReadAllText(repository.LauncherScriptPath);
-
-        Assert.Contains("$deadline = (Get-Date).AddMinutes(2)", launcherScript, StringComparison.Ordinal);
-        Assert.Contains("Start-Sleep -Milliseconds 500", launcherScript, StringComparison.Ordinal);
-        Assert.Contains("Start-Process -FilePath $InstalledPath", launcherScript, StringComparison.Ordinal);
+        Assert.DoesNotContain("LaunchAfterApply", helperScript, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -79,14 +64,14 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
             @"C:\Program Files\AutoThemeSolarEngine\auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
             ReleaseFlavor.SelfContained,
             InstallationMode.ProgramFiles,
-            "AutoThemeSolarEngine Silent Update");
+            "AutoThemeSolarEngine Update");
 
         Assert.Equal(
             "auto-theme-solar-engine-win-x64-self-contained-v26.04.04.exe",
             metadata.InstalledExecutableName);
         Assert.Equal("self-contained", metadata.ReleaseFlavor);
         Assert.Equal("program-files", metadata.InstallationMode);
-        Assert.Equal("AutoThemeSolarEngine Silent Update", metadata.ElevatedTaskName);
+        Assert.Equal("AutoThemeSolarEngine Update", metadata.ElevatedTaskName);
     }
 
     /// <summary>
@@ -160,7 +145,7 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
     public void BuildElevatedTaskRegistrationScriptUsesCurrentHelperAndInteractivePrincipal()
     {
         string script = InstallationMetadataRepository.BuildElevatedTaskRegistrationScript(
-            "AutoThemeSolarEngine Silent Update",
+            "AutoThemeSolarEngine Update",
             @"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\Apply-SolarEngine-Update.ps1",
             @"C:\Program Files\PowerShell\7\pwsh.exe",
             @"MACHINE\tester");
@@ -170,7 +155,8 @@ public sealed class InstallationMetadataRepositoryTests : IDisposable
         Assert.Contains(@"C:\Users\tester\AppData\Local\AutoThemeSolarEngine\Apply-SolarEngine-Update.ps1", script, StringComparison.Ordinal);
         Assert.Contains(@"C:\Program Files\PowerShell\7\pwsh.exe", script, StringComparison.Ordinal);
         Assert.Contains(@"MACHINE\tester", script, StringComparison.Ordinal);
-        Assert.Contains("Register-ScheduledTask -TaskName 'AutoThemeSolarEngine Silent Update' -InputObject $task -Force | Out-Null", script, StringComparison.Ordinal);
+        Assert.Contains("Register-ScheduledTask -TaskName 'AutoThemeSolarEngine Update' -InputObject $task -Force | Out-Null", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("-WindowStyle\", \"Hidden", script, StringComparison.Ordinal);
     }
 
     /// <summary>

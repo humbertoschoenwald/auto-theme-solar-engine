@@ -49,10 +49,11 @@ internal sealed class CoordinateInputState
 
     public bool TryFormatSeed(
         int locationPrecisionDecimals,
+        bool inputsVisible,
         out string latitudeText,
         out string longitudeText)
     {
-        if (_seed is null)
+        if (!inputsVisible || _seed is null)
         {
             latitudeText = string.Empty;
             longitudeText = string.Empty;
