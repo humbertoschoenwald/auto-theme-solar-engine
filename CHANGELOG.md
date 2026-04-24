@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Fixes
+
+- **ci:** satisfy explicit editor baseline (cac6f3b)
+
+### Documentation
+
+- **docs:** define editor and analyzer projection (3f126ca)
 
 ## v26.04.05 - 2026-04-21
 
