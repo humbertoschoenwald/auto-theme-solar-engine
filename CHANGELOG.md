@@ -9,6 +9,7 @@
 ### Documentation
 
 - **docs:** trim public repo content (ecd8ae5)
+- **docs:** point install command to v26.04.07 (229ef8b)
 
 ## v26.04.06 - 2026-04-24
 
