@@ -19,6 +19,7 @@ alwaysApply: false
 @file ../../docs/adr/0014-source-only-static-policy-enforcement.md
 @file ../../docs/adr/0015-preview-sdk-and-language-adoption.md
 @file ../../docs/adr/0019-changelog-lifecycle-and-release-notes.md
+@file ../../docs/adr/0020-editorconfig-and-analyzer-projection.md
 
 # Tooling, Versioning, And Automation
 
@@ -26,6 +27,13 @@ alwaysApply: false
 - RULE: Use pnpm, not npm, for repository tooling installs and script execution.
 - RULE: Preview language features may be adopted only when the pinned SDK compiles them in a normal repository build without unsupported shims.
 - RULE: Do not use C# `union` declarations in product code until the pinned SDK and runtime provide a complete repository-ready path.
+- RULE: Keep `.editorconfig` companion analyzer and analysis-mode properties
+  explicit in `Directory.Build.props` rather than relying on SDK defaults.
+- RULE: The analyzer severity doctrine is binary: error by default, none only
+  for path-scoped exceptions.
+- RULE: Reserve future repository analyzer IDs only when ADR documents the
+  activation condition and the current build remains stable without the
+  analyzer package present.
 - RULE: Keep Conventional Commits and CalVer `vYY.MM.PATCH`.
 - RULE: Local pre-push is the full-fidelity validation lane. Remote CI may run
   only the light test lane when the heavier checks remain enforced locally.

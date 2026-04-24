@@ -14,6 +14,7 @@ alwaysApply: false
 @file ../../docs/adr/0016-modular-monolith-and-slice-boundaries.md
 @file ../../docs/adr/0017-explicit-failure-flow.md
 @file ../../docs/adr/0018-relational-data-access-applicability.md
+@file ../../docs/adr/0020-editorconfig-and-analyzer-projection.md
 
 # Coding And Testing
 
@@ -43,6 +44,14 @@ alwaysApply: false
   target-typed `new()`.
 - RULE: Keep internal and private types `static` or `sealed` unless derivation
   is required, and keep primary constructor parameters parameter-shaped.
+- RULE: `.editorconfig` is the machine-grade projection of repository
+  formatting, naming, and analyzer severity doctrine.
+- RULE: Global indentation defaults may use tabs where the file type allows
+  them, but authored C# must remain four-space and space-indented only.
+- RULE: Enabled analyzer diagnostics fail as errors by default. Use `none` only
+  for explicit path-scoped exceptions with local justification.
+- RULE: Do not encode repository policy with `warning`, `suggestion`, `silent`,
+  `info`, or `default` severities in `.editorconfig`.
 - RULE: Tests must be deterministic, granular, and include regressions for bug fixes.
 - RULE: Do not add tautological tests or cardboard stubs. Tests must exercise
   observable behavior with meaningful collaborators.

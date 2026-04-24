@@ -1,10 +1,10 @@
 {
-  // Derived from ADR-0000, ADR-0006, ADR-0007, ADR-0008, ADR-0009, and ADR-0015.
+  // Derived from ADR-0000, ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0011, ADR-0015, and ADR-0020.
   // This file is an operational projection of repository doctrine, not an independent policy source.
 
   "editor.detectIndentation": false,
-  "editor.insertSpaces": true,
-  "editor.tabSize": 4,
+  "editor.insertSpaces": false,
+  "editor.tabSize": 8,
   "editor.formatOnSave": true,
   "editor.renderWhitespace": "all",
 
@@ -62,8 +62,22 @@
     "editor.tabSize": 4,
     "editor.insertSpaces": true
   },
+  "[python]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
+  "[powershell]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
+  "[shellscript]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit",
       "source.organizeImports": "explicit"
@@ -71,13 +85,20 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
   },
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[yaml]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
   },
   "[markdown]": {
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
   }
 }

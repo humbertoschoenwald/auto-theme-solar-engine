@@ -104,3 +104,4 @@ Current high-impact derived files include:
 - `0017-explicit-failure-flow.md`
 - `0018-relational-data-access-applicability.md`
 - `0019-changelog-lifecycle-and-release-notes.md`
+- `0020-editorconfig-and-analyzer-projection.md`
