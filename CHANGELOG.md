@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## v26.04.06 - 2026-04-24
+
 ### Fixes
 
 - **ci:** satisfy explicit editor baseline (cac6f3b)
