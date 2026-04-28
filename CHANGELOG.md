@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## v26.05.00 - 2026-04-28
+
 ### Features
 
 - **app:** offset sunrise and sunset transitions (6994fc1)

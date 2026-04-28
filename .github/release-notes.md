@@ -1,9 +1,22 @@
-## v26.04.08 - 2026-04-24
+## v26.05.00 - 2026-04-28
+
+### Features
+
+- **app:** offset sunrise and sunset transitions (6994fc1)
 
 ### Fixes
 
-- **app:** bind assembly metadata to release version (3e2b51d)
+- **app:** require explicit coordinate reveal (2ab00b0)
+
+### Refactoring
+
+- **app:** model union alternatives explicitly (f7c406d)
 
 ### Documentation
 
-- **docs:** yank v26.04.07 and point install docs to v26.04.08 (ee06c89)
+- **docs:** update local tool and release doctrine (5995a6e)
+
+### Build
+
+- **app:** prepare v26.05.00 release (c81292c)
+- **app:** support local validation dependencies (288617c)
