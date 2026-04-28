@@ -18,7 +18,9 @@ The application must determine theme transitions without introducing cloud depen
   - `PolarNight`,
   - `MidnightSun`.
 - The calculation pipeline must preserve local-date correctness across time zones, UTC offsets, and daylight-saving transitions.
-- The application may apply a configurable one-minute offset after computed sunset to match Windows theme-transition behavior without distorting sunrise math.
+- The application may apply a configurable one-minute offset after computed
+  sunrise and sunset to match Windows theme-transition behavior without
+  distorting the underlying solar-event calculation.
 - Theme reevaluation is performed:
   - on startup,
   - on a clamped recurring interval,

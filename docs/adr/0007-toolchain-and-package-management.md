@@ -23,6 +23,10 @@ The JavaScript tooling had been managed with npm. The repository now standardize
 - pnpm is the only supported JavaScript package manager for this repository.
 - `package.json` must declare a `packageManager` field so automation and contributors resolve the same pnpm version.
 - Repository hooks, local scripts, and GitHub Actions must use pnpm instead of npm for install and script execution.
+- Repository-local tool drops under `tools/` are not product deliverables.
+  Only `tools/README.md` and each direct tool directory's `README.md` are
+  tracked unless a future ADR accepts a specific tool implementation into the
+  repository.
 - Workspace editor settings may disable telemetry, automatic updates, and indentation guesswork when those defaults reduce repository drift and make saved-file execution deterministic.
 - Windows release publishing remains focused on one x64 self-contained Native
   AOT executable.

@@ -40,6 +40,9 @@ The repository already enforces commit quality, spelling, formatting, build heal
   denominator and must instead be covered by the local heavy validation lane.
 - Release automation runs only after CI succeeds for a push to `main`.
 - Versioning uses CalVer in `vYY.MM.PATCH` format.
+- Release automation uses the explicit project `Version` property as the
+  release tag source. Deliberate out-of-month releases are allowed when the
+  project version is intentionally bumped to a valid CalVer.
 - Changelog and release notes are generated from commit history rather than hand-maintained as separate doctrine.
 - Non-deliverable pushes to `main` may opt out of release publication with an explicit `[skip release]` marker in the head commit message.
 - A push to `main` is allowed only when the author intentionally accepts the release side effects and the quality gates pass. Pull requests remain an optional collaboration tool, not a mandatory doctrinal workflow.

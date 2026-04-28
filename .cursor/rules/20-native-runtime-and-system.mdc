@@ -23,6 +23,8 @@ alwaysApply: false
   fields.
 - RULE: Solar scheduling must stay local and deterministic. Do not replace it with external sunrise or weather APIs.
 - RULE: Keep the solar engine on the documented NOAA/Meeus approximation unless ADR explicitly upgrades the precision and complexity budget.
+- RULE: Apply the configurable one-minute transition offset to both computed
+  sunrise and sunset without changing the underlying solar calculation.
 - RULE: Persist coordinates only through the reduced-precision protected storage path.
 - RULE: Keep persisted coordinates visually hidden on the main settings surface unless the user is actively editing them.
 - RULE: Treat undocumented shell-refresh behavior as a compatibility exception. If you change it, update ADR first and keep graceful fallback behavior.

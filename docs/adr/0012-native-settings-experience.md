@@ -38,16 +38,16 @@ inside the desktop UI while keeping the runtime fully native.
   keep persisted values visually hidden when the user is not actively editing
   them.
 - The `Configuration` tab contains startup, tray, process-priority, language,
-  sunset-offset, and runtime-status controls.
+  solar-transition-offset, and runtime-status controls.
 - The `Updates` tab contains automatic-update state and manual update checks.
 - `Use Windows location` defaults to enabled only when native location access is
   actually available. If access is unavailable or denied, the option must be
   disabled rather than appearing active.
 - New operator-facing toggles default to enabled unless a system capability gate
   prevents it. This includes startup, tray launch, high process priority,
-  sunset offset, and automatic update installation.
+  solar-transition offset, and automatic update installation.
 - `Use high process priority` defaults to enabled.
-- `Add one extra minute at sunset` defaults to enabled.
+- `Add one extra minute at sunrise and sunset` defaults to enabled.
 
 ## Alternatives Considered
 

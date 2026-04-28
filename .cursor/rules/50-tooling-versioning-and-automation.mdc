@@ -25,6 +25,9 @@ alwaysApply: false
 
 - RULE: Use the pinned .NET 11 Preview 3 SDK, C# preview mode, Node.js 25, and pnpm as the repository toolchain baseline.
 - RULE: Use pnpm, not npm, for repository tooling installs and script execution.
+- RULE: Treat `tools/` implementations as local-only drops. Track only
+  `tools/README.md` and each direct tool directory's `README.md` unless ADR
+  accepts a tool implementation into the repository.
 - RULE: Preview language features may be adopted only when the pinned SDK compiles them in a normal repository build without unsupported shims.
 - RULE: Do not use C# `union` declarations in product code until the pinned SDK and runtime provide a complete repository-ready path.
 - RULE: Keep `.editorconfig` companion analyzer and analysis-mode properties
@@ -35,6 +38,8 @@ alwaysApply: false
   activation condition and the current build remains stable without the
   analyzer package present.
 - RULE: Keep Conventional Commits and CalVer `vYY.MM.PATCH`.
+- RULE: Release automation must use the explicit project `Version` property as
+  the release tag source, including deliberate out-of-month CalVer bumps.
 - RULE: Local pre-push is the full-fidelity validation lane. Remote CI may run
   only the light test lane when the heavier checks remain enforced locally.
 - RULE: Local validation must generate
