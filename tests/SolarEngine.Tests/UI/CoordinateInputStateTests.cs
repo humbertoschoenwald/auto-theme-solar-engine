@@ -62,6 +62,31 @@ public sealed class CoordinateInputStateTests
     }
 
     /// <summary>
+    /// Verifies auto-hidden blank inputs continue saving from the remembered coordinate seed.
+    /// </summary>
+    [Fact]
+    public void ResolveManualCoordinatesUsesRememberedSeedWhenHiddenInputsAreBlank()
+    {
+        CoordinateInputState state = new();
+        GeoCoordinates savedCoordinates = new()
+        {
+            Latitude = 19.4326d,
+            Longitude = -99.1332d
+        };
+
+        state.Remember(savedCoordinates);
+
+        Result<GeoCoordinates> result = state.ResolveManualCoordinates(
+            string.Empty,
+            string.Empty,
+            inputsVisible: false);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(savedCoordinates.Latitude, result.Value.Latitude);
+        Assert.Equal(savedCoordinates.Longitude, result.Value.Longitude);
+    }
+
+    /// <summary>
     /// Verifies hidden coordinate inputs can be repopulated from the remembered seed without exposing raw stored values.
     /// </summary>
     [Fact]

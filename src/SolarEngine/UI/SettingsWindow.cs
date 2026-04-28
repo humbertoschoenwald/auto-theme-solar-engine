@@ -56,6 +56,8 @@ internal sealed class SettingsWindow(
     private const string SettingsLocationAccessKey = "settings.location_access";
     private const string SettingsUseWindowsLocationKey = "settings.use_windows_location";
     private const string SettingsDetectFromWindowsKey = "settings.detect_from_windows";
+    private const string SettingsShowCoordinatesKey = "settings.show_coordinates";
+    private const string SettingsRevealCoordinatesConfirmationKey = "settings.message.reveal_coordinates";
     private const string SettingsLatitudeKey = "settings.latitude";
     private const string SettingsLongitudeKey = "settings.longitude";
     private const string SettingsPrecisionKey = "settings.precision";
@@ -65,7 +67,7 @@ internal sealed class SettingsWindow(
     private const string SettingsStartWithWindowsKey = "settings.start_with_windows";
     private const string SettingsOpenInTrayKey = "settings.open_in_tray";
     private const string SettingsUseHighPriorityKey = "settings.use_high_priority";
-    private const string SettingsExtraMinuteAtSunsetKey = "settings.extra_minute_at_sunset";
+    private const string SettingsExtraMinuteAtSolarTransitionsKey = "settings.extra_minute_at_solar_transitions";
     private const string SettingsRuntimeStatusKey = "settings.runtime_status";
     private const string SettingsAutomaticUpdatesKey = "settings.install_updates_automatically";
     private const string SettingsCurrentVersionKey = "settings.current_version";
@@ -133,6 +135,7 @@ internal sealed class SettingsWindow(
     private const int AutomaticUpdatesId = 113;
     private const int PrecisionEditId = 114;
     private const int CheckUpdatesId = 115;
+    private const int ShowCoordinatesId = 116;
     private const uint WM_PROCESS_UI_ACTIONS = NativeInterop.WM_APP + 100;
 
     private static readonly Lock s_instancesGate = new();
@@ -148,15 +151,16 @@ internal sealed class SettingsWindow(
     private static readonly ControlBounds s_locationAccessValueBounds = new(156, 108, 348, 20);
     private static readonly ControlBounds s_useWindowsLocationBounds = new(16, 140, 240, 20);
     private static readonly ControlBounds s_detectLocationButtonBounds = new(324, 136, 180, 28);
-    private static readonly ControlBounds s_latitudeLabelBounds = new(16, 180, 132, 20);
-    private static readonly ControlBounds s_latitudeEditBounds = new(156, 176, 220, 24);
-    private static readonly ControlBounds s_longitudeLabelBounds = new(16, 214, 132, 20);
-    private static readonly ControlBounds s_longitudeEditBounds = new(156, 210, 220, 24);
-    private static readonly ControlBounds s_precisionLabelBounds = new(16, 248, 132, 20);
-    private static readonly ControlBounds s_precisionEditBounds = new(156, 244, 48, 24);
-    private static readonly ControlBounds s_privacyHintBounds = new(216, 248, 288, 20);
-    private static readonly ControlBounds s_todayScheduleLabelBounds = new(16, 292, 160, 20);
-    private static readonly ControlBounds s_todayScheduleValueBounds = new(16, 320, 488, 44);
+    private static readonly ControlBounds s_showCoordinatesBounds = new(16, 174, 240, 20);
+    private static readonly ControlBounds s_latitudeLabelBounds = new(16, 212, 132, 20);
+    private static readonly ControlBounds s_latitudeEditBounds = new(156, 208, 220, 24);
+    private static readonly ControlBounds s_longitudeLabelBounds = new(16, 246, 132, 20);
+    private static readonly ControlBounds s_longitudeEditBounds = new(156, 242, 220, 24);
+    private static readonly ControlBounds s_precisionLabelBounds = new(16, 280, 132, 20);
+    private static readonly ControlBounds s_precisionEditBounds = new(156, 276, 48, 24);
+    private static readonly ControlBounds s_privacyHintBounds = new(216, 280, 288, 20);
+    private static readonly ControlBounds s_todayScheduleLabelBounds = new(16, 324, 160, 20);
+    private static readonly ControlBounds s_todayScheduleValueBounds = new(16, 352, 488, 44);
     private static readonly ControlBounds s_languageLabelBounds = new(16, 108, 132, 20);
     private static readonly ControlBounds s_languageSelectorBounds = new(156, 104, 160, 120);
     private static readonly ControlBounds s_startWithWindowsBounds = new(16, 152, 240, 20);
@@ -209,6 +213,7 @@ internal sealed class SettingsWindow(
     private nint _updatesTabButtonHandle;
     private nint _locationAccessLabelHandle;
     private nint _locationAccessValueHandle;
+    private nint _showCoordinatesHandle;
     private nint _latitudeLabelHandle;
     private nint _latitudeEditHandle;
     private nint _longitudeLabelHandle;
@@ -277,14 +282,15 @@ internal sealed class SettingsWindow(
             return;
         }
 
-        _disposed = true;
-
         if (_windowHandle != nint.Zero)
         {
+            HideCoordinateInputs(clearHiddenText: true);
+            _disposed = true;
             _ = NativeInterop.DestroyWindow(_windowHandle);
         }
         else
         {
+            _disposed = true;
             DisposeNativeResources();
         }
     }
@@ -446,6 +452,7 @@ internal sealed class SettingsWindow(
         _locationAccessValueHandle = CreateLabel(string.Empty, s_locationAccessValueBounds, _homeControls);
         _useWindowsLocationHandle = CreateCheckBox(UseWindowsLocationId, string.Empty, s_useWindowsLocationBounds, _homeControls);
         _detectLocationButtonHandle = CreateButton(DetectLocationId, string.Empty, s_detectLocationButtonBounds, false, _homeControls);
+        _showCoordinatesHandle = CreateCheckBox(ShowCoordinatesId, string.Empty, s_showCoordinatesBounds, _homeControls);
         _latitudeLabelHandle = CreateLabel(string.Empty, s_latitudeLabelBounds, _homeControls);
         _latitudeEditHandle = CreateEdit(LatitudeEditId, s_latitudeEditBounds, DefaultCoordinateMaxCharacters, _homeControls);
         _longitudeLabelHandle = CreateLabel(string.Empty, s_longitudeLabelBounds, _homeControls);
@@ -616,6 +623,7 @@ internal sealed class SettingsWindow(
         _ = NativeInterop.SetWindowText(_locationAccessLabelHandle, _localization[SettingsLocationAccessKey]);
         _ = NativeInterop.SetWindowText(_useWindowsLocationHandle, _localization[SettingsUseWindowsLocationKey]);
         _ = NativeInterop.SetWindowText(_detectLocationButtonHandle, _localization[SettingsDetectFromWindowsKey]);
+        _ = NativeInterop.SetWindowText(_showCoordinatesHandle, _localization[SettingsShowCoordinatesKey]);
         _ = NativeInterop.SetWindowText(_latitudeLabelHandle, _localization[SettingsLatitudeKey]);
         _ = NativeInterop.SetWindowText(_longitudeLabelHandle, _localization[SettingsLongitudeKey]);
         _ = NativeInterop.SetWindowText(_precisionLabelHandle, _localization[SettingsPrecisionKey]);
@@ -627,7 +635,9 @@ internal sealed class SettingsWindow(
         _ = NativeInterop.SetWindowText(_startWithWindowsHandle, _localization[SettingsStartWithWindowsKey]);
         _ = NativeInterop.SetWindowText(_startMinimizedHandle, _localization[SettingsOpenInTrayKey]);
         _ = NativeInterop.SetWindowText(_highPriorityHandle, _localization[SettingsUseHighPriorityKey]);
-        _ = NativeInterop.SetWindowText(_extraMinuteAtSunsetHandle, _localization[SettingsExtraMinuteAtSunsetKey]);
+        _ = NativeInterop.SetWindowText(
+            _extraMinuteAtSunsetHandle,
+            _localization[SettingsExtraMinuteAtSolarTransitionsKey]);
         _ = NativeInterop.SetWindowText(_runtimeStatusLabelHandle, _localization[SettingsRuntimeStatusKey]);
 
         _ = NativeInterop.SetWindowText(_automaticUpdatesHandle, _localization[SettingsAutomaticUpdatesKey]);
@@ -647,6 +657,11 @@ internal sealed class SettingsWindow(
 
     private void SetActiveTab(SettingsTab activeTab)
     {
+        if (_activeTab == SettingsTab.Home && activeTab != SettingsTab.Home)
+        {
+            HideCoordinateInputs(clearHiddenText: true);
+        }
+
         _activeTab = activeTab;
         SetControlsVisible(_homeControls, activeTab == SettingsTab.Home);
         SetControlsVisible(_configurationControls, activeTab == SettingsTab.Configuration);
@@ -669,10 +684,10 @@ internal sealed class SettingsWindow(
     {
         nint focusHandle = _activeTab switch
         {
-            SettingsTab.Home => _latitudeEditHandle,
+            SettingsTab.Home => _showCoordinatesHandle,
             SettingsTab.Configuration => _languageSelectorHandle,
             SettingsTab.Updates => _checkUpdatesButtonHandle,
-            _ => _latitudeEditHandle
+            _ => _showCoordinatesHandle
         };
 
         if (focusHandle != nint.Zero)
@@ -777,22 +792,9 @@ internal sealed class SettingsWindow(
         }
 
         if ((controlId == LatitudeEditId || controlId == LongitudeEditId)
-            && notificationCode == NativeInterop.EN_SETFOCUS)
-        {
-            SetCoordinateInputsVisible(areVisible: true);
-            return;
-        }
-
-        if ((controlId == LatitudeEditId || controlId == LongitudeEditId)
             && notificationCode == NativeInterop.EN_KILLFOCUS)
         {
             RememberVisibleCoordinates();
-
-            if (!CoordinateInputsHaveFocus())
-            {
-                SetCoordinateInputsVisible(areVisible: false);
-            }
-
             return;
         }
 
@@ -822,6 +824,10 @@ internal sealed class SettingsWindow(
                 RefreshStatus();
                 break;
 
+            case ShowCoordinatesId:
+                HandleShowCoordinatesClicked();
+                break;
+
             case DetectLocationId:
                 StartDetectLocation();
                 break;
@@ -836,6 +842,33 @@ internal sealed class SettingsWindow(
             default:
                 break;
         }
+    }
+
+    private void HandleShowCoordinatesClicked()
+    {
+        if (!NativeInterop.GetChecked(_showCoordinatesHandle))
+        {
+            HideCoordinateInputs(clearHiddenText: true);
+            return;
+        }
+
+        if (!ConfirmCoordinateReveal())
+        {
+            SetCoordinateInputsVisible(areVisible: false, clearHiddenText: true);
+            return;
+        }
+
+        SetCoordinateInputsVisible(areVisible: true);
+    }
+
+    private bool ConfirmCoordinateReveal()
+    {
+        return NativeInterop.MessageBox(
+            _windowHandle,
+            _localization[SettingsRevealCoordinatesConfirmationKey],
+            DialogCaption,
+            NativeInterop.MB_YESNO | NativeInterop.MB_ICONWARNING | NativeInterop.MB_DEFBUTTON2)
+            == NativeInterop.IDYES;
     }
 
     private void StartApplyNow()
@@ -1019,6 +1052,8 @@ internal sealed class SettingsWindow(
 
         _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, !isBusy && locationAvailable);
         _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, !isBusy && locationAvailable);
+        _ = NativeInterop.EnableWindow(_showCoordinatesHandle, !isBusy);
+        UpdateCoordinateInputEnabledState();
         _ = NativeInterop.EnableWindow(_languageSelectorHandle, !isBusy);
         _ = NativeInterop.EnableWindow(_checkUpdatesButtonHandle, !isBusy);
         _ = NativeInterop.EnableWindow(_applyNowButtonHandle, !isBusy);
@@ -1063,6 +1098,7 @@ internal sealed class SettingsWindow(
             return;
         }
 
+        HideCoordinateInputs(clearHiddenText: true);
         _ = NativeInterop.ShowWindow(_windowHandle, NativeInterop.SW_HIDE);
         GcPressureMonitor.ScheduleCompaction();
     }
@@ -1227,6 +1263,8 @@ internal sealed class SettingsWindow(
         bool isBusy = Volatile.Read(ref _operationInProgress) != IdleOperationState;
         _ = NativeInterop.EnableWindow(_useWindowsLocationHandle, locationAvailable && !isBusy);
         _ = NativeInterop.EnableWindow(_detectLocationButtonHandle, locationAvailable && !isBusy);
+        _ = NativeInterop.EnableWindow(_showCoordinatesHandle, !isBusy);
+        UpdateCoordinateInputEnabledState();
         _ = NativeInterop.EnableWindow(_checkUpdatesButtonHandle, !isBusy);
 
         _ = NativeInterop.SetWindowText(
@@ -1286,10 +1324,10 @@ internal sealed class SettingsWindow(
         FocusInvalidInput(error);
     }
 
-    private bool CoordinateInputsHaveFocus()
+    private void HideCoordinateInputs(bool clearHiddenText)
     {
-        nint focusedHandle = NativeInterop.GetFocus();
-        return focusedHandle == _latitudeEditHandle || focusedHandle == _longitudeEditHandle;
+        RememberVisibleCoordinates();
+        SetCoordinateInputsVisible(areVisible: false, clearHiddenText: clearHiddenText);
     }
 
     private void RememberVisibleCoordinates()
@@ -1313,9 +1351,15 @@ internal sealed class SettingsWindow(
             return;
         }
 
+        if (_showCoordinatesHandle != nint.Zero)
+        {
+            NativeInterop.SetChecked(_showCoordinatesHandle, areVisible);
+        }
+
         char passwordCharacter = areVisible ? VisibleCoordinateCharacter : HiddenCoordinateCharacter;
         NativeInterop.SetPasswordCharacter(_latitudeEditHandle, passwordCharacter);
         NativeInterop.SetPasswordCharacter(_longitudeEditHandle, passwordCharacter);
+        UpdateCoordinateInputEnabledState();
 
         if (areVisible)
         {
@@ -1327,6 +1371,20 @@ internal sealed class SettingsWindow(
         {
             ClearCoordinateInputs();
         }
+    }
+
+    private void UpdateCoordinateInputEnabledState()
+    {
+        if (_latitudeEditHandle == nint.Zero || _longitudeEditHandle == nint.Zero)
+        {
+            return;
+        }
+
+        bool isBusy = Volatile.Read(ref _operationInProgress) != IdleOperationState;
+        bool canEditCoordinates = _coordinateInputsVisible && !isBusy;
+
+        _ = NativeInterop.EnableWindow(_latitudeEditHandle, canEditCoordinates);
+        _ = NativeInterop.EnableWindow(_longitudeEditHandle, canEditCoordinates);
     }
 
     private void PopulateCoordinateInputsFromSeedIfEmpty()
@@ -1382,6 +1440,12 @@ internal sealed class SettingsWindow(
             controlHandle = _useWindowsLocationHandle;
         }
 
+        if (!_coordinateInputsVisible
+            && (controlHandle == _latitudeEditHandle || controlHandle == _longitudeEditHandle))
+        {
+            controlHandle = _showCoordinatesHandle;
+        }
+
         _ = NativeInterop.SetFocus(controlHandle);
 
         if (controlHandle == _latitudeEditHandle
@@ -1423,6 +1487,7 @@ internal sealed class SettingsWindow(
         _windowIconHandle?.Dispose();
         _windowIconHandle = null;
         _languageSelectorHandle = nint.Zero;
+        _showCoordinatesHandle = nint.Zero;
         _latitudeEditHandle = nint.Zero;
         _longitudeEditHandle = nint.Zero;
         _precisionEditHandle = nint.Zero;

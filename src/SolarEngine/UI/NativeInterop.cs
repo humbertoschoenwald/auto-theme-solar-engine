@@ -107,9 +107,12 @@ internal static partial class NativeInterop
     internal const int DWMWCP_ROUND = 2;
 
     internal const int MB_OK = 0x0000;
+    internal const int MB_YESNO = 0x0004;
     internal const int MB_ICONINFORMATION = 0x0040;
     internal const int MB_ICONWARNING = 0x0030;
     internal const int MB_ICONERROR = 0x0010;
+    internal const int MB_DEFBUTTON2 = 0x0100;
+    internal const int IDYES = 6;
 
     internal const int FW_NORMAL = 400;
     internal const int DEFAULT_CHARSET = 1;
