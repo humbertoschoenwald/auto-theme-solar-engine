@@ -36,7 +36,7 @@ internal sealed class ThemeTransitionOrchestrator(
     private const string TimeDisplayFormat = "HH:mm";
     private const int MinimumCheckIntervalSeconds = 10;
     private const int MaximumCheckIntervalSeconds = 300;
-    private const double ExtraSunsetMinuteCount = 1d;
+    private const double ExtraSolarTransitionMinuteCount = 1d;
 
     private readonly SemaphoreSlim _stateGate = new(1, 1);
     private readonly CancellationTokenSource _shutdownCancellationTokenSource = new();
@@ -315,15 +315,16 @@ internal sealed class ThemeTransitionOrchestrator(
 
     private static ThemeMode ResolveMode(SolarSchedule schedule, DateTime now, AppConfig configuration)
     {
+        DateTime? sunriseThreshold = ResolveEffectiveSunriseLocal(schedule, configuration);
         DateTime? sunsetThreshold = ResolveEffectiveSunsetLocal(schedule, configuration);
 
         return schedule.DaylightCondition switch
         {
             SolarDaylightCondition.PolarNight => ThemeMode.Dark,
             SolarDaylightCondition.MidnightSun => ThemeMode.Light,
-            _ when schedule.SunriseLocal is not null
+            _ when sunriseThreshold is not null
                 && sunsetThreshold is not null
-                && now >= schedule.SunriseLocal.Value
+                && now >= sunriseThreshold.Value
                 && now < sunsetThreshold.Value => ThemeMode.Light,
             SolarDaylightCondition.Standard => ThemeMode.Dark,
             _ => ThemeMode.Dark
@@ -332,7 +333,7 @@ internal sealed class ThemeTransitionOrchestrator(
 
     private string BuildStandardStatusText(string modeText)
     {
-        return _todaySchedule is { SunriseLocal: DateTime sunrise }
+        return ResolveEffectiveSunriseLocal(_todaySchedule, _configuration) is DateTime sunrise
             && ResolveEffectiveSunsetLocal(_todaySchedule, _configuration) is DateTime sunset
             ? localization.Format(
                 ScheduleTooltipKey,
@@ -344,7 +345,7 @@ internal sealed class ThemeTransitionOrchestrator(
 
     private string BuildStandardScheduleText()
     {
-        return _todaySchedule is { SunriseLocal: DateTime sunrise }
+        return ResolveEffectiveSunriseLocal(_todaySchedule, _configuration) is DateTime sunrise
             && ResolveEffectiveSunsetLocal(_todaySchedule, _configuration) is DateTime sunset
             ? localization.Format(
                 ScheduleWindowKey,
@@ -353,12 +354,21 @@ internal sealed class ThemeTransitionOrchestrator(
             : localization[ScheduleUnavailableWindowKey];
     }
 
-    private static DateTime? ResolveEffectiveSunsetLocal(SolarSchedule schedule, AppConfig configuration)
+    private static DateTime? ResolveEffectiveSunriseLocal(SolarSchedule? schedule, AppConfig configuration)
     {
-        return schedule.SunsetLocal is not DateTime sunset
+        return schedule?.SunriseLocal is not DateTime sunrise
             ? null
             : configuration.AddExtraMinuteAtSunset
-            ? sunset.AddMinutes(ExtraSunsetMinuteCount)
+            ? sunrise.AddMinutes(ExtraSolarTransitionMinuteCount)
+            : sunrise;
+    }
+
+    private static DateTime? ResolveEffectiveSunsetLocal(SolarSchedule? schedule, AppConfig configuration)
+    {
+        return schedule?.SunsetLocal is not DateTime sunset
+            ? null
+            : configuration.AddExtraMinuteAtSunset
+            ? sunset.AddMinutes(ExtraSolarTransitionMinuteCount)
             : sunset;
     }
 }

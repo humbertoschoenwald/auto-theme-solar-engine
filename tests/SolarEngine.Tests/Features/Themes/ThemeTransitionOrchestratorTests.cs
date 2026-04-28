@@ -50,10 +50,10 @@ public sealed class ThemeTransitionOrchestratorTests
     }
 
     /// <summary>
-    /// Verifies the optional sunset offset changes the exposed schedule text.
+    /// Verifies the optional solar-transition offset changes the exposed schedule text.
     /// </summary>
     [Fact]
-    public async Task BuildTodayScheduleTextUsesAdjustedSunsetWhenExtraMinuteAtSunsetIsEnabled()
+    public async Task BuildTodayScheduleTextUsesAdjustedTransitionsWhenExtraMinuteIsEnabled()
     {
         using TestContext context = new();
         SolarSchedule baseSchedule = CreateStandardDaySchedule();
@@ -64,7 +64,12 @@ public sealed class ThemeTransitionOrchestratorTests
 
         string scheduleText = orchestrator.BuildTodayScheduleText();
 
+        _ = Assert.NotNull(baseSchedule.SunriseLocal);
         _ = Assert.NotNull(baseSchedule.SunsetLocal);
+        Assert.Contains(
+            baseSchedule.SunriseLocal.Value.AddMinutes(1).ToString("HH:mm", CultureInfo.InvariantCulture),
+            scheduleText,
+            StringComparison.Ordinal);
         Assert.Contains(
             baseSchedule.SunsetLocal.Value.AddMinutes(1).ToString("HH:mm", CultureInfo.InvariantCulture),
             scheduleText,
@@ -85,6 +90,27 @@ public sealed class ThemeTransitionOrchestratorTests
         await orchestrator.ApplyCurrentThemeAsync();
 
         _ = Assert.Single(context.ThemeMutator.AppliedModes);
+    }
+
+    /// <summary>
+    /// Verifies the sunrise offset keeps dark mode active during the extra minute.
+    /// </summary>
+    [Fact]
+    public async Task ApplyCurrentThemeAsyncKeepsDarkModeDuringConfiguredSunriseOffset()
+    {
+        SolarSchedule baseSchedule = CreateStandardDaySchedule();
+        _ = Assert.NotNull(baseSchedule.SunriseLocal);
+        DateTime momentInsideExtraMinute =
+            AlignWithBaselineDate(baseSchedule.SunriseLocal.Value).AddSeconds(30);
+
+        using TestContext context = new();
+        using ThemeTransitionOrchestrator orchestrator = context.CreateOrchestrator(momentInsideExtraMinute);
+
+        orchestrator.UpdateConfiguration(CreateStandardDayConfiguration());
+        await orchestrator.RefreshAsync();
+        await orchestrator.ApplyCurrentThemeAsync();
+
+        Assert.Equal(ThemeMode.Dark, Assert.Single(context.ThemeMutator.AppliedModes));
     }
 
     /// <summary>
