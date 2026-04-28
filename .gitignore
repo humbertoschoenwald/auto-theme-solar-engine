@@ -8,6 +8,8 @@
 artifacts/
 .artifacts/
 cache/
+dependencies/
+temp/
 .dotnet/
 
 *.nupkg

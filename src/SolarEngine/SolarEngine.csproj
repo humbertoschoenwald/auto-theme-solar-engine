@@ -34,7 +34,7 @@
     <PublishTrimmed Condition="'$(UseNativeAot)' == 'true' and '$(SelfContained)' == 'true'">true</PublishTrimmed>
     <PublishTrimmed Condition="'$(UseNativeAot)' != 'true'">false</PublishTrimmed>
     <CsWinRTAotOptimizerEnabled Condition="'$(UseNativeAot)' == 'true'">true</CsWinRTAotOptimizerEnabled>
-    <CsWinRTWindowsMetadata>10.0.26100.0</CsWinRTWindowsMetadata>
+    <CsWinRTWindowsMetadata Condition="'$(CsWinRTWindowsMetadata)' == ''">10.0.26100.0</CsWinRTWindowsMetadata>
 
     <IncludeNativeLibrariesForSelfExtract Condition="'$(UseNativeAot)' != 'true'">true</IncludeNativeLibrariesForSelfExtract>
 

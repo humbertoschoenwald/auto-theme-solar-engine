@@ -112,6 +112,7 @@ venv
 warnaserror
 webp
 Win32
+winmd
 WPF
 wtsapi
 WTSSESSION

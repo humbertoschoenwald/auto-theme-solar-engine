@@ -27,6 +27,13 @@ The JavaScript tooling had been managed with npm. The repository now standardize
   Only `tools/README.md` and each direct tool directory's `README.md` are
   tracked unless a future ADR accepts a specific tool implementation into the
   repository.
+- Repository-local `dependencies/`, `cache/`, and `temp/` directories are not
+  product deliverables. Ad hoc downloads, dependency caches, and scratch files
+  for local validation belong there instead of global machine paths whenever
+  that avoids contaminating a contributor workstation.
+- Local validation may consume Windows SDK .NET reference metadata from
+  `dependencies/windows-sdk-net-ref/<version>/winmd` when the full Windows SDK
+  is not installed globally.
 - Workspace editor settings may disable telemetry, automatic updates, and indentation guesswork when those defaults reduce repository drift and make saved-file execution deterministic.
 - Windows release publishing remains focused on one x64 self-contained Native
   AOT executable.
@@ -42,3 +49,5 @@ The JavaScript tooling had been managed with npm. The repository now standardize
 - Package-manager drift moves from convention to explicit policy.
 - Native AOT publish validation now depends on a Windows-native toolchain in
   addition to the .NET SDK.
+- Contributors can keep large local validation inputs outside Git while still
+  allowing the standard validation script to find them deterministically.

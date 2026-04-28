@@ -40,6 +40,29 @@ function Use-RepositoryDotNet {
     $env:PATH = "$repositoryDotNetRoot;$env:PATH"
 }
 
+function Use-RepositoryCsWinRTMetadata {
+    if ($env:CsWinRTWindowsMetadata) {
+        return
+    }
+
+    $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    $metadataRoot = Join-Path $repositoryRoot "dependencies/windows-sdk-net-ref"
+
+    if (-not (Test-Path $metadataRoot)) {
+        return
+    }
+
+    $candidate = Get-ChildItem -LiteralPath $metadataRoot -Directory |
+        Sort-Object -Property Name -Descending |
+        ForEach-Object { Join-Path $_.FullName "winmd" } |
+        Where-Object { Test-Path $_ } |
+        Select-Object -First 1
+
+    if ($candidate) {
+        $env:CsWinRTWindowsMetadata = $candidate
+    }
+}
+
 function Resolve-PnpmCommand {
     if ($env:PNPM_BIN) {
         return $env:PNPM_BIN
@@ -65,6 +88,7 @@ function Resolve-PnpmCommand {
 }
 
 Use-RepositoryDotNet
+Use-RepositoryCsWinRTMetadata
 
 $pnpm = Resolve-PnpmCommand
 

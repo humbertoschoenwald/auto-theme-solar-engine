@@ -7,6 +7,8 @@ globs:
   - ".github/actions/**/*.yml"
   - ".github/workflows/**/*.yml"
   - "scripts/**"
+  - ".gitignore"
+  - "src/**/*.csproj"
   - "commitlint.config.cjs"
   - "cspell.jsonc"
 alwaysApply: false
@@ -28,6 +30,11 @@ alwaysApply: false
 - RULE: Treat `tools/` implementations as local-only drops. Track only
   `tools/README.md` and each direct tool directory's `README.md` unless ADR
   accepts a tool implementation into the repository.
+- RULE: Keep ad hoc local downloads, caches, and scratch outputs in
+  `dependencies/`, `cache/`, or `temp/`, and keep those directories out of Git.
+- RULE: Local validation may use Windows SDK .NET reference metadata from
+  `dependencies/windows-sdk-net-ref/<version>/winmd` instead of installing the
+  full Windows SDK globally.
 - RULE: Preview language features may be adopted only when the pinned SDK compiles them in a normal repository build without unsupported shims.
 - RULE: Do not use C# `union` declarations in product code until the pinned SDK and runtime provide a complete repository-ready path.
 - RULE: Keep `.editorconfig` companion analyzer and analysis-mode properties
