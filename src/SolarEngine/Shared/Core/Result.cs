@@ -3,49 +3,41 @@
 
 namespace SolarEngine.Shared.Core;
 
-internal readonly struct Result : IEquatable<Result>
+internal sealed class Result : IEquatable<Result>
 {
-    private const string InvalidErrorStateDescription = "Invalid error state for the given success status.";
-    private readonly Error? _error;
+    private const string InvalidFailureErrorStateDescription = "Invalid error state for a failure result.";
 
-    private Result(bool isSuccess, Error error)
+    private readonly IResultVariant _variant;
+
+    private Result(IResultVariant variant)
     {
-        if ((isSuccess && error != Error.None) || (!isSuccess && error == Error.None))
-        {
-            throw new ArgumentException(InvalidErrorStateDescription, nameof(error));
-        }
-
-        IsSuccess = isSuccess;
-        _error = error;
+        _variant = variant;
     }
 
-    public bool IsSuccess
-    {
-        get;
-    }
+    public bool IsSuccess => _variant.IsSuccess;
 
     public bool IsFailure => !IsSuccess;
 
-    public Error Error => _error ?? Error.None;
+    public Error Error => _variant.Error;
 
     public static Result Success()
     {
-        return new(true, Error.None);
+        return new Result(new SuccessVariant());
     }
 
     public static Result<T> Success<T>(T value)
     {
-        return new(value);
+        return Result<T>.Success(value);
     }
 
     public static Result Failure(Error error)
     {
-        return new(false, error);
+        return new Result(new FailureVariant(ValidateFailureError(error)));
     }
 
     public static Result<T> Failure<T>(Error error)
     {
-        return new(error);
+        return Result<T>.Failure(error);
     }
 
     public static Result FromError(Error error)
@@ -58,10 +50,9 @@ internal readonly struct Result : IEquatable<Result>
         return Failure(error);
     }
 
-    public bool Equals(Result other)
+    public bool Equals(Result? other)
     {
-        return IsSuccess == other.IsSuccess
-            && EqualityComparer<Error>.Default.Equals(Error, other.Error);
+        return other is not null && EqualityComparer<IResultVariant>.Default.Equals(_variant, other._variant);
     }
 
     public override bool Equals(object? obj)
@@ -71,90 +62,102 @@ internal readonly struct Result : IEquatable<Result>
 
     public override int GetHashCode()
     {
-        HashCode hash = new();
-        hash.Add(IsSuccess);
-        hash.Add(Error, EqualityComparer<Error>.Default);
-        return hash.ToHashCode();
+        return _variant.GetHashCode();
     }
 
-    public static bool operator ==(Result left, Result right)
+    public static bool operator ==(Result? left, Result? right)
     {
-        return left.Equals(right);
+        return EqualityComparer<Result>.Default.Equals(left, right);
     }
 
-    public static bool operator !=(Result left, Result right)
+    public static bool operator !=(Result? left, Result? right)
     {
-        return !left.Equals(right);
+        return !EqualityComparer<Result>.Default.Equals(left, right);
+    }
+
+    private static Error ValidateFailureError(Error error)
+    {
+        return error == Error.None
+            ? throw new ArgumentException(InvalidFailureErrorStateDescription, nameof(error))
+            : error;
+    }
+
+    private interface IResultVariant
+    {
+        public bool IsSuccess
+        {
+            get;
+        }
+
+        public Error Error
+        {
+            get;
+        }
+    }
+
+    private sealed record SuccessVariant : IResultVariant
+    {
+        public bool IsSuccess => true;
+
+        public Error Error => Error.None;
+    }
+
+    private sealed record FailureVariant(Error FailureError) : IResultVariant
+    {
+        public bool IsSuccess => false;
+
+        public Error Error => FailureError;
     }
 }
 
-internal readonly struct Result<T> : IEquatable<Result<T>>
+internal sealed class Result<T> : IEquatable<Result<T>>
 {
     private const string InvalidFailureErrorStateDescription = "Invalid error state for a failure result.";
     private const string ValueAccessDescription = "Access the value only when the result is successful.";
-    private readonly T? _value;
-    private readonly Error? _error;
 
-    internal Result(T value)
+    private readonly IResultVariant<T> _variant;
+
+    private Result(IResultVariant<T> variant)
     {
-        _value = value;
-        _error = Error.None;
-        IsSuccess = true;
+        _variant = variant;
     }
 
-    internal Result(Error error)
-    {
-        if (error == Error.None)
-        {
-            throw new ArgumentException(InvalidFailureErrorStateDescription, nameof(error));
-        }
-
-        _value = default;
-        _error = error;
-        IsSuccess = false;
-    }
-
-    public bool IsSuccess
-    {
-        get;
-    }
+    public bool IsSuccess => _variant.IsSuccess;
 
     public bool IsFailure => !IsSuccess;
 
-    public Error Error => _error ?? Error.None;
+    public Error Error => _variant.Error;
 
-    public T Value => IsSuccess
-        ? _value!
-        : throw new UnexpectedStateException(ValueAccessDescription);
+    public T Value => _variant.Value;
 
     public static Result<T> Success(T value)
     {
-        return new(value);
+        return new Result<T>(new SuccessVariant(value));
     }
 
     public static Result<T> Failure(Error error)
     {
-        return new(error);
+        return new Result<T>(new FailureVariant(ValidateFailureError(error)));
     }
 
     public static Result<T> FromValue(T value)
     {
-        return new(value);
+        return Success(value);
     }
 
     public static Result<T> FromError(Error error)
     {
-        return new(error);
+        return Failure(error);
     }
 
     public static implicit operator Result<T>(T value)
     {
-        return new(value);
+        return Success(value);
     }
 
     public static implicit operator Result<T>(Error error)
     {
-        return new(error);
+        return Failure(error);
     }
 
     public TResult Match<TResult>(Func<T, TResult> onSuccess, Func<Error, TResult> onFailure)
@@ -162,14 +165,12 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
         ArgumentNullException.ThrowIfNull(onSuccess);
         ArgumentNullException.ThrowIfNull(onFailure);
 
-        return IsSuccess ? onSuccess(_value!) : onFailure(Error);
+        return IsSuccess ? onSuccess(Value) : onFailure(Error);
     }
 
-    public bool Equals(Result<T> other)
+    public bool Equals(Result<T>? other)
     {
-        return IsSuccess == other.IsSuccess && (IsSuccess
-            ? EqualityComparer<T>.Default.Equals(_value, other._value)
-            : EqualityComparer<Error>.Default.Equals(Error, other.Error));
+        return other is not null && EqualityComparer<IResultVariant<T>>.Default.Equals(_variant, other._variant);
     }
 
     public override bool Equals(object? obj)
@@ -179,28 +180,59 @@ internal readonly struct Result<T> : IEquatable<Result<T>>
 
     public override int GetHashCode()
     {
-        HashCode hash = new();
-        hash.Add(IsSuccess);
-
-        if (IsSuccess)
-        {
-            hash.Add(_value);
-        }
-        else
-        {
-            hash.Add(Error, EqualityComparer<Error>.Default);
-        }
-
-        return hash.ToHashCode();
+        return _variant.GetHashCode();
     }
 
-    public static bool operator ==(Result<T> left, Result<T> right)
+    public static bool operator ==(Result<T>? left, Result<T>? right)
     {
-        return left.Equals(right);
+        return EqualityComparer<Result<T>>.Default.Equals(left, right);
     }
 
-    public static bool operator !=(Result<T> left, Result<T> right)
+    public static bool operator !=(Result<T>? left, Result<T>? right)
     {
-        return !left.Equals(right);
+        return !EqualityComparer<Result<T>>.Default.Equals(left, right);
+    }
+
+    private static Error ValidateFailureError(Error error)
+    {
+        return error == Error.None
+            ? throw new ArgumentException(InvalidFailureErrorStateDescription, nameof(error))
+            : error;
+    }
+
+    private interface IResultVariant<out TValue>
+    {
+        public bool IsSuccess
+        {
+            get;
+        }
+
+        public Error Error
+        {
+            get;
+        }
+
+        public TValue Value
+        {
+            get;
+        }
+    }
+
+    private sealed record SuccessVariant(T SuccessValue) : IResultVariant<T>
+    {
+        public bool IsSuccess => true;
+
+        public Error Error => Error.None;
+
+        public T Value => SuccessValue;
+    }
+
+    private sealed record FailureVariant(Error FailureError) : IResultVariant<T>
+    {
+        public bool IsSuccess => false;
+
+        public Error Error => FailureError;
+
+        public T Value => throw new UnexpectedStateException(ValueAccessDescription);
     }
 }

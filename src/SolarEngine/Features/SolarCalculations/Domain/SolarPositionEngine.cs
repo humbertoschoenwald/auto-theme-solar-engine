@@ -50,13 +50,13 @@ internal static class SolarPositionEngine
             return Result<SolarSchedule>.Failure(validationError);
         }
 
-        SolarEventResult sunriseResult = CalculateSolarEvent(date, coordinates, isSunrise: true);
+        SolarEventOutcomeBase sunriseResult = CalculateSolarEvent(date, coordinates, isSunrise: true);
         if (sunriseResult.Error != Error.None)
         {
             return Result<SolarSchedule>.Failure(sunriseResult.Error);
         }
 
-        SolarEventResult sunsetResult = CalculateSolarEvent(date, coordinates, isSunrise: false);
+        SolarEventOutcomeBase sunsetResult = CalculateSolarEvent(date, coordinates, isSunrise: false);
         if (sunsetResult.Error != Error.None)
         {
             return Result<SolarSchedule>.Failure(sunsetResult.Error);
@@ -78,7 +78,7 @@ internal static class SolarPositionEngine
             new SolarSchedule(date, sunriseLocal, sunsetLocal, daylightCondition));
     }
 
-    private static SolarEventResult CalculateSolarEvent(DateOnly date, GeoCoordinates coordinates, bool isSunrise)
+    private static SolarEventOutcomeBase CalculateSolarEvent(DateOnly date, GeoCoordinates coordinates, bool isSunrise)
     {
         int dayOfYear = date.DayOfYear;
         double longitudeHour = coordinates.Longitude / DegreesPerHour;
@@ -105,26 +105,26 @@ internal static class SolarPositionEngine
                 ? SolarDaylightCondition.MidnightSun
                 : SolarDaylightCondition.PolarNight;
 
-            return new SolarEventResult(null, poleCondition, Error.None);
+            return SolarEventOutcomeBase.Daylight(poleCondition);
         }
 
         double cosHourAngle = numerator / denominator;
 
         if (cosHourAngle > 1d)
         {
-            return new SolarEventResult(null, SolarDaylightCondition.PolarNight, Error.None);
+            return SolarEventOutcomeBase.Daylight(SolarDaylightCondition.PolarNight);
         }
 
         if (cosHourAngle < -1d)
         {
-            return new SolarEventResult(null, SolarDaylightCondition.MidnightSun, Error.None);
+            return SolarEventOutcomeBase.Daylight(SolarDaylightCondition.MidnightSun);
         }
 
         double localHourAngle = CalculateLocalHourAngle(cosHourAngle);
         double localMeanTime = CalculateLocalMeanTime(localHourAngle, rightAscension, approximateTime);
         double utcHours = (localMeanTime - longitudeHour).NormalizeHours();
 
-        return new SolarEventResult(utcHours, SolarDaylightCondition.Standard, Error.None);
+        return SolarEventOutcomeBase.Standard(utcHours);
 
         double CalculateApproximateTime()
         {
@@ -253,8 +253,33 @@ internal static class SolarPositionEngine
         return rightAscension + (longitudeQuadrant - rightAscensionQuadrant);
     }
 
-    private readonly record struct SolarEventResult(
-        double? UtcHours,
-        SolarDaylightCondition DaylightCondition,
-        Error Error);
+    private abstract record SolarEventOutcomeBase
+    {
+        public virtual double? UtcHours => null;
+
+        public virtual SolarDaylightCondition DaylightCondition => SolarDaylightCondition.Standard;
+
+        public virtual Error Error => Error.None;
+
+        public static SolarEventOutcomeBase Standard(double utcHours)
+        {
+            return new StandardSolarEvent(utcHours);
+        }
+
+        public static SolarEventOutcomeBase Daylight(SolarDaylightCondition daylightCondition)
+        {
+            return new DaylightSolarEvent(daylightCondition);
+        }
+
+        private sealed record StandardSolarEvent(double EventUtcHours) : SolarEventOutcomeBase
+        {
+            public override double? UtcHours => EventUtcHours;
+        }
+
+        private sealed record DaylightSolarEvent(
+            SolarDaylightCondition EventDaylightCondition) : SolarEventOutcomeBase
+        {
+            public override SolarDaylightCondition DaylightCondition => EventDaylightCondition;
+        }
+    }
 }
