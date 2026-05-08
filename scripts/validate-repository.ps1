@@ -63,6 +63,76 @@ function Use-RepositoryCsWinRTMetadata {
     }
 }
 
+function Resolve-VsWherePath {
+    $candidatePaths = @()
+
+    if (${env:ProgramFiles(x86)}) {
+        $candidatePaths += Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+    }
+
+    if ($env:ProgramFiles) {
+        $candidatePaths += Join-Path $env:ProgramFiles "Microsoft Visual Studio\Installer\vswhere.exe"
+    }
+
+    foreach ($candidatePath in $candidatePaths) {
+        if (Test-Path $candidatePath) {
+            return $candidatePath
+        }
+    }
+
+    return $null
+}
+
+function Use-VisualCppBuildEnvironment {
+    if (-not $IsWindows) {
+        return
+    }
+
+    if (Get-Command link.exe -ErrorAction SilentlyContinue) {
+        return
+    }
+
+    $vswhere = Resolve-VsWherePath
+    if (-not $vswhere) {
+        throw "Visual Studio Build Tools with the C++ workload is required for Native AOT publish validation."
+    }
+
+    $installationPath = & $vswhere `
+        -latest `
+        -products * `
+        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+        -property installationPath
+
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($installationPath)) {
+        throw "Visual Studio Build Tools with the C++ workload was not found."
+    }
+
+    $vcvarsPath = Join-Path $installationPath "VC\Auxiliary\Build\vcvars64.bat"
+    if (-not (Test-Path $vcvarsPath)) {
+        throw "vcvars64.bat was not found in the Visual Studio Build Tools installation."
+    }
+
+    $environmentOutput = & cmd.exe /d /s /c "`"$vcvarsPath`" >nul && set"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Loading the Visual C++ build environment failed."
+    }
+
+    foreach ($line in $environmentOutput) {
+        $separatorIndex = $line.IndexOf("=")
+        if ($separatorIndex -le 0) {
+            continue
+        }
+
+        $name = $line.Substring(0, $separatorIndex)
+        $value = $line.Substring($separatorIndex + 1)
+        [Environment]::SetEnvironmentVariable($name, $value, "Process")
+    }
+
+    if (-not (Get-Command link.exe -ErrorAction SilentlyContinue)) {
+        throw "link.exe was not available after loading the Visual C++ build environment."
+    }
+}
+
 function Resolve-PnpmCommand {
     if ($env:PNPM_BIN) {
         return $env:PNPM_BIN
@@ -139,6 +209,8 @@ else {
 }
 
 if (-not $SkipPublishSmoke) {
+    Use-VisualCppBuildEnvironment
+
     Invoke-Checked {
         dotnet publish $AppProject `
             --configuration Release `
