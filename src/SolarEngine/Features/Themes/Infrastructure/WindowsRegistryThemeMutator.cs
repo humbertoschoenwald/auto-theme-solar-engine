@@ -41,15 +41,13 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
 
     private static readonly nint s_hwndBroadcast = new(0xFFFF);
 
-    private const string ShellTrayWindowClassName = "Shell_TrayWnd";
-    private const string ShellSecondaryTrayWindowClassName = "Shell_SecondaryTrayWnd";
-    private const string ProgramManagerWindowClassName = "Program";
-    private const string WorkerWindowClassName = "WorkerW";
-
     private const int WmSysColorChange = 0x0015;
     private const int WmSettingChange = 0x001A;
     private const int WmThemeChanged = 0x031A;
     private const int WmDwmColorizationColorChanged = 0x0320;
+    private const int WindowClassNameBufferLength = 256;
+    private const int WindowClassNameStartIndex = 0;
+    private const int EmptyWindowClassNameLength = 0;
     private const int SmtoAbortIfHung = 0x0002;
     private const uint RdwInvalidate = 0x0001;
     private const uint RdwAllChildren = 0x0080;
@@ -99,16 +97,31 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         object? appsValue = personalizeKey.GetValue(AppsUseLightThemeValueName);
         object? systemValue = personalizeKey.GetValue(SystemUsesLightThemeValueName);
 
-        return !TryReadDword(appsValue, out int appsLight) || !TryReadDword(systemValue, out int systemLight)
-            ? null
-            : appsLight != systemLight
-            ? null
-            : appsLight switch
-            {
-                LightThemeValue => ThemeMode.Light,
-                DarkThemeValue => ThemeMode.Dark,
-                _ => null
-            };
+        return ResolveThemeMode(appsValue, systemValue);
+    }
+
+    internal static ThemeMode? ResolveThemeMode(object? appsValue, object? systemValue)
+    {
+        bool hasAppsThemeValue = TryReadDword(appsValue, out int appsLight);
+        bool hasSystemThemeValue = TryReadDword(systemValue, out int systemLight);
+
+        return (hasAppsThemeValue, hasSystemThemeValue) switch
+        {
+            (true, true) when appsLight != systemLight => null,
+            (true, _) => ResolveThemeModeValue(appsLight),
+            (false, true) => ResolveThemeModeValue(systemLight),
+            _ => null
+        };
+    }
+
+    private static ThemeMode? ResolveThemeModeValue(int lightValue)
+    {
+        return lightValue switch
+        {
+            LightThemeValue => ThemeMode.Light,
+            DarkThemeValue => ThemeMode.Dark,
+            _ => null
+        };
     }
 
     private static void ApplyTaskbarColorPreference(ThemeMode mode, RegistryKey personalizeKey)
@@ -219,10 +232,10 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         BroadcastWindowMessage(WmDwmColorizationColorChanged);
         BroadcastWindowMessage(WmSysColorChange);
 
-        RefreshShellWindowByClassName(ShellTrayWindowClassName);
-        RefreshShellWindowsByClassName(ShellSecondaryTrayWindowClassName);
-        RefreshShellWindowByClassName(ProgramManagerWindowClassName);
-        RefreshShellWindowsByClassName(WorkerWindowClassName);
+        ShellThemeRefreshPlanner.RefreshShellWindows(
+            EnumerateTopLevelShellWindows(),
+            EnumerateDescendantWindowHandles,
+            RefreshShellWindow);
     }
 
     private static void BroadcastThemeChange(string? parameter)
@@ -235,31 +248,49 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         _ = SendMessageTimeoutRaw(s_hwndBroadcast, message, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
     }
 
-    private static void RefreshShellWindowByClassName(string className)
+    private static List<ShellWindowInfo> EnumerateTopLevelShellWindows()
     {
-        nint windowHandle = FindWindow(className, null);
-        if (windowHandle == nint.Zero)
-        {
-            return;
-        }
+        List<ShellWindowInfo> windows = [];
 
-        RefreshShellWindow(windowHandle);
+        _ = EnumWindows(
+            (windowHandle, _) =>
+            {
+                string className = GetWindowClassName(windowHandle);
+                if (!string.IsNullOrEmpty(className))
+                {
+                    windows.Add(new ShellWindowInfo(windowHandle, className));
+                }
+
+                return true;
+            },
+            nint.Zero);
+
+        return windows;
     }
 
-    private static void RefreshShellWindowsByClassName(string className)
+    private static List<nint> EnumerateDescendantWindowHandles(nint windowHandle)
     {
-        nint previousWindowHandle = nint.Zero;
-        while (true)
-        {
-            nint windowHandle = FindWindowEx(nint.Zero, previousWindowHandle, className, null);
-            if (windowHandle == nint.Zero)
-            {
-                return;
-            }
+        List<nint> descendantWindowHandles = [];
 
-            RefreshShellWindow(windowHandle);
-            previousWindowHandle = windowHandle;
-        }
+        _ = EnumChildWindows(
+            windowHandle,
+            (descendantWindowHandle, _) =>
+            {
+                descendantWindowHandles.Add(descendantWindowHandle);
+                return true;
+            },
+            nint.Zero);
+
+        return descendantWindowHandles;
+    }
+
+    private static string GetWindowClassName(nint windowHandle)
+    {
+        char[] buffer = new char[WindowClassNameBufferLength];
+        int length = GetClassName(windowHandle, buffer, buffer.Length);
+        return length <= EmptyWindowClassNameLength
+            ? string.Empty
+            : new string(buffer, WindowClassNameStartIndex, length);
     }
 
     private static void RefreshShellWindow(nint windowHandle)
@@ -345,11 +376,18 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate void FlushMenuThemesDelegate();
 
-    [LibraryImport("user32.dll", EntryPoint = "FindWindowW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    private static partial nint FindWindow(string? lpClassName, string? lpWindowName);
+    private delegate bool EnumWindowsProcedure(nint hWnd, nint lParam);
 
-    [LibraryImport("user32.dll", EntryPoint = "FindWindowExW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    private static partial nint FindWindowEx(nint hWndParent, nint hWndChildAfter, string? lpszClass, string? lpszWindow);
+    [LibraryImport("user32.dll", EntryPoint = "EnumWindows", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool EnumWindows(EnumWindowsProcedure lpEnumFunc, nint lParam);
+
+    [LibraryImport("user32.dll", EntryPoint = "EnumChildWindows", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool EnumChildWindows(nint hWndParent, EnumWindowsProcedure lpEnumFunc, nint lParam);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetClassNameW", SetLastError = true)]
+    private static partial int GetClassName(nint hWnd, [Out] char[] lpClassName, int nMaxCount);
 
     [LibraryImport("user32.dll", EntryPoint = "RedrawWindow", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
