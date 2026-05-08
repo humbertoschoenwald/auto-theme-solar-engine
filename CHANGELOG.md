@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- No unreleased changes.
+### Fixes
+
+- **app:** refresh all taskbars on theme change (04e1993)
 
 ## v26.05.00 - 2026-04-28
 
