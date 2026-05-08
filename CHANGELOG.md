@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- No unreleased changes.
+
+## v26.05.02 - 2026-05-08
+
 ### Fixes
 
 - **app:** mirror Windows theme transitions (00f12b8)
