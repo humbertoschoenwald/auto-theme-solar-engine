@@ -42,6 +42,21 @@ internal static class ShellThemeRefreshPlanner
         }
     }
 
+    internal static void NotifyTopLevelWindows(
+        IEnumerable<ShellWindowInfo> topLevelWindows,
+        Action<nint> notifyWindow)
+    {
+        ArgumentNullException.ThrowIfNull(topLevelWindows);
+        ArgumentNullException.ThrowIfNull(notifyWindow);
+
+        HashSet<nint> notifiedWindowHandles = [];
+
+        foreach (ShellWindowInfo window in topLevelWindows)
+        {
+            NotifyWindowOnce(window.WindowHandle, notifiedWindowHandles, notifyWindow);
+        }
+    }
+
     private static bool ShouldRefreshWindowClass(string className)
     {
         return className is ShellTrayWindowClassName
@@ -66,5 +81,18 @@ internal static class ShellThemeRefreshPlanner
         }
 
         refreshWindow(windowHandle);
+    }
+
+    private static void NotifyWindowOnce(
+        nint windowHandle,
+        HashSet<nint> notifiedWindowHandles,
+        Action<nint> notifyWindow)
+    {
+        if (windowHandle == nint.Zero || !notifiedWindowHandles.Add(windowHandle))
+        {
+            return;
+        }
+
+        notifyWindow(windowHandle);
     }
 }

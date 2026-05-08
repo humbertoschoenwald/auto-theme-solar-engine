@@ -70,4 +70,26 @@ public sealed class ShellThemeRefreshPlannerTests
 
         Assert.Equal([desktopWindow], refreshedWindowHandles);
     }
+
+    /// <summary>
+    /// Verifies top-level app windows are notified exactly once.
+    /// </summary>
+    [Fact]
+    public void NotifyTopLevelWindowsNotifiesEveryDistinctTopLevelWindow()
+    {
+        nint firstWindow = new(600);
+        nint secondWindow = new(601);
+        List<nint> notifiedWindowHandles = [];
+        ShellWindowInfo[] topLevelWindows =
+        [
+            new(firstWindow, "Chrome_WidgetWin_1"),
+            new(firstWindow, "Chrome_WidgetWin_1"),
+            new(nint.Zero, "Ghost"),
+            new(secondWindow, "ApplicationFrameWindow")
+        ];
+
+        ShellThemeRefreshPlanner.NotifyTopLevelWindows(topLevelWindows, notifiedWindowHandles.Add);
+
+        Assert.Equal([firstWindow, secondWindow], notifiedWindowHandles);
+    }
 }

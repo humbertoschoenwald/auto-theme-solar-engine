@@ -14,11 +14,14 @@ namespace SolarEngine.Features.Themes.Infrastructure;
 
 internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher logPublisher) : IThemeMutator
 {
+    private const string ThemesKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes";
     private const string PersonalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string AppKeyPath = @"Software\AutoThemeSolarEngine";
+    private const string CurrentThemeValueName = "CurrentTheme";
     private const string AppsUseLightThemeValueName = "AppsUseLightTheme";
     private const string SystemUsesLightThemeValueName = "SystemUsesLightTheme";
     private const string ColorPrevalenceValueName = "ColorPrevalence";
+    private const string EnableTransparencyValueName = "EnableTransparency";
     private const string StoredDarkModeColorPrevalenceValueName = "StoredDarkModeColorPrevalence";
     private const string LightModeTaskbarPreferenceManagedValueName = "LightModeTaskbarPreferenceManaged";
     private const string UxThemeLibraryName = "uxtheme.dll";
@@ -27,6 +30,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private const string RegistryKeyResolutionDescription = "Resolve the Personalize registry key before mutating shell theme state.";
     private const string RegistryFailureCode = "themes.mutator.registry_failure";
     private const string RegistryFailureDescription = "Isolate registry mutation failures behind a deterministic application contract.";
+    private const string ThemeMetadataResolutionDescription = "Resolve the Themes registry key before synchronizing shell theme metadata.";
     private const string PersistTaskbarPreferenceDescription = "Resolve the application registry key before persisting taskbar appearance preferences.";
     private const string RestoreTaskbarPreferenceDescription = "Resolve the application registry key before restoring taskbar appearance preferences.";
     private const string ManageTaskbarPreferenceDescription = "Resolve the application registry key before tracking taskbar appearance ownership.";
@@ -34,9 +38,12 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
     private const string WindowsThemeElementParameter = "WindowsThemeElement";
     private const string SystemPaletteParameter = "SystemPalette";
     private const int ThemeRequestTimeoutMilliseconds = 2000;
+    private const int TopLevelWindowNotificationTimeoutMilliseconds = 500;
     private const int DarkThemeValue = 0;
     private const int LightThemeValue = 1;
     private const int ManagedPreferenceEnabledValue = 1;
+    private const int TransparencyDisabledValue = 0;
+    private const int TransparencyEnabledValue = 1;
     private const uint UpdatePerUserSystemParametersAction = 1;
 
     private static readonly nint s_hwndBroadcast = new(0xFFFF);
@@ -66,8 +73,10 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
             personalizeKey.SetValue(AppsUseLightThemeValueName, lightValue, RegistryValueKind.DWord);
             personalizeKey.SetValue(SystemUsesLightThemeValueName, lightValue, RegistryValueKind.DWord);
             ApplyTaskbarColorPreference(mode, personalizeKey);
+            PulseTransparencyPreferenceIfNeeded(personalizeKey);
             personalizeKey.Flush();
 
+            SynchronizeCurrentThemeMetadata(mode);
             RefreshShellThemeState();
 
             logPublisher.Write($"Theme mutation committed: {mode}.");
@@ -122,6 +131,32 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
             DarkThemeValue => ThemeMode.Dark,
             _ => null
         };
+    }
+
+    private static void PulseTransparencyPreferenceIfNeeded(RegistryKey personalizeKey)
+    {
+        if (!TryReadDword(personalizeKey.GetValue(EnableTransparencyValueName), out int originalTransparencyValue))
+        {
+            return;
+        }
+
+        int pulseTransparencyValue = originalTransparencyValue == TransparencyDisabledValue
+            ? TransparencyEnabledValue
+            : TransparencyDisabledValue;
+
+        personalizeKey.SetValue(EnableTransparencyValueName, pulseTransparencyValue, RegistryValueKind.DWord);
+        personalizeKey.SetValue(EnableTransparencyValueName, originalTransparencyValue, RegistryValueKind.DWord);
+    }
+
+    private static void SynchronizeCurrentThemeMetadata(ThemeMode mode)
+    {
+        using RegistryKey themesKey = Registry.CurrentUser.CreateSubKey(ThemesKeyPath, writable: true)
+            ?? throw new UnexpectedStateException(ThemeMetadataResolutionDescription);
+
+        string? currentThemePath = themesKey.GetValue(CurrentThemeValueName) as string;
+        string synchronizedThemePath = ThemeMetadataSynchronizer.Synchronize(mode, currentThemePath);
+        themesKey.SetValue(CurrentThemeValueName, synchronizedThemePath, RegistryValueKind.String);
+        themesKey.Flush();
     }
 
     private static void ApplyTaskbarColorPreference(ThemeMode mode, RegistryKey personalizeKey)
@@ -232,8 +267,14 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         BroadcastWindowMessage(WmDwmColorizationColorChanged);
         BroadcastWindowMessage(WmSysColorChange);
 
+        List<ShellWindowInfo> topLevelWindows = EnumerateTopLevelWindows();
+
+        ShellThemeRefreshPlanner.NotifyTopLevelWindows(
+            topLevelWindows,
+            NotifyThemeChangeWindow);
+
         ShellThemeRefreshPlanner.RefreshShellWindows(
-            EnumerateTopLevelShellWindows(),
+            topLevelWindows,
             EnumerateDescendantWindowHandles,
             RefreshShellWindow);
     }
@@ -248,7 +289,7 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
         _ = SendMessageTimeoutRaw(s_hwndBroadcast, message, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
     }
 
-    private static List<ShellWindowInfo> EnumerateTopLevelShellWindows()
+    private static List<ShellWindowInfo> EnumerateTopLevelWindows()
     {
         List<ShellWindowInfo> windows = [];
 
@@ -295,20 +336,30 @@ internal sealed partial class WindowsRegistryThemeMutator(StructuredLogPublisher
 
     private static void RefreshShellWindow(nint windowHandle)
     {
-        BroadcastThemeChangeToWindow(windowHandle, ImmersiveColorSetParameter);
-        BroadcastThemeChangeToWindow(windowHandle, WindowsThemeElementParameter);
-        BroadcastThemeChangeToWindow(windowHandle, SystemPaletteParameter);
-        BroadcastThemeChangeToWindow(windowHandle, null);
-
-        _ = SendMessageTimeoutRaw(windowHandle, WmThemeChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
-        _ = SendMessageTimeoutRaw(windowHandle, WmDwmColorizationColorChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
-        _ = SendMessageTimeoutRaw(windowHandle, WmSysColorChange, nint.Zero, nint.Zero, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
+        NotifyThemeChangeWindow(windowHandle, ThemeRequestTimeoutMilliseconds);
         _ = RedrawWindow(windowHandle, nint.Zero, nint.Zero, RdwInvalidate | RdwAllChildren | RdwFrame | RdwUpdatenow);
     }
 
-    private static void BroadcastThemeChangeToWindow(nint windowHandle, string? parameter)
+    private static void NotifyThemeChangeWindow(nint windowHandle)
     {
-        _ = SendMessageTimeoutString(windowHandle, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, ThemeRequestTimeoutMilliseconds, out _);
+        NotifyThemeChangeWindow(windowHandle, TopLevelWindowNotificationTimeoutMilliseconds);
+    }
+
+    private static void NotifyThemeChangeWindow(nint windowHandle, int timeoutMilliseconds)
+    {
+        BroadcastThemeChangeToWindow(windowHandle, ImmersiveColorSetParameter, timeoutMilliseconds);
+        BroadcastThemeChangeToWindow(windowHandle, WindowsThemeElementParameter, timeoutMilliseconds);
+        BroadcastThemeChangeToWindow(windowHandle, SystemPaletteParameter, timeoutMilliseconds);
+        BroadcastThemeChangeToWindow(windowHandle, null, timeoutMilliseconds);
+
+        _ = SendMessageTimeoutRaw(windowHandle, WmThemeChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, timeoutMilliseconds, out _);
+        _ = SendMessageTimeoutRaw(windowHandle, WmDwmColorizationColorChanged, nint.Zero, nint.Zero, SmtoAbortIfHung, timeoutMilliseconds, out _);
+        _ = SendMessageTimeoutRaw(windowHandle, WmSysColorChange, nint.Zero, nint.Zero, SmtoAbortIfHung, timeoutMilliseconds, out _);
+    }
+
+    private static void BroadcastThemeChangeToWindow(nint windowHandle, string? parameter, int timeoutMilliseconds)
+    {
+        _ = SendMessageTimeoutString(windowHandle, WmSettingChange, nint.Zero, parameter, SmtoAbortIfHung, timeoutMilliseconds, out _);
     }
 
     private static bool TryUpdatePerUserSystemParameters()

@@ -28,6 +28,14 @@ alwaysApply: false
 - RULE: Persist coordinates only through the reduced-precision protected storage path.
 - RULE: Keep persisted coordinates visually hidden on the main settings surface unless the user is actively editing them.
 - RULE: Treat undocumented shell-refresh behavior as a compatibility exception. If you change it, update ADR first and keep graceful fallback behavior.
+- RULE: Theme refresh must keep direct top-level window notification separate
+  from shell-window redraw so app frameworks can observe theme changes without
+  broad redraw side effects.
+- RULE: When Windows theme metadata is synchronized, preserve the user's
+  current theme content where possible and write generated theme files only
+  under app-owned LocalAppData.
+- RULE: If theme mutation pulses transparency to refresh cached taskbar accent
+  surfaces, restore the user's original transparency value before shell refresh.
 - RULE: Keep the settings experience native, tabbed, theme-aware, and directly localizable rather than introducing a heavyweight desktop UI stack.
 - RULE: Use a native language selector for English and Spanish instead of a toggle-only control.
 - RULE: User-visible desktop UI surfaces must use `Auto Theme Solar Engine`.
