@@ -30,6 +30,7 @@ DWMSBT
 DWMWA
 DWMWCP
 Dont
+FEFF
 geolocation
 geolocator
 Geolocator
@@ -60,6 +61,7 @@ messageloop
 MINIMIZEBOX
 msbuild
 msdia
+msstyles
 MSVC
 Mutex
 netcoreapp
@@ -103,17 +105,21 @@ testplatform
 THICKFRAME
 TimeProvider
 TIMECHANGE
+taskbars
 TRAYICON
 Trimmable
 Updatenow
 userosscache
+USERPROFILE
 uxtheme
 venv
+vcvars
 warnaserror
 webp
 Win32
 winmd
 WPF
+vswhere
 wtsapi
 WTSSESSION
 xunit
